@@ -290,7 +290,7 @@ function clearTimers() {
 }
 
 function renderLearn() {
-  const ns = levelNotes(), S = 30, gap = 104, first = 150, yTop = 120;
+  const ns = levelNotes(), S = 30, gap = 124, first = 150, yTop = 120; // room for a flat between notes
   const VW = first + ns.length * gap + 20, VH = 400;
   const card = $("card");
   card.textContent = "";
