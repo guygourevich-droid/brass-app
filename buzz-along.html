@@ -118,6 +118,10 @@
       <button id="inTrombone" class="seg-btn" aria-pressed="false">Trombone</button>
       <button id="inHorn" class="seg-btn" aria-pressed="false">Horn</button>
     </div>
+    <div class="seg" role="group" aria-label="Breath before buzzing">
+      <button id="br2" class="seg-btn" aria-pressed="true" title="Rest 2 counts, breathe in for 2">Breathe 2</button>
+      <button id="br1" class="seg-btn" aria-pressed="false" title="Rest 3 counts, breathe in on 4">Breathe 1</button>
+    </div>
     <div class="levels" role="group" aria-label="Level"><span class="k">Level</span><span id="levels" class="levels"></span></div>
     <label class="ctl" for="tempo"><span class="k">Count speed</span><input id="tempo" type="range" min="40" max="100" step="1" value="60"><output id="tempoOut" for="tempo">60</output></label>
     <label class="toggle" for="model"><input id="model" type="checkbox" checked><span>Model sound</span></label>
@@ -153,65 +157,57 @@
 "use strict";
 
 /* ---------- Buzz-Along ----------
-   One round = get ready (4) → listen to the model (the phrase) → breathe in (2) → buzz it back (the phrase) → lips rest (4).
-   Each note is a ribbon: length = how long, height = how high, a sloping ribbon = a siren. */
+   Every step is whole 4/4 bars on one steady click:
+   count-in (1 bar) → listen (the phrase) → breathing bar (rest, then breathe in) → buzz (the phrase) → lips rest (1 bar).
+   Each note is a ribbon: longer = longer, higher = higher, a hill = a siren. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
 
-// Model notes: the usual first notes for each instrument, a 4th apart (concert pitch in Hz).
+// Model starting note (concert Hz) and what students read. Siren tops: a step, a 3rd, a 4th, a 5th above.
 const INSTRUMENTS = {
-  trumpet: { label: "Trumpet", lo: 349.23, hi: 466.16, notes: "written G & C" },
-  trombone: { label: "Trombone", lo: 174.61, hi: 233.08, notes: "F & B♭" },
-  horn: { label: "Horn", lo: 261.63, hi: 349.23, notes: "written G & C" }
+  trumpet: { label: "Trumpet", lo: 349.23, start: "written Sol (G)", tops: ["La (A)", "Si (B)", "Do (C)", "Re (D)"] },
+  trombone: { label: "Trombone", lo: 174.61, start: "Fa (F)", tops: ["Sol (G)", "La (A)", "Si♭ (B♭)", "Do (C)"] },
+  horn: { label: "Horn", lo: 261.63, start: "written Sol (G)", tops: ["La (A)", "Si (B)", "Do (C)", "Re (D)"] }
 };
 
-// Patterns in beats. "L" low, "H" high, "LH" slide up, "HL" slide down, "LHL" up and back; null = rest.
+// Patterns in beats: "L" = starting note, "LHL" = siren up and back, "LH"/"HL" = slide up / down, null = rest.
+const SIRENS = [[["LHL", 4], [null, 4]], [["LHL", 8]], [["LH", 4], ["HL", 4]]];
 const LEVELS = [
-  { name: "First buzz · 2 counts", bars: 1, rows: 1, patterns: [[["L", 2], [null, 2]]] },
-  { name: "First buzz · 4 counts", bars: 1, rows: 1, patterns: [[["L", 4]]] },
-  { name: "Long buzz · 8 counts", bars: 2, rows: 1, patterns: [[["L", 8]]] },
-  { name: "Long & short", bars: 2, rows: 1, patterns: [
+  { name: "Long tone · 4 counts", bars: 1, patterns: [[["L", 4]]] },
+  { name: "Long tone · 8 counts", bars: 2, patterns: [[["L", 8]]] },
+  { name: "Rhythm · long notes", bars: 2, patterns: [
+    [["L", 2], ["L", 2], ["L", 4]],
+    [["L", 2], [null, 2], ["L", 2], [null, 2]],
     [["L", 4], ["L", 2], [null, 2]],
-    [["L", 2], [null, 2], ["L", 4]],
-    [["L", 3], [null, 1], ["L", 3], [null, 1]],
-    [["L", 2], ["L", 2], ["L", 2], [null, 2]],
+    [["L", 2], ["L", 2], ["L", 2], [null, 2]]
+  ] },
+  { name: "Rhythm · short notes", bars: 2, patterns: [
     [["L", 1], ["L", 1], ["L", 2], ["L", 4]],
-    [["L", 1], [null, 1], ["L", 1], [null, 1], ["L", 4]],
-    [["L", 2], [null, 1], ["L", 1], ["L", 4]]
+    [["L", 1], ["L", 1], ["L", 1], [null, 1], ["L", 4]],
+    [["L", 2], ["L", 1], ["L", 1], ["L", 4]],
+    [["L", 1], [null, 1], ["L", 1], [null, 1], ["L", 2], [null, 2]]
   ] },
-  { name: "High & low", bars: 2, rows: 2, patterns: [
-    [["L", 4], ["H", 4]],
-    [["L", 2], ["H", 2], ["L", 4]],
-    [["L", 3], [null, 1], ["H", 3], [null, 1]],
-    [["L", 2], ["L", 2], ["H", 4]],
-    [["H", 4], ["L", 4]],
-    [["L", 2], ["H", 2], ["H", 2], ["L", 2]]
-  ] },
-  { name: "Mini sirens", bars: 2, rows: 2, patterns: [
-    [["LH", 4], ["H", 2], [null, 2]],
-    [["L", 2], ["LH", 2], ["H", 2], [null, 2]],
-    [["HL", 4], [null, 4]],
-    [["LH", 4], ["HL", 4]],
-    [["LHL", 6], [null, 2]],
-    [["L", 2], ["LHL", 4], [null, 2]]
-  ] }
+  { name: "Siren · a step", bars: 2, semis: 2, top: 0, patterns: SIRENS },
+  { name: "Siren · a 3rd", bars: 2, semis: 4, top: 1, patterns: SIRENS },
+  { name: "Siren · a 4th", bars: 2, semis: 5, top: 2, patterns: SIRENS },
+  { name: "Siren · a 5th", bars: 2, semis: 7, top: 3, patterns: SIRENS }
 ];
 
-const LISTEN_HINT = ["One long, steady sound", "One long, steady sound", "One long, steady sound", "Long and short notes", "Which notes go high?", "Hear the slides"];
-const BUZZ_HINT = ["Start with your tongue, steady air", "Start with your tongue, steady air", "Keep the air going to the end", "Count the long notes", "Low and high, like you heard", "Slide smoothly, keep the air going"];
+const LISTEN_HINT = ["One long, steady note", "One long, steady note", "Long notes and rests", "Short and long notes", "Hear the siren go up and back", "Hear the siren go up and back", "Hear the siren go up and back", "Hear the siren go up and back"];
+const BUZZ_HINT = ["Start with your tongue, steady air", "Keep the air going to the end", "Count the long notes", "A clean start on every note", "Slide smoothly, keep the air going", "Slide smoothly, keep the air going", "Slide smoothly, keep the air going", "Slide smoothly, keep the air going"];
 
 const TIPS = [
   "<b>Mouthpiece rests lightly.</b> Never press it into your lips.",
-  "<b>Breathe before every note.</b> Big relaxed breath, shoulders down.",
+  "<b>Breathe in time.</b> Big relaxed breath, shoulders down.",
   "<b>Start with your tongue,</b> not a push of air.",
   "<b>Steady air, steady buzz.</b> Keep the air moving to the end of the note.",
   "<b>Rest your lips</b> between buzzes. Short and often beats long and tired."
 ];
 
-const COLORS = { listen: "#e3a92b", breathe: "#e3a92b", buzz: "#ff6f59", rest: "#ff6f59", done: "#ff6f59", ready: "#e3a92b" };
+const GOLD = "#c98a12", CORAL = "#e4513f", BLUE = "#1a7fe2", MINT = "#17905a", GREY = "#8190a1";
 
-const state = { inst: "trumpet", li: 0, bpm: 60, model: true, click: true, phase: "ready", notes: [], lane: null, run: null, prev: -1, tip: 0, last: 0 };
+const state = { inst: "trumpet", li: 0, bpm: 60, model: true, click: true, breath: 2, phase: "idle", notes: [], lane: null, run: null, prev: -1, tip: 0 };
 
 /* ---------- Sound ---------- */
 
@@ -222,7 +218,7 @@ const Sound = (() => {
     if (!ctx) {
       if (navigator.audioSession) navigator.audioSession.type = "playback";
       ctx = new (window.AudioContext || window.webkitAudioContext)();
-      noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.1), ctx.sampleRate);
+      noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const d = noise.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
@@ -260,13 +256,26 @@ const Sound = (() => {
     o.frequency.exponentialRampToValueAtTime(400, t + 0.03);
     f.type = "lowpass";
     f.frequency.value = 1500;
-    env(g, t, accent ? 0.24 : 0.13, 0.003, accent ? 0.08 : 0.05);
+    env(g, t, accent ? 0.26 : 0.14, 0.003, accent ? 0.08 : 0.05);
     o.connect(f); f.connect(g); g.connect(bus);
     o.start(t); o.stop(t + 0.12);
   }
 
-  // Buzzy model note: two slightly detuned sawtooths through a soft filter, a tongue "t" at the start,
-  // and slides timed to match the ribbon shape on screen.
+  // Soft rising whoosh at the moment to breathe in.
+  function breath(t, dur) {
+    const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    n.buffer = noise;
+    f.type = "bandpass"; f.Q.value = 0.9;
+    f.frequency.setValueAtTime(500, t);
+    f.frequency.exponentialRampToValueAtTime(1400, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.09, t + dur * 0.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    n.connect(f); f.connect(g); g.connect(bus);
+    n.start(t); n.stop(t + dur + 0.05);
+  }
+
+  // Buzzy model note: detuned sawtooths, a tongue "t" at the start, slides timed to match the ribbon.
   function tone(t, dur, path, lo, hi) {
     const end = t + Math.max(0.15, dur - 0.08);
     const v = [...path].map(c => (c === "H" ? hi : lo));
@@ -294,14 +303,14 @@ const Sound = (() => {
   }
 
   const now = () => ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
-  return { ensure, open, close, tick, tone, now };
+  return { ensure, open, close, tick, breath, tone, now };
 })();
 
-/* ---------- Lane (the ribbon picture) ---------- */
+/* ---------- Lane ---------- */
 
 const smooth = x => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
 
-// 0 = low row, 1 = high row, at fraction f through the note. Matches the timing of the audio slide.
+// 0 = starting note, 1 = top note, at fraction f through the note (same timing as the audio slide).
 function pitchAt(path, f) {
   const v = [...path].map(c => (c === "H" ? 1 : 0));
   if (v.length === 1) return v[0];
@@ -326,88 +335,94 @@ function toNotes(pattern) {
   return notes;
 }
 
-function renderLane(L, pattern, notes) {
+function renderLane(L, notes) {
   const VW = 1600, VH = 440, X0 = 120, X1 = 1560, R = 30;
   const beats = L.bars * 4, bw = (X1 - X0) / beats;
-  const yLow = L.rows === 2 ? 290 : 220, yHigh = L.rows === 2 ? 140 : 220;
+  const siren = !!L.semis;
+  const yLow = siren ? 320 : 220, yHigh = siren ? 320 - (L.semis / 7) * 200 : 220; // bigger siren = taller hill
   const yOf = p => yLow + (yHigh - yLow) * p;
   const box = $("lane");
   box.textContent = "";
-  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": "Notes shown as ribbons: longer is longer, higher is higher" }, box);
-  const defs = el("defs", {}, svg);
-  const mask = el("mask", { id: "ribbonMask", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: VW, height: VH }, defs);
+  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": "Notes as ribbons: longer is longer, higher is higher" }, box);
+  const mask = el("mask", { id: "ribbonMask", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: VW, height: VH }, el("defs", {}, svg));
 
-  // Beat grid and counts
   const labels = [];
   for (let b = 0; b <= beats; b++) {
-    const x = X0 + b * bw;
-    el("line", { x1: x, x2: x, y1: 60, y2: 370, stroke: b % 4 === 0 ? "#9fb3c8" : "#d6e0ea", "stroke-width": b % 4 === 0 ? 3 : 2 }, svg);
+    const x = X0 + b * bw, bar = b % 4 === 0;
+    el("line", { x1: x, x2: x, y1: 60, y2: 370, stroke: bar ? "#a9bccf" : "#e3eaf1", "stroke-width": bar ? 3 : 2 }, svg);
     if (b < beats) {
-      const t = el("text", { x: x + bw / 2, y: 418, "text-anchor": "middle", "font-size": 34, "font-weight": 600, fill: "#9aa8b8", style: "font-family: var(--display)" }, svg);
+      const t = el("text", { x: x + bw / 2, y: 422, "text-anchor": "middle", "font-size": 40, "font-weight": 600, fill: "#a3b0bf", style: "font-family: var(--display)" }, svg);
       t.textContent = (b % 4) + 1;
       labels.push(t);
     }
   }
-  if (L.rows === 2) {
+  if (siren) {
     for (const [y, word] of [[yHigh, "high"], [yLow, "low"]]) {
-      el("line", { x1: X0, x2: X1, y1: y, y2: y, stroke: "#c9d6e3", "stroke-width": 2, "stroke-dasharray": "10 12" }, svg);
-      el("text", { x: X0 - 16, y: y + 10, "text-anchor": "end", "font-size": 28, "font-weight": 600, fill: "#8190a1", style: "font-family: var(--display)" }, svg).textContent = word;
+      el("line", { x1: X0, x2: X1, y1: y, y2: y, stroke: "#d3dde8", "stroke-width": 2, "stroke-dasharray": "10 12" }, svg);
+      el("text", { x: X0 - 16, y: y + 10, "text-anchor": "end", "font-size": 28, "font-weight": 600, fill: GREY, style: "font-family: var(--display)" }, svg).textContent = word;
     }
   }
 
-  // Breath marks where a rest of 2+ beats leads into another note
-  let beat = 0;
-  pattern.forEach(([path, dur], i) => {
-    if (!path && dur >= 2 && i < pattern.length - 1) {
-      el("text", { x: X0 + beat * bw + bw * 0.5, y: 110, "text-anchor": "middle", "font-size": 96, "font-weight": 700, fill: "#1a7fe2", style: "font-family: var(--display)" }, svg).textContent = "’";
-    }
-    beat += dur;
-  });
-
-  // Ribbons: an empty tube, then a coloured fill revealed by the playhead through a mask
+  const ribbons = el("g", {}, svg);
   const geo = notes.map(n => {
-    const x0 = X0 + n.start * bw + R + 6, x1 = Math.max(x0, X0 + (n.start + n.dur) * bw - R - 6);
-    let d;
-    if (n.path.length === 1) d = `M ${x0} ${yOf(pitchAt(n.path, 0))} L ${x1} ${yOf(pitchAt(n.path, 0))}`;
-    else {
-      d = "";
-      for (let i = 0; i <= 32; i++) { const f = i / 32; d += `${i ? "L" : "M"} ${(x0 + (x1 - x0) * f).toFixed(1)} ${yOf(pitchAt(n.path, f)).toFixed(1)} `; }
+    const x0 = X0 + n.start * bw + R + 8, x1 = Math.max(x0, X0 + (n.start + n.dur) * bw - R - 8);
+    let d = "";
+    const steps = n.path.length === 1 ? 1 : 40;
+    for (let i = 0; i <= steps; i++) {
+      const f = i / steps;
+      d += `${i ? "L" : "M"} ${(x0 + (x1 - x0) * f).toFixed(1)} ${yOf(pitchAt(n.path, f)).toFixed(1)} `;
     }
-    el("path", { d, fill: "none", stroke: "#c9d6e3", "stroke-width": 2 * R + 8, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
-    el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": 2 * R, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+    el("path", { d, fill: "none", stroke: "#c9d6e3", "stroke-width": 2 * R + 8, "stroke-linecap": "round", "stroke-linejoin": "round" }, ribbons);
+    el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": 2 * R, "stroke-linecap": "round", "stroke-linejoin": "round" }, ribbons);
     el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": 2 * R, "stroke-linecap": "round", "stroke-linejoin": "round" }, mask);
     return { ...n, x0, x1 };
   });
-  const fill = el("rect", { x: 0, y: 0, width: 0, height: VH, fill: COLORS.listen, mask: "url(#ribbonMask)" }, svg);
+  const fill = el("rect", { x: 0, y: 0, width: 0, height: VH, fill: GOLD, mask: "url(#ribbonMask)" }, ribbons);
+  const bead = el("circle", { r: R * 0.6, fill: "#fff", stroke: GOLD, "stroke-width": 8, opacity: 0 }, svg);
 
-  const playhead = el("line", { x1: X0, x2: X0, y1: 50, y2: 380, stroke: COLORS.listen, "stroke-width": 5, "stroke-linecap": "round", opacity: 0 }, svg);
-  const sparks = el("g", {}, svg);
-  const bead = el("g", { opacity: 0 }, svg);
-  const halo = el("circle", { r: R + 14, fill: COLORS.listen, opacity: 0.28 }, bead);
-  const core = el("circle", { r: R * 0.62, fill: "#fff", stroke: COLORS.listen, "stroke-width": 7 }, bead);
+  // Count boxes shown over the lane for the count-in, the breathing bar and the rest bar.
+  const pillsG = el("g", { opacity: 0 }, svg);
+  const pills = [0, 1, 2, 3].map(i => {
+    const x = 330 + i * 250;
+    const r = el("rect", { x, y: 130, width: 190, height: 170, rx: 30, "stroke-width": 5 }, pillsG);
+    const t = el("text", { x: x + 95, y: 240, "text-anchor": "middle", "font-size": 80, "font-weight": 700, style: "font-family: var(--display)" }, pillsG);
+    return { r, t };
+  });
+  let lastSig = "", activeLabel = -1;
 
-  const pool = Array.from({ length: 36 }, () => ({ node: el("circle", { r: 6, fill: "#fff", opacity: 0 }, sparks), life: 0, x: 0, y: 0, vx: 0, vy: 0 }));
-  let carry = 0, activeLabel = -1;
+  function setPills(kind, beatPos) {
+    const cur = Math.min(3, Math.floor(beatPos));
+    const sig = kind + cur + state.breath;
+    if (sig === lastSig) return;
+    lastSig = sig;
+    pills.forEach((p, i) => {
+      const breatheHere = kind === "breath" && i >= 4 - state.breath;
+      const color = kind === "countin" ? GOLD : kind === "rest" ? MINT : breatheHere ? BLUE : GREY;
+      const text = breatheHere ? "in" : String(i + 1);
+      p.t.textContent = text;
+      if (i === cur) { p.r.setAttribute("fill", color); p.r.setAttribute("stroke", color); p.t.setAttribute("fill", "#fff"); }
+      else if (i < cur) { p.r.setAttribute("fill", "#f2f5f9"); p.r.setAttribute("stroke", "#dfe6ee"); p.t.setAttribute("fill", "#b6c1cd"); }
+      else { p.r.setAttribute("fill", "#fff"); p.r.setAttribute("stroke", breatheHere ? BLUE : "#cfdae6"); p.t.setAttribute("fill", color); }
+    });
+  }
 
   return {
-    xAt: b => X0 + Math.min(beats, Math.max(0, b)) * bw,
-    beats,
-    update(kind, beatPos, dt) {
-      const color = COLORS[kind] || COLORS.listen;
-      fill.setAttribute("fill", color);
-      playhead.setAttribute("stroke", color);
-      halo.setAttribute("fill", color);
-      core.setAttribute("stroke", color);
+    update(kind, beatPos) {
       const moving = kind === "listen" || kind === "buzz";
-      const x = moving ? X0 + Math.min(beats, Math.max(0, beatPos)) * bw : kind === "ready" ? X0 : X1 + R + 10;
-      fill.setAttribute("width", Math.max(0, x));
-      playhead.setAttribute("x1", x); playhead.setAttribute("x2", x);
-      playhead.setAttribute("opacity", moving ? 0.9 : 0);
+      const boxes = kind === "countin" || kind === "breath" || kind === "rest";
+      const color = kind === "buzz" || kind === "rest" || kind === "done" ? CORAL : GOLD;
+      ribbons.setAttribute("opacity", boxes ? 0.25 : 1);
+      pillsG.setAttribute("opacity", boxes ? 1 : 0);
+      if (boxes) setPills(kind, beatPos); else lastSig = "";
+
+      fill.setAttribute("fill", color);
+      const x = moving ? X0 + Math.min(beats, Math.max(0, beatPos)) * bw : kind === "breath" || kind === "rest" || kind === "done" ? VW : 0;
+      fill.setAttribute("width", x);
 
       const idx = moving ? Math.min(beats - 1, Math.floor(beatPos)) : -1;
       if (idx !== activeLabel) {
-        if (labels[activeLabel]) { labels[activeLabel].setAttribute("fill", "#9aa8b8"); labels[activeLabel].setAttribute("font-size", 34); }
-        if (labels[idx]) { labels[idx].setAttribute("fill", color); labels[idx].setAttribute("font-size", 44); }
+        if (labels[activeLabel]) { labels[activeLabel].setAttribute("fill", "#a3b0bf"); labels[activeLabel].setAttribute("font-size", 40); }
+        if (labels[idx]) { labels[idx].setAttribute("fill", color); labels[idx].setAttribute("font-size", 52); }
         activeLabel = idx;
       }
 
@@ -415,41 +430,18 @@ function renderLane(L, pattern, notes) {
       if (g) {
         const bx = Math.min(g.x1, Math.max(g.x0, x));
         const by = yOf(pitchAt(g.path, g.x1 > g.x0 ? (bx - g.x0) / (g.x1 - g.x0) : 0));
-        bead.setAttribute("transform", `translate(${bx.toFixed(1)} ${by.toFixed(1)})`);
+        bead.setAttribute("cx", bx.toFixed(1));
+        bead.setAttribute("cy", by.toFixed(1));
+        bead.setAttribute("stroke", color);
         bead.setAttribute("opacity", 1);
-        carry += dt * 40;
-        while (carry >= 1) {
-          carry -= 1;
-          const p = pool.find(q => q.life <= 0);
-          if (!p) break;
-          Object.assign(p, { life: 1, x: bx, y: by + (Math.random() - 0.5) * 30, vx: -90 - Math.random() * 90, vy: (Math.random() - 0.5) * 80 });
-          p.node.setAttribute("fill", Math.random() < 0.5 ? "#fff" : color);
-          p.node.setAttribute("r", (3 + Math.random() * 6).toFixed(1));
-        }
       } else {
         bead.setAttribute("opacity", 0);
-      }
-      for (const p of pool) {
-        if (p.life <= 0) continue;
-        p.life -= dt / 0.7;
-        p.x += p.vx * dt; p.y += p.vy * dt;
-        p.node.setAttribute("cx", p.x.toFixed(1));
-        p.node.setAttribute("cy", p.y.toFixed(1));
-        p.node.setAttribute("opacity", p.life <= 0 ? 0 : (p.life * 0.9).toFixed(2));
       }
     }
   };
 }
 
 /* ---------- Game ---------- */
-
-const TEXT = {
-  idle: ["🐝", "Buzz-Along", "Press Play"],
-  ready: ["👂", "Get ready", "Listen first, mouthpiece down"],
-  breathe: ["🌬️", "Breathe in", "Mouthpiece to your lips"],
-  rest: ["😌", "Lips rest", "Mouthpiece down, relax your lips"],
-  done: ["👍", "Nice buzzing!", "Again, or Next?"]
-};
 
 function setPhaseText(glyph, word, hint) {
   const g = $("phaseGlyph");
@@ -465,11 +457,16 @@ function setCount(v) {
   c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop");
 }
 
-function show(kind, count) {
-  $("stage").dataset.phase = kind;
-  if (kind === "listen") setPhaseText("👂", "Listen", LISTEN_HINT[state.li]);
-  else if (kind === "buzz") setPhaseText("🐝", "Buzz!", BUZZ_HINT[state.li]);
-  else setPhaseText(...TEXT[kind]);
+function show(kind, count, breatheNow) {
+  const stage = $("stage");
+  if (kind === "countin") { stage.dataset.phase = "ready"; setPhaseText("👂", "Get ready", "Listen after 4"); }
+  else if (kind === "listen") { stage.dataset.phase = "listen"; setPhaseText("👂", "Listen", LISTEN_HINT[state.li]); }
+  else if (kind === "breath" && !breatheNow) { stage.dataset.phase = "ready"; setPhaseText("🌬️", "Get ready", `Mouthpiece up · breathe in on ${4 - state.breath + 1}`); }
+  else if (kind === "breath") { stage.dataset.phase = "breathe"; setPhaseText("🌬️", "Breathe in", "Buzz after 4"); }
+  else if (kind === "buzz") { stage.dataset.phase = "buzz"; setPhaseText("🐝", "Buzz!", BUZZ_HINT[state.li]); }
+  else if (kind === "rest") { stage.dataset.phase = "rest"; setPhaseText("😌", "Lips rest", "Mouthpiece down, relax your lips"); }
+  else if (kind === "done") { stage.dataset.phase = "done"; setPhaseText("👍", "Nice buzzing!", "Again, or Next?"); }
+  else { stage.dataset.phase = "idle"; setPhaseText("🐝", "Buzz-Along", "Press Play"); }
   setCount(count ?? "");
 }
 
@@ -477,14 +474,17 @@ function updateHeader() {
   const L = LEVELS[state.li], I = INSTRUMENTS[state.inst];
   $("levelNum").textContent = `Level ${state.li + 1}`;
   $("levelName").textContent = L.name;
-  $("noteInfo").textContent = state.model ? `${I.label} · model notes ${I.notes}` : `${I.label} · model sound off: demonstrate live`;
+  const notes = L.semis ? `siren ${I.start} → ${I.tops[L.top]}` : `model note ${I.start}`;
+  $("noteInfo").textContent = state.model ? `${I.label} · ${notes}` : `${I.label} · model sound off: demonstrate live`;
   document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i === state.li)));
   for (const k in INSTRUMENTS) $("in" + INSTRUMENTS[k].label).setAttribute("aria-pressed", String(k === state.inst));
+  $("br2").setAttribute("aria-pressed", String(state.breath === 2));
+  $("br1").setAttribute("aria-pressed", String(state.breath === 1));
 }
 
 function updateButtons() {
-  $("nextBtn").textContent = state.phase === "ready" ? "▶ Play" : "Next ▶";
-  $("againBtn").disabled = state.phase === "ready";
+  $("nextBtn").textContent = state.phase === "idle" ? "▶ Play" : "Next ▶";
+  $("againBtn").disabled = state.phase === "idle";
 }
 
 function newPattern() {
@@ -492,10 +492,9 @@ function newPattern() {
   let i = Math.floor(Math.random() * L.patterns.length);
   if (L.patterns.length > 1 && i === state.prev) i = (i + 1) % L.patterns.length;
   state.prev = i;
-  const pattern = L.patterns[i];
-  state.notes = toNotes(pattern);
-  state.lane = renderLane(L, pattern, state.notes);
-  state.lane.update("ready", 0, 0);
+  state.notes = toNotes(L.patterns[i]);
+  state.lane = renderLane(L, state.notes);
+  state.lane.update("idle", 0);
 }
 
 function stopRun() {
@@ -503,48 +502,50 @@ function stopRun() {
   state.run = null;
 }
 
-function ready() {
+function toIdle() {
   stopRun();
-  state.phase = "ready";
+  state.phase = "idle";
   show("idle");
-  if (state.lane) state.lane.update("ready", 0, 0);
+  if (state.lane) state.lane.update("idle", 0);
   updateButtons();
 }
 
 function play() {
-  const L = LEVELS[state.li], I = INSTRUMENTS[state.inst], beat = 60 / state.bpm, beats = L.bars * 4;
+  const L = LEVELS[state.li], I = INSTRUMENTS[state.inst], beat = 60 / state.bpm, phrase = L.bars * 4;
+  const hi = I.lo * Math.pow(2, (L.semis || 0) / 12);
   const ctx = Sound.ensure();
   Sound.open();
   const segs = [];
-  let t = ctx.currentTime + 0.2;
+  let t = ctx.currentTime + 0.25;
   const add = (kind, n) => { segs.push({ kind, beats: n, start: t, end: t + n * beat }); t += n * beat; };
-  add("ready", 4); add("listen", beats); add("breathe", 2); add("buzz", beats); add("rest", 4);
+  add("countin", 4); add("listen", phrase); add("breath", 4); add("buzz", phrase); add("rest", 4);
+
   if (state.click) {
     for (const s of segs) {
       if (s.kind === "rest") continue;
-      for (let i = 0; i < s.beats; i++) Sound.tick(s.start + i * beat, s.kind !== "breathe" && i % 4 === 0);
+      for (let i = 0; i < s.beats; i++) Sound.tick(s.start + i * beat, i % 4 === 0);
     }
   }
-  if (state.model) for (const n of state.notes) Sound.tone(segs[1].start + n.start * beat, n.dur * beat, n.path, I.lo, I.hi);
-  state.tip++;
-  $("tip").innerHTML = TIPS[state.tip % TIPS.length];
+  const breathSeg = segs[2];
+  Sound.breath(breathSeg.start + (4 - state.breath) * beat, Math.min(1.2, state.breath * beat * 0.9));
+  if (state.model) for (const n of state.notes) Sound.tone(segs[1].start + n.start * beat, n.dur * beat, n.path, I.lo, hi);
+
+  $("tip").innerHTML = TIPS[state.tip++ % TIPS.length];
   state.run = { segs, beat, end: t, key: "" };
   state.phase = "playing";
   updateButtons();
 }
 
 function primary() {
-  if (state.phase !== "ready") newPattern();
+  if (state.phase !== "idle") newPattern();
   play();
 }
 
 function again() {
-  if (state.phase !== "ready") play();
+  if (state.phase !== "idle") play();
 }
 
-function frame(ts) {
-  const dt = Math.min(0.05, (ts - (state.last || ts)) / 1000);
-  state.last = ts;
+function frame() {
   const run = state.run;
   if (run) {
     const now = Sound.now();
@@ -552,19 +553,17 @@ function frame(ts) {
       stopRun();
       state.phase = "done";
       show("done");
-      state.lane.update("done", 0, dt);
+      state.lane.update("done", 0);
       updateButtons();
     } else {
       const seg = run.segs.find(s => now < s.end);
       const beatPos = Math.max(0, now - seg.start) / run.beat;
-      const moving = seg.kind === "listen" || seg.kind === "buzz";
-      const count = moving ? (Math.floor(beatPos) % 4) + 1 : Math.min(seg.beats, Math.floor(beatPos) + 1);
-      const key = seg.kind + count;
-      if (key !== run.key) { run.key = key; show(seg.kind, count); }
-      state.lane.update(seg.kind, beatPos, dt);
+      const count = (Math.floor(beatPos) % 4) + 1;
+      const breatheNow = seg.kind === "breath" && Math.floor(beatPos) >= 4 - state.breath;
+      const key = seg.kind + count + breatheNow;
+      if (key !== run.key) { run.key = key; show(seg.kind, count, breatheNow); }
+      state.lane.update(seg.kind, beatPos);
     }
-  } else if (state.lane) {
-    state.lane.update(state.phase === "done" ? "done" : "ready", 0, dt);
   }
   requestAnimationFrame(frame);
 }
@@ -589,13 +588,15 @@ LEVELS.forEach((L, i) => {
   b.textContent = i + 1;
   b.title = `Level ${i + 1}: ${L.name}`;
   b.setAttribute("aria-label", b.title);
-  b.addEventListener("click", () => { state.li = i; state.prev = -1; updateHeader(); newPattern(); ready(); });
+  b.addEventListener("click", () => { state.li = i; state.prev = -1; updateHeader(); newPattern(); toIdle(); });
   $("levels").appendChild(b);
 });
 
 for (const k in INSTRUMENTS) {
-  $("in" + INSTRUMENTS[k].label).addEventListener("click", () => { state.inst = k; updateHeader(); ready(); });
+  $("in" + INSTRUMENTS[k].label).addEventListener("click", () => { state.inst = k; updateHeader(); toIdle(); });
 }
+$("br2").addEventListener("click", () => { state.breath = 2; updateHeader(); toIdle(); });
+$("br1").addEventListener("click", () => { state.breath = 1; updateHeader(); toIdle(); });
 $("nextBtn").addEventListener("click", primary);
 $("againBtn").addEventListener("click", again);
 $("tempo").addEventListener("input", e => { state.bpm = +e.target.value; $("tempoOut").textContent = state.bpm; });
@@ -616,7 +617,7 @@ document.addEventListener("keydown", e => {
   if (k === " " || k === "Enter" || k === "PageDown" || (k === "ArrowRight" && !onRange)) { e.preventDefault(); primary(); }
   else if (k === "r" || k === "R" || k === "PageUp" || (k === "ArrowLeft" && !onRange)) { e.preventDefault(); again(); }
   else if (k === "f" || k === "F") toggleFullscreen();
-  else if (k === "Escape" && state.run) { stopRun(); state.phase = "done"; show("done"); $("phaseWord").textContent = "Stopped"; updateButtons(); }
+  else if (k === "Escape" && state.run) toIdle();
 });
 
 const rootEl = document.documentElement;
@@ -626,7 +627,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.ser
 $("tip").innerHTML = TIPS[0];
 updateHeader();
 newPattern();
-ready();
+toIdle();
 requestAnimationFrame(frame);
 </script>
 </body>

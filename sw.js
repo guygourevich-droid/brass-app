@@ -1,14 +1,16 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "brass-app-v3";
+const CACHE = "brass-app-v4";
 const FILES = [
   "./",
   "index.html",
   "balloon-breath.html",
   "buzz-along.html",
   "clap-along.html",
+  "note-names.html",
   "manifest.json",
   "fonts/fonts.css",
+  "fonts/Bravura.woff2",
   "fonts/lexend-400-700-latin.woff2",
   "fonts/atkinson-hyperlegible-400-latin.woff2",
   "fonts/atkinson-hyperlegible-700-latin.woff2",

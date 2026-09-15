@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Note Names · Brass App</title>
+<meta name="theme-color" content="#bfe4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #56616f;
+    --line: rgba(21, 24, 29, .12);
+    --panel: rgba(255, 255, 255, .7);
+    --blue: #1a7fe2;
+    --coral: #e4513f;
+    --mint: #17905a;
+    --good-bg: #e6f6ee;
+    --bad-bg: #fdecea;
+    --display: "Lexend", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { background: #cfeaff; color: var(--ink); }
+  body { margin: 0; font-family: var(--body); font-size: 15px; color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e2f2ff 55%, #fff4e3 100%) fixed; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  .sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .cloud { position: absolute; left: -30vw; width: clamp(160px, 22vw, 320px); opacity: .8; animation: drift linear infinite; }
+  .cloud:nth-child(1) { top: 12%; animation-duration: 120s; animation-delay: -30s; }
+  .cloud:nth-child(2) { top: 74%; width: clamp(110px, 15vw, 220px); opacity: .65; animation-duration: 150s; animation-delay: -100s; }
+  @keyframes drift { to { transform: translateX(160vw); } }
+
+  .app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; padding-inline: clamp(16px, 3vw, 48px); }
+
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); margin-right: auto; text-decoration: none; }
+  .brand:hover { color: var(--blue); }
+  .brand-tool { font-weight: 500; color: var(--muted); }
+  .seg { display: inline-flex; background: var(--panel); border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-family: var(--display); font-weight: 500; color: var(--muted); }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .15); }
+  .k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .levels { display: inline-flex; align-items: center; gap: 4px; }
+  .lvl { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-weight: 500; cursor: pointer; color: var(--ink-2); }
+  .lvl:hover { border-color: var(--blue); }
+  .lvl[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle input { accent-color: var(--blue); width: 16px; height: 16px; }
+  .icon-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; height: 32px; padding: 0 10px; cursor: pointer; color: var(--ink-2); }
+
+  .stage { display: grid; grid-template-rows: auto auto auto auto; align-content: start; gap: clamp(8px, 1.8vh, 20px); padding-block: clamp(12px, 2.6vh, 32px); min-width: 0; }
+  .stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px; font-family: var(--display); color: var(--ink-2); font-size: clamp(18px, 2.6vh, 28px); }
+  .stage-head b { color: var(--ink); font-weight: 700; margin-right: .45em; }
+  .score { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .score b { color: var(--mint); margin: 0; }
+  .info { margin: 0; color: var(--muted); font-size: clamp(14px, 1.8vh, 17px); }
+
+  .card { background: rgba(255, 255, 255, .9); border-radius: 28px; padding: clamp(8px, 2vw, 24px); box-shadow: 0 8px 30px rgba(40, 100, 160, .12); display: flex; justify-content: center; }
+  .card svg { display: block; width: 100%; height: auto; max-height: 48vh; }
+  .learn-note { cursor: pointer; outline: none; }
+  .learn-note:focus-visible rect { stroke: var(--blue); stroke-width: 3; }
+
+  .answers { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(8px, 1.2vw, 14px); }
+  .answer {
+    font-family: var(--display); font-weight: 600; font-size: clamp(22px, 3.6vh, 40px);
+    min-width: 3.4em; padding: .35em .8em; border-radius: 999px; background: #fff;
+    border: 3px solid #cfdae6; color: var(--ink); cursor: pointer; transition: transform .1s, background-color .15s, border-color .15s;
+  }
+  .answer:hover { border-color: var(--blue); }
+  .answer:active { transform: scale(.97); }
+  .answer.right { background: var(--good-bg); border-color: var(--mint); color: #0f6a42; }
+  .answer.wrong { background: var(--bad-bg); border-color: var(--coral); color: #b3342a; animation: shake .4s; }
+  @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+
+  .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
+  .tip { color: var(--ink-2); font-size: clamp(14px, 1.9vh, 18px); max-width: 60ch; }
+  .tip b { font-family: var(--display); color: var(--ink); }
+  .transport-btns { display: flex; gap: 12px; margin-left: auto; }
+  .btn { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.4vh, 24px); border-radius: 999px; padding: .6em 1.4em; cursor: pointer; border: 2px solid transparent; }
+  .btn.primary { background: var(--blue); color: #fff; min-width: 7.5em; }
+  .btn.primary:hover { background: #0f63b8; }
+  .btn.ghost { background: var(--panel); border-color: var(--line); color: var(--ink-2); }
+  .btn.ghost:hover { border-color: var(--blue); }
+
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+  @media (max-width: 640px) {
+    .brand { width: 100%; }
+    .transport-btns { width: 100%; }
+    .transport-btns .btn { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cloud, .answer.wrong { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
+  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
+</div>
+
+<div class="app">
+  <header class="console" aria-label="Teacher controls">
+    <a class="brand" href="index.html" title="Back to Brass App"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool">/ Note Names</span></a>
+    <div class="seg" role="group" aria-label="Instrument">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true">Trumpet</button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false">Trombone</button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false">Horn</button>
+    </div>
+    <div class="seg" role="group" aria-label="Mode">
+      <button id="mLearn" class="seg-btn" aria-pressed="true">Meet the notes</button>
+      <button id="mQuiz" class="seg-btn" aria-pressed="false">Name it</button>
+    </div>
+    <div class="levels" role="group" aria-label="Level"><span class="k">Level</span><span id="levels" class="levels"></span></div>
+    <div class="seg" role="group" aria-label="Note names">
+      <button id="nSolfege" class="seg-btn" aria-pressed="true">Do Re Mi</button>
+      <button id="nLetters" class="seg-btn" aria-pressed="false">C D E</button>
+    </div>
+    <label class="toggle" for="sound"><input id="sound" type="checkbox" checked><span>Sound</span></label>
+    <button id="fullscreen" class="icon-btn" title="Full screen (F)">⛶ Full screen</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="stage-head">
+      <div><b id="levelNum">Level 1</b><span id="levelNotes"></span></div>
+      <div class="score" id="score"></div>
+    </div>
+    <p class="info" id="info"></p>
+    <div class="card" id="card"></div>
+    <div class="answers" id="answers" role="group" aria-label="Answers"></div>
+  </main>
+
+  <footer class="transport">
+    <div class="tip" id="tip"></div>
+    <div class="transport-btns">
+      <button id="secondaryBtn" class="btn ghost">Name it ▶</button>
+      <button id="primaryBtn" class="btn primary">▶ Play them</button>
+    </div>
+  </footer>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<script>
+"use strict";
+
+/* ---------- Note Names ----------
+   Students always see their own WRITTEN note, in their own clef, with the name they read.
+   The sound is the real CONCERT pitch: trumpet in B♭ sounds a tone lower, horn in F a 5th lower, trombone as written. */
+
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+const INK = "#15181d", GOOD = "#17905a", GOLD = "#b7800f", WASH = "#ddebfa", BLUE = "#1a7fe2";
+
+// Bravura music font (SMuFL, SIL OFL): font-size = 4 staff spaces, each symbol sits on its reference line.
+const GLYPH = { gClef: "", fClef: "", flat: "", whole: "" };
+const MUSIC_FONT = "font-family: Bravura";
+const WHOLE_WIDTH = 1.688; // staff spaces
+
+const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+const SOLFEGE = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
+const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
+
+// A written note: letter index (C = 0 … B = 6), octave (C4 = middle C), alteration (-1 = flat).
+const note = (l, o, a = 0) => ({ l, o, a });
+const TREBLE_FIRST_NOTES = [note(0, 4), note(1, 4), note(2, 4), note(3, 4), note(4, 4), note(5, 4), note(6, 4), note(0, 5)];
+
+// First notes in the order they are added. Level n uses the first n + 1 notes.
+const INSTRUMENTS = {
+  trumpet: {
+    label: "Trumpet", clef: "treble", transpose: -2, notes: TREBLE_FIRST_NOTES,
+    info: "Trumpet in B♭ · written notes, treble clef · the sound is concert pitch, a tone lower"
+  },
+  trombone: {
+    label: "Trombone", clef: "bass", transpose: 0,
+    notes: [note(6, 2, -1), note(0, 3), note(1, 3), note(2, 3, -1), note(3, 3), note(4, 3), note(5, 3), note(6, 3, -1)],
+    info: "Trombone · bass clef · concert pitch, no transposition"
+  },
+  horn: {
+    label: "Horn", clef: "treble", transpose: -7, notes: TREBLE_FIRST_NOTES,
+    info: "Horn in F · written notes, treble clef · the sound is concert pitch, a 5th lower"
+  }
+};
+const LEVEL_COUNT = 7;
+
+const state = {
+  inst: "trumpet", level: 1, mode: "learn", names: "solfege", sound: true,
+  current: null, drawn: null, answered: false, streak: 0, best: 0, last: -1, tip: 0,
+  learn: [], timers: []
+};
+
+const nameOf = n => (state.names === "solfege" ? SOLFEGE : LETTERS)[n.l] + (n.a === -1 ? "♭" : "");
+const concertMidi = n => 12 * (n.o + 1) + SEMITONE[n.l] + n.a + INSTRUMENTS[state.inst].transpose;
+const levelNotes = () => INSTRUMENTS[state.inst].notes.slice(0, state.level + 1);
+
+/* ---------- Sound ---------- */
+
+const Sound = (() => {
+  let ctx = null, master = null;
+
+  function ensure() {
+    if (!ctx) {
+      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = 0.8;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+  }
+
+  // Warm brass-like tone: two detuned sawtooths, the filter opens on the attack. Returns ms until the note starts.
+  function play(midi, delay = 0, dur = 1.1) {
+    ensure();
+    const t = ctx.currentTime + 0.03 + delay, hz = 440 * Math.pow(2, (midi - 69) / 12);
+    const f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = "lowpass";
+    f.Q.value = 1.1;
+    f.frequency.setValueAtTime(hz * 1.5, t);
+    f.frequency.exponentialRampToValueAtTime(Math.min(6000, hz * 8), t + 0.07);
+    f.frequency.exponentialRampToValueAtTime(Math.min(4000, hz * 4.5), t + 0.35);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.18, t + 0.05);
+    g.gain.setValueAtTime(0.18, t + dur - 0.18);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    f.connect(g); g.connect(master);
+    for (const detune of [0, 6]) {
+      const o = ctx.createOscillator();
+      o.type = "sawtooth";
+      o.frequency.value = hz;
+      o.detune.value = detune;
+      o.connect(f);
+      o.start(t); o.stop(t + dur + 0.05);
+    }
+    return (t - ctx.currentTime) * 1000;
+  }
+
+  return { play };
+})();
+
+/* ---------- Staff ---------- */
+
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+// Staff position: 0 = bottom line, 1 = first space … 8 = top line. Treble bottom line is E4, bass bottom line is G2.
+function staffPos(n) {
+  const diatonic = n.o * 7 + n.l;
+  return INSTRUMENTS[state.inst].clef === "treble" ? diatonic - 30 : diatonic - 18;
+}
+
+function drawStaff(svg, x0, x1, yTop, S) {
+  const yBottom = yTop + 4 * S;
+  for (let i = 0; i < 5; i++) el("line", { x1: x0, x2: x1, y1: yTop + i * S, y2: yTop + i * S, stroke: INK, "stroke-width": S * 0.08 }, svg);
+  const treble = INSTRUMENTS[state.inst].clef === "treble";
+  const lineY = treble ? yBottom - S : yTop + S; // G clef wraps the G line; F clef dots sit either side of the F line
+  el("text", { x: x0 + S * 0.6, y: lineY, "font-size": 4 * S, fill: INK, style: MUSIC_FONT }, svg).textContent = treble ? GLYPH.gClef : GLYPH.fClef;
+  return p => yBottom - (p * S) / 2;
+}
+
+function drawNote(parent, n, x, yOf, S) {
+  const p = staffPos(n), y = yOf(p), w = WHOLE_WIDTH * S;
+  const g = el("g", { fill: INK }, parent);
+  const ledger = q => el("line", { x1: x - 0.45 * S, x2: x + w + 0.45 * S, y1: yOf(q), y2: yOf(q), stroke: INK, "stroke-width": S * 0.13 }, parent);
+  for (let q = -2; q >= p; q -= 2) ledger(q);
+  for (let q = 10; q <= p; q += 2) ledger(q);
+  if (n.a === -1) el("text", { x: x - 1.3 * S, y, "font-size": 4 * S, style: MUSIC_FONT }, g).textContent = GLYPH.flat;
+  el("text", { x, y, "font-size": 4 * S, style: MUSIC_FONT }, g).textContent = GLYPH.whole;
+  return { g, y, cx: x + w / 2 };
+}
+
+/* ---------- Meet the notes ---------- */
+
+function clearTimers() {
+  state.timers.forEach(clearTimeout);
+  state.timers = [];
+}
+
+function renderLearn() {
+  const ns = levelNotes(), S = 30, gap = 104, first = 150, yTop = 120;
+  const VW = first + ns.length * gap + 20, VH = 400;
+  const card = $("card");
+  card.textContent = "";
+  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": `The notes for this level: ${ns.map(nameOf).join(", ")}` }, card);
+  const yOf = drawStaff(svg, 20, VW - 20, yTop, S);
+  state.learn = ns.map((n, i) => {
+    const x = first + i * gap;
+    const item = el("g", { class: "learn-note", tabindex: 0, role: "button", "aria-label": `${nameOf(n)}: play` }, svg);
+    const box = el("rect", { x: x - 24, y: 22, width: WHOLE_WIDTH * S + 48, height: 364, rx: 16, fill: "transparent" }, item);
+    const drawn = drawNote(item, n, x, yOf, S);
+    const label = el("text", { x: drawn.cx, y: 364, "text-anchor": "middle", "font-size": 40, "font-weight": 700, fill: INK, style: "font-family: var(--display)" }, item);
+    label.textContent = nameOf(n);
+    if (state.level > 1 && i === ns.length - 1) {
+      el("rect", { x: drawn.cx - 34, y: 34, width: 68, height: 30, rx: 15, fill: "#fdf1d6", stroke: GOLD, "stroke-width": 2 }, item);
+      el("text", { x: drawn.cx, y: 55, "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: GOLD, style: "font-family: var(--display)" }, item).textContent = "new";
+    }
+    item.addEventListener("click", () => playOne(i));
+    item.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playOne(i); } });
+    return { n, box, drawn, label };
+  });
+  $("answers").textContent = "";
+}
+
+function light(i, on) {
+  const it = state.learn[i];
+  if (!it) return;
+  it.box.setAttribute("fill", on ? WASH : "transparent");
+  it.drawn.g.setAttribute("fill", on ? BLUE : INK);
+  it.label.setAttribute("fill", on ? BLUE : INK);
+}
+
+function playOne(i) {
+  clearTimers();
+  state.learn.forEach((_, j) => light(j, false));
+  light(i, true);
+  if (state.sound) Sound.play(concertMidi(state.learn[i].n));
+  state.timers.push(setTimeout(() => light(i, false), 1000));
+}
+
+function playAll() {
+  clearTimers();
+  state.learn.forEach((it, i) => {
+    const ms = state.sound ? Sound.play(concertMidi(it.n), i * 0.9, 0.8) : 30 + i * 900;
+    state.timers.push(setTimeout(() => light(i, true), ms));
+    state.timers.push(setTimeout(() => light(i, false), ms + 800));
+  });
+}
+
+/* ---------- Name it ---------- */
+
+function nextNote() {
+  const ns = levelNotes(), newest = ns.length - 1;
+  let i = 0;
+  for (let tries = 0; tries < 20; tries++) {
+    i = state.level > 1 && Math.random() < 0.35 ? newest : Math.floor(Math.random() * ns.length);
+    if (i !== state.last) break;
+  }
+  state.last = i;
+  state.current = ns[i];
+  state.answered = false;
+  renderQuiz();
+  rotateTip();
+}
+
+function renderQuiz() {
+  const S = 30, VW = 720, VH = 400, yTop = 120;
+  const card = $("card");
+  card.textContent = "";
+  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": "Which note is this?" }, card);
+  const yOf = drawStaff(svg, 30, VW - 30, yTop, S);
+  const drawn = drawNote(svg, state.current, 390, yOf, S);
+  const label = el("text", { x: drawn.cx, y: 372, "text-anchor": "middle", "font-size": 60, "font-weight": 700, fill: GOOD, opacity: 0, style: "font-family: var(--display)" }, svg);
+  state.drawn = { ...drawn, label };
+
+  const box = $("answers");
+  box.textContent = "";
+  [...new Set(levelNotes().map(nameOf))].forEach((name, i) => {
+    const b = document.createElement("button");
+    b.className = "answer";
+    b.textContent = name;
+    b.dataset.name = name;
+    b.setAttribute("aria-keyshortcuts", String(i + 1));
+    b.addEventListener("click", () => answer(name));
+    box.appendChild(b);
+  });
+}
+
+function answer(name) {
+  if (state.mode !== "quiz" || state.answered || !state.current) return;
+  state.answered = true;
+  const right = nameOf(state.current), ok = name === right;
+  [...$("answers").children].forEach(b => {
+    if (b.dataset.name === right) b.classList.add("right");
+    else if (b.dataset.name === name) b.classList.add("wrong");
+  });
+  if (ok) state.drawn.g.setAttribute("fill", GOOD);
+  state.drawn.label.textContent = right;
+  state.drawn.label.setAttribute("opacity", 1);
+  state.streak = ok ? state.streak + 1 : 0;
+  state.best = Math.max(state.best, state.streak);
+  updateScore();
+  if (state.sound) Sound.play(concertMidi(state.current));
+  if (ok && state.streak % 10 === 0) confetti();
+}
+
+function hear() {
+  if (state.current) Sound.play(concertMidi(state.current));
+}
+
+/* ---------- Screen ---------- */
+
+function tips() {
+  const first = nameOf(INSTRUMENTS[state.inst].notes[0]);
+  return [
+    state.inst === "trombone" ? `<b>${first}</b> sits on the second line from the bottom.` : `<b>${first}</b> sits on its own little line below the staff.`,
+    "<b>Line or space?</b> Look carefully before you answer.",
+    "<b>Find a note you know,</b> then step up or down.",
+    "<b>Say it together</b>, then check the answer."
+  ];
+}
+
+function rotateTip() {
+  const list = tips();
+  $("tip").innerHTML = list[state.tip % list.length];
+  state.tip++;
+}
+
+function updateScore() {
+  $("score").innerHTML = state.mode === "quiz" ? `In a row: <b>${state.streak}</b> · Best: ${state.best}` : "";
+}
+
+function updateHeader() {
+  const I = INSTRUMENTS[state.inst];
+  $("levelNum").textContent = `Level ${state.level}`;
+  $("levelNotes").textContent = levelNotes().map(nameOf).join(" · ");
+  $("info").textContent = I.info;
+  document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i + 1 === state.level)));
+  for (const k in INSTRUMENTS) $("in" + INSTRUMENTS[k].label).setAttribute("aria-pressed", String(k === state.inst));
+  $("mLearn").setAttribute("aria-pressed", String(state.mode === "learn"));
+  $("mQuiz").setAttribute("aria-pressed", String(state.mode === "quiz"));
+  $("nSolfege").setAttribute("aria-pressed", String(state.names === "solfege"));
+  $("nLetters").setAttribute("aria-pressed", String(state.names === "letters"));
+  $("primaryBtn").textContent = state.mode === "learn" ? "▶ Play them" : "Next ▶";
+  $("secondaryBtn").textContent = state.mode === "learn" ? "Name it ▶" : "🔊 Hear it";
+  updateScore();
+}
+
+function render({ newNote = false } = {}) {
+  clearTimers();
+  updateHeader();
+  if (state.mode === "learn") { renderLearn(); rotateTip(); return; }
+  if (newNote || !state.current) nextNote();
+  else renderQuiz();
+}
+
+function setInstrument(k) { state.inst = k; state.current = null; state.last = -1; state.streak = 0; render(); }
+function setLevel(n) { state.level = n; state.current = null; state.last = -1; state.streak = 0; render(); }
+function setMode(m) { state.mode = m; render({ newNote: m === "quiz" }); }
+function setNames(sys) { state.names = sys; render(); }
+
+function primary() { state.mode === "learn" ? playAll() : nextNote(); }
+function secondary() { state.mode === "learn" ? setMode("quiz") : hear(); }
+
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = $("confetti"), g = c.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  const W = innerWidth, H = innerHeight;
+  c.width = W * dpr; c.height = H * dpr;
+  g.scale(dpr, dpr);
+  const colors = ["#1a7fe2", "#17905a", "#e3a92b", "#ff6f59", "#7a5cf0"];
+  const ps = Array.from({ length: 140 }, () => ({
+    x: W * (0.25 + Math.random() * 0.5), y: H * 0.6,
+    vx: (Math.random() - 0.5) * 16, vy: -(9 + Math.random() * 13),
+    s: 7 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3,
+    c: colors[Math.floor(Math.random() * colors.length)]
+  }));
+  const t0 = performance.now();
+  (function draw(now) {
+    const t = now - t0;
+    g.clearRect(0, 0, W, H);
+    for (const p of ps) {
+      p.vy += 0.45; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      g.save(); g.translate(p.x, p.y); g.rotate(p.r);
+      g.globalAlpha = Math.max(0, 1 - t / 2200);
+      g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * 0.66);
+      g.restore();
+    }
+    if (t < 2200) requestAnimationFrame(draw); else g.clearRect(0, 0, W, H);
+  })(t0);
+}
+
+function toggleFullscreen() {
+  const d = document, root = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else {
+      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (_) { /* not allowed here */ }
+}
+
+/* ---------- Wiring ---------- */
+
+for (let n = 1; n <= LEVEL_COUNT; n++) {
+  const b = document.createElement("button");
+  b.className = "lvl";
+  b.id = "lvl" + n;
+  b.textContent = n;
+  b.title = `Level ${n}: ${n + 1} notes`;
+  b.setAttribute("aria-label", b.title);
+  b.addEventListener("click", () => setLevel(n));
+  $("levels").appendChild(b);
+}
+
+for (const k in INSTRUMENTS) $("in" + INSTRUMENTS[k].label).addEventListener("click", () => setInstrument(k));
+$("mLearn").addEventListener("click", () => setMode("learn"));
+$("mQuiz").addEventListener("click", () => setMode("quiz"));
+$("nSolfege").addEventListener("click", () => setNames("solfege"));
+$("nLetters").addEventListener("click", () => setNames("letters"));
+$("sound").addEventListener("change", e => { state.sound = e.target.checked; });
+$("primaryBtn").addEventListener("click", primary);
+$("secondaryBtn").addEventListener("click", secondary);
+$("fullscreen").addEventListener("click", toggleFullscreen);
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b && e.detail) b.blur();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target, k = e.key;
+  const native = t.tagName === "BUTTON" || t.type === "checkbox" || (t.classList && t.classList.contains("learn-note"));
+  if ((k === " " || k === "Enter") && native) return;
+  if (k === " " || k === "Enter" || k === "PageDown" || k === "ArrowRight") { e.preventDefault(); primary(); }
+  else if (state.mode === "quiz" && /^[1-9]$/.test(k)) { const b = $("answers").children[+k - 1]; if (b) answer(b.dataset.name); }
+  else if ((k === "h" || k === "H") && state.mode === "quiz") hear();
+  else if (k === "f" || k === "F") toggleFullscreen();
+});
+
+const rootEl = document.documentElement;
+if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+render();
+// Draw again once the music font has loaded, so clefs and notes never show as blank boxes.
+if (document.fonts && document.fonts.load) document.fonts.load("120px Bravura").then(() => render(), () => {});
+</script>
+</body>
+</html>
