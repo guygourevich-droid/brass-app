@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Clap-Along · Brass App</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #66707d;
+    --blue: #1a7fe2;
+    --blue-deep: #0f63b8;
+    --wash: #ddebfa;
+    --rest: #b4bcc7;
+    --held: #cdd3db;
+    --console: #f2f5f9;
+    --line: #e1e7ef;
+    --good: #1d9a58;
+    --good-bg: #e8f6ee;
+    --bad: #d2453f;
+    --bad-bg: #fcebea;
+    --display: "Lexend", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); color: var(--ink); }
+  body { margin: 0; font-family: var(--body); font-size: 15px; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  .app {
+    min-height: 100vh; min-height: 100dvh;
+    display: grid; grid-template-rows: auto 1fr auto;
+    padding-inline: clamp(16px, 3vw, 48px);
+  }
+
+  /* Teacher console */
+  .console {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px;
+    padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--muted);
+  }
+  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); letter-spacing: -0.01em; margin-right: auto; text-decoration: none; }
+  .brand:hover { color: var(--blue); }
+  .brand-tool { font-weight: 500; color: var(--muted); }
+  @media (hover: none) and (pointer: coarse) { .hint { display: none; } }
+  .seg { display: inline-flex; background: var(--console); border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg-btn {
+    border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    font-family: var(--display); font-weight: 500; color: var(--muted);
+  }
+  .seg-btn[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(21,24,29,.12); }
+  .levels { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .levels-k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-right: 4px; }
+  .lvl {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper);
+    font-family: var(--display); font-weight: 500; cursor: pointer; color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .lvl:hover { border-color: var(--blue); }
+  .lvl[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .lvl.meter3 { border-style: dashed; }
+  .lvl.meter3[aria-pressed="true"] { border-style: solid; }
+  .ctl { display: inline-flex; align-items: center; gap: 8px; }
+  .ctl-k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .ctl-k.note { font-size: 18px; letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+  .ctl input[type="range"] { width: 110px; accent-color: var(--blue); }
+  .ctl output { font-family: var(--display); font-variant-numeric: tabular-nums; min-width: 2.2em; color: var(--ink-2); }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle input { accent-color: var(--blue); width: 16px; height: 16px; }
+  .icon-btn {
+    border: 1px solid var(--line); background: var(--paper); border-radius: 8px; height: 32px; padding: 0 10px;
+    cursor: pointer; color: var(--ink-2);
+  }
+  .icon-btn:hover { border-color: var(--blue); }
+
+  /* Stage */
+  .stage { display: flex; flex-direction: column; justify-content: center; gap: clamp(8px, 2vh, 24px); padding-block: clamp(12px, 3vh, 36px); min-width: 0; }
+  .stage-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
+  .level-title { font-family: var(--display); font-size: clamp(18px, 2.4vh, 26px); color: var(--ink-2); text-wrap: balance; }
+  .level-title b { font-weight: 700; color: var(--ink); margin-right: .35em; }
+  .tempo-mark { font-family: var(--display); font-size: clamp(16px, 2.2vh, 24px); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tempo-mark .q { font-size: 1.3em; color: var(--ink-2); }
+
+  .score svg { display: block; width: 100%; height: auto; max-height: 52vh; }
+  .hide-counts .cnt { display: none; }
+
+  .cue { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: clamp(110px, 20vh, 200px); justify-content: center; }
+  .cue-glyph { font-size: clamp(56px, 11vh, 124px); line-height: 1; font-family: var(--display); font-weight: 700; color: var(--blue); }
+  .cue-word { font-family: var(--display); font-weight: 600; font-size: clamp(18px, 3vh, 32px); color: var(--ink-2); text-align: center; text-wrap: balance; }
+  .cue.pop .cue-glyph { animation: pop .32s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { from { transform: scale(.6); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+
+  /* Ear quiz */
+  .quiz-rows { display: grid; gap: clamp(6px, 1.4vh, 14px); }
+  .qrow {
+    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(8px, 1.5vw, 20px);
+    width: 100%; text-align: left; background: var(--paper); cursor: pointer;
+    border: 2px solid var(--line); border-radius: 16px; padding: 4px clamp(8px, 1.4vw, 18px);
+    transition: border-color .15s, background-color .15s;
+  }
+  .qrow:hover { border-color: var(--blue); }
+  .qrow:disabled { cursor: default; }
+  .qrow:disabled:hover { border-color: var(--line); }
+  .qletter {
+    width: clamp(36px, 5vh, 56px); height: clamp(36px, 5vh, 56px); border-radius: 50%;
+    display: grid; place-items: center; background: var(--console);
+    font-family: var(--display); font-weight: 700; font-size: clamp(18px, 2.8vh, 28px); color: var(--ink-2);
+  }
+  .qscore svg { display: block; width: 100%; height: auto; max-height: max(90px, calc((100dvh - 420px) / 3)); }
+  .qrow.correct, .qrow.correct:disabled:hover { border-color: var(--good); background: var(--good-bg); }
+  .qrow.correct .qletter { background: var(--good); color: #fff; }
+  .qrow.wrong, .qrow.wrong:disabled:hover { border-color: var(--bad); background: var(--bad-bg); }
+  .qrow.wrong .qletter { background: var(--bad); color: #fff; }
+  .qrow.wrong { animation: shake .4s; }
+  @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  .is-quiz .cue { flex-direction: row; gap: 14px; min-height: clamp(48px, 7vh, 80px); }
+  .is-quiz .cue-glyph { font-size: clamp(30px, 5vh, 52px); }
+
+  /* Transport */
+  .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
+  .hint { color: var(--muted); font-size: 13px; }
+  .hint kbd { font-family: var(--display); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: var(--console); color: var(--ink-2); }
+  .transport-btns { display: flex; gap: 12px; margin-left: auto; }
+  .btn {
+    font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.4vh, 24px);
+    border-radius: 999px; padding: .6em 1.4em; cursor: pointer; border: 2px solid transparent;
+  }
+  .btn.primary { background: var(--blue); color: #fff; min-width: 7.5em; }
+  .btn.primary:hover { background: var(--blue-deep); }
+  .btn.ghost { background: var(--paper); border-color: var(--line); color: var(--ink-2); }
+  .btn.ghost:hover { border-color: var(--blue); }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+  @media (max-width: 640px) {
+    .brand { width: 100%; }
+    .hint { display: none; }
+    .ctl input[type="range"] { width: 84px; }
+    .transport-btns { width: 100%; }
+    .transport-btns .btn { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cue.pop .cue-glyph, .qrow.wrong { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="console" aria-label="Teacher controls">
+    <a class="brand" href="index.html" title="Back to Brass App"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool">/ Clap-Along</span></a>
+    <div class="seg" role="group" aria-label="Mode">
+      <button id="modeEcho" class="seg-btn" aria-pressed="true">Echo</button>
+      <button id="modeQuiz" class="seg-btn" aria-pressed="false">Ear quiz</button>
+    </div>
+    <div class="levels" role="group" aria-label="Level"><span class="levels-k">Level</span><span id="levels" class="levels"></span></div>
+    <label class="ctl" for="tempo"><span class="ctl-k note">♩ =</span><input id="tempo" type="range" min="50" max="120" step="1" value="80"><output id="tempoOut" for="tempo">80</output></label>
+    <label class="ctl" for="clickVol"><span class="ctl-k">Click</span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
+    <label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span>Counts</span></label>
+    <button id="fullscreen" class="icon-btn" title="Full screen (F)" aria-label="Full screen">⛶ Full screen</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="stage-head">
+      <div class="level-title"><b id="levelNum">Level 1</b><span id="levelName"></span></div>
+      <div class="tempo-mark" id="tempoMark"></div>
+    </div>
+
+    <section id="echoView" class="echo" aria-label="Echo">
+      <div class="score" id="echoScore"></div>
+    </section>
+
+    <section id="quizView" class="quiz" aria-label="Ear quiz" hidden>
+      <div class="quiz-rows" id="quizRows">
+        <button class="qrow" id="qrow0" data-i="0" aria-label="Answer A"><span class="qletter">A</span><span class="qscore"></span></button>
+        <button class="qrow" id="qrow1" data-i="1" aria-label="Answer B"><span class="qletter">B</span><span class="qscore"></span></button>
+        <button class="qrow" id="qrow2" data-i="2" aria-label="Answer C"><span class="qletter">C</span><span class="qscore"></span></button>
+      </div>
+    </section>
+
+    <div class="cue" id="cue" aria-live="polite"><span class="cue-glyph" id="cueGlyph">▶</span><span class="cue-word" id="cueWord">Press Play</span></div>
+  </main>
+
+  <footer class="transport">
+    <div class="hint" id="hint"><kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen</div>
+    <div class="transport-btns">
+      <button id="againBtn" class="btn ghost">↻ Again</button>
+      <button id="nextBtn" class="btn primary">▶ Play</button>
+    </div>
+  </footer>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<script>
+"use strict";
+
+/* ---------- Rhythm model ----------
+   Time is counted in semiquaver units: crotchet = 4, bar of 4/4 = 16, bar of 3/4 = 12.
+   A bar is a list of cells (rhythm figures) that each start on a beat. */
+
+const CELLS = {
+  q:    { len: 4,  ev: [[4, 0]] },                              // crotchet
+  qr:   { len: 4,  ev: [[4, 1]], rest: true },                  // crotchet rest
+  h:    { len: 8,  ev: [[8, 0]] },                              // minim
+  hr:   { len: 8,  ev: [[8, 1]], rest: true },                  // minim rest
+  dh:   { len: 12, ev: [[12, 0]] },                             // dotted minim
+  w:    { len: 16, ev: [[16, 0]] },                             // semibreve
+  ee:   { len: 4,  ev: [[2, 0], [2, 0]], beams: 1 },            // pair of quavers
+  re:   { len: 4,  ev: [[2, 1], [2, 0]] },                      // quaver rest + quaver
+  er:   { len: 4,  ev: [[2, 0], [2, 1]] },                      // quaver + quaver rest
+  dqe:  { len: 8,  ev: [[6, 0], [2, 0]] },                      // dotted crotchet + quaver
+  syn:  { len: 8,  ev: [[2, 0], [4, 0], [2, 0]] },              // quaver-crotchet-quaver
+  ssss: { len: 4,  ev: [[1, 0], [1, 0], [1, 0], [1, 0]], beams: 2 } // four semiquavers
+};
+
+// Where longer figures may start (units from the barline) so the middle of a 4/4 bar stays readable.
+// Anything not listed may start on any beat.
+const STARTS = {
+  4: { h: [0, 4, 8], hr: [0, 8], dh: [0, 4], w: [0], dqe: [0, 8], syn: [0, 8] },
+  3: { h: [0, 4], hr: [], dh: [0], w: [], dqe: [0, 4], syn: [0, 4] }
+};
+
+const LEVELS = [
+  { name: "Crotchets & crotchet rests", beats: 4, bars: 1, bpm: 80,
+    pool: { q: 6, qr: 2.2 }, need: ["qr"] },
+  { name: "Minims, dotted minims & semibreves", beats: 4, bars: 1, bpm: 80,
+    pool: { q: 5, qr: 1.6, h: 4, hr: 1.4, dh: 1.8, w: 0.4 }, need: ["h", "hr", "dh", "w"] },
+  { name: "Quavers", beats: 4, bars: 1, bpm: 80,
+    pool: { q: 4, qr: 1.4, h: 1.8, hr: 0.6, dh: 0.6, ee: 5 }, need: ["ee"] },
+  { name: "Single quavers & quaver rests", beats: 4, bars: 1, bpm: 80,
+    pool: { q: 3.5, qr: 1, h: 1.4, hr: 0.4, dh: 0.4, ee: 3, re: 3, er: 1.4 }, need: ["re", "er"] },
+  { name: "Dotted crotchet + quaver", beats: 4, bars: 2, bpm: 80,
+    pool: { q: 3, qr: 1, h: 1.4, hr: 0.4, dh: 0.4, ee: 3, re: 1.2, er: 0.6, dqe: 4 }, need: ["dqe"] },
+  { name: "Syncopation", beats: 4, bars: 2, bpm: 80,
+    pool: { q: 3, qr: 1, h: 1, hr: 0.3, ee: 3, re: 1, er: 0.5, dqe: 2, syn: 4 }, need: ["syn"] },
+  { name: "3/4 time", beats: 3, bars: 1, bpm: 80,
+    pool: { q: 4, qr: 1.2, h: 2.5, dh: 1.2, ee: 3, re: 1.2, er: 0.6 }, need: ["h", "dh", "ee", "re", "er"] },
+  { name: "3/4 with dotted crotchets & syncopation", beats: 3, bars: 2, bpm: 80,
+    pool: { q: 3, qr: 1, h: 1.5, dh: 0.6, ee: 3, re: 1, er: 0.5, dqe: 3, syn: 3 }, need: ["dqe", "syn"] },
+  { name: "Semiquavers (bonus)", beats: 4, bars: 2, bpm: 60,
+    pool: { q: 3, qr: 1, h: 1.2, ee: 3, re: 0.8, dqe: 1, ssss: 4 }, need: ["ssss"] }
+];
+
+function allowedAt(id, pos, beats) {
+  const s = STARTS[beats][id];
+  return s ? s.includes(pos) : pos % 4 === 0;
+}
+
+function pickWeighted(entries, rng) {
+  let total = 0;
+  for (const [, w] of entries) total += w;
+  let r = rng() * total;
+  for (const [id, w] of entries) { r -= w; if (r < 0) return id; }
+  return entries[entries.length - 1][0];
+}
+
+// Fill [from, to) of one bar with random cells from the level's pool. Crotchets fit anywhere, so this never dead-ends.
+function fillSpan(L, from, to, rng) {
+  const out = [];
+  let pos = from;
+  while (pos < to) {
+    const opts = Object.entries(L.pool).filter(([id]) => CELLS[id].len <= to - pos && allowedAt(id, pos, L.beats));
+    if (!opts.length) return null;
+    const id = pickWeighted(opts, rng);
+    out.push({ id, pos });
+    pos += CELLS[id].len;
+  }
+  return out;
+}
+
+function barValid(L, bar) {
+  const upb = L.beats * 4;
+  let rest = 0, onsets = 0;
+  const count = {};
+  for (let i = 0; i < bar.length; i++) {
+    const c = bar[i];
+    for (const [dur, r] of CELLS[c.id].ev) { if (r) rest += dur; else onsets++; }
+    count[c.id] = (count[c.id] || 0) + 1;
+    if (i && CELLS[c.id].rest && CELLS[bar[i - 1].id].rest) return false; // two rests in a row reads as a longer rest
+  }
+  if (rest > upb / 2) return false;
+  if (onsets < 2 && bar.length > 1) return false;
+  for (const id in count) {
+    const cap = id === "q" || id === "ee" ? 99 : id === "ssss" ? 3 : 2;
+    if (count[id] > cap) return false;
+  }
+  return true;
+}
+
+function toEvents(bars, L) {
+  const upb = L.beats * 4;
+  const events = [];
+  let group = 0;
+  bars.forEach((bar, b) => {
+    for (const c of bar) {
+      const def = CELLS[c.id];
+      const beam = def.beams ? ++group : 0;
+      let t = c.pos;
+      for (const [dur, rest] of def.ev) {
+        events.push({ bar: b, tb: t, t: b * upb + t, dur, rest: !!rest, beam, beams: def.beams || 0 });
+        t += dur;
+      }
+    }
+  });
+  return events;
+}
+
+function makePhrase(li, bars) {
+  const events = toEvents(bars, LEVELS[li]);
+  const onsets = events.filter(e => !e.rest).map(e => e.t);
+  return { li, bars, events, onsets, sig: onsets.join(",") };
+}
+
+const hasAny = (bars, ids) => bars.some(bar => bar.some(c => ids.includes(c.id)));
+const sameBar = (a, b) => a.length === b.length && a.every((c, i) => c.id === b[i].id && c.pos === b[i].pos);
+
+function generatePhrase(li, avoid = new Set(), rng = Math.random) {
+  const L = LEVELS[li], upb = L.beats * 4;
+  let fallback = null;
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    const bars = [];
+    for (let b = 0; b < L.bars; b++) bars.push(fillSpan(L, 0, upb, rng));
+    if (!bars.every(bar => barValid(L, bar))) continue;
+    if (L.need.length && !hasAny(bars, L.need)) continue;
+    if (bars.length > 1 && sameBar(bars[0], bars[1])) continue;
+    const p = makePhrase(li, bars);
+    if (p.onsets.length < 2 && !hasAny(bars, ["w"])) continue;
+    fallback = p;
+    if (avoid.has(p.sig)) continue;
+    return p;
+  }
+  return fallback || makePhrase(li, Array.from({ length: L.bars }, () => fillSpan(L, 0, upb, rng)));
+}
+
+function onsetDiff(a, b) {
+  const A = new Set(a.onsets), B = new Set(b.onsets);
+  let d = 0;
+  for (const t of A) if (!B.has(t)) d++;
+  for (const t of B) if (!A.has(t)) d++;
+  return d;
+}
+
+// Two wrong answers: copy the right answer and rewrite one or two neighbouring beats,
+// so every option sounds different but only slightly.
+function makeDistractors(answer, rng = Math.random) {
+  const L = LEVELS[answer.li];
+  const seen = new Set([answer.sig]);
+  const out = [];
+  for (let guard = 0; out.length < 2 && guard < 800; guard++) {
+    const bars = answer.bars.map(bar => bar.map(c => ({ ...c })));
+    const b = Math.floor(rng() * bars.length);
+    const bar = bars[b];
+    let i = Math.floor(rng() * bar.length), j = i;
+    if (bar.length > 1 && rng() < 0.45) { if (j < bar.length - 1) j++; else i--; }
+    const from = bar[i].pos, to = bar[j].pos + CELLS[bar[j].id].len;
+    const fill = fillSpan(L, from, to, rng);
+    if (!fill) continue;
+    const nb = [...bar.slice(0, i), ...fill, ...bar.slice(j + 1)];
+    if (!barValid(L, nb)) continue;
+    bars[b] = nb;
+    if (bars.length > 1 && sameBar(bars[0], bars[1])) continue;
+    const p = makePhrase(answer.li, bars);
+    if (seen.has(p.sig) || p.onsets.length < 2 || onsetDiff(p, answer) > 3) continue;
+    seen.add(p.sig);
+    out.push(p);
+  }
+  while (out.length < 2) {
+    const p = generatePhrase(answer.li, seen, rng);
+    seen.add(p.sig);
+    out.push(p);
+  }
+  return out;
+}
+
+function countLabel(tb) {
+  const s = tb % 4;
+  return s === 0 ? String(tb / 4 + 1) : s === 2 ? "&" : s === 1 ? "e" : "a";
+}
+
+/* ---------- Notation (single-line rhythm staff, time-proportional spacing like the video) ---------- */
+
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+function drawRest(g, dur, x, y, k) {
+  const r = svgEl("g", { transform: `translate(${x} ${y}) scale(${k})`, fill: "none", stroke: "#15181d", "stroke-linecap": "round", "stroke-linejoin": "round" }, g);
+  if (dur === 4) {
+    svgEl("path", { d: "M -6 -38 L 8 -20", "stroke-width": 4 }, r);
+    svgEl("path", { d: "M 8 -20 L -5 -2", "stroke-width": 11 }, r);
+    svgEl("path", { d: "M -5 -2 L 9 16", "stroke-width": 4 }, r);
+    svgEl("path", { d: "M 9 16 C -4 9, -13 22, 1 36", "stroke-width": 5 }, r);
+  } else if (dur === 2) {
+    svgEl("circle", { cx: -6, cy: -15, r: 6, fill: "#15181d", stroke: "none" }, r);
+    svgEl("path", { d: "M -6 -10 C 0 -8, 6 -11, 10 -18 L -2 22", "stroke-width": 3.6 }, r);
+  } else if (dur === 8) {
+    svgEl("rect", { x: -14, y: -13, width: 28, height: 13, fill: "#15181d", stroke: "none" }, r);
+  } else {
+    svgEl("rect", { x: -14, y: 0, width: 28, height: 13, fill: "#15181d", stroke: "none" }, r);
+  }
+}
+
+// Draws a phrase into `container`. Returns helpers to move the highlight band.
+function renderScore(container, phrase, compact = false) {
+  const L = LEVELS[phrase.li];
+  const upb = L.beats * 4, nb = L.bars, events = phrase.events;
+  const VW = 1600, VH = compact ? 300 : 380;
+  const lineY = compact ? 212 : 272, countsY = compact ? 64 : 92;
+  const left = 118, right = 24;
+  const U = (VW - left - right) / (nb * (upb + 0.82));
+  const padL = 1.12 * U, barW = U * (upb + 0.82);
+  const barX = b => left + b * barW;
+  const xAt = t => { const b = Math.min(nb - 1, Math.floor(t / upb)); return barX(b) + padL + (t - b * upb) * U; };
+  const rx = Math.min(25, U * 0.42), ry = rx * 0.72, k = rx / 25;
+  const stemH = rx * (compact ? 4.6 : 5.6), sw = Math.max(3, rx * 0.13), top = lineY - stemH;
+  const ink = "#15181d";
+
+  // Count labels: every onset, plus held beats in light grey so students can count through long notes.
+  const labels = events.map(e => ({ t: e.t, text: countLabel(e.tb), cls: e.rest ? "cnt r" : "cnt n" }));
+  const onsetSet = new Set(events.map(e => e.t));
+  for (let t = 0; t < nb * upb; t += 4) if (!onsetSet.has(t)) labels.push({ t, text: countLabel(t % upb), cls: "cnt h" });
+  labels.sort((a, b) => a.t - b.t);
+  let gap = 4;
+  for (let i = 1; i < labels.length; i++) gap = Math.min(gap, labels[i].t - labels[i - 1].t);
+  const fs = Math.max(24, Math.min(compact ? 44 : 58, U * gap * 0.8));
+
+  container.textContent = "";
+  const svg = svgEl("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": `Rhythm, ${L.bars} bar${L.bars > 1 ? "s" : ""} of ${L.beats}/4` }, container);
+  const bandTop = countsY - fs - 10, bandBottom = lineY + (compact ? 58 : 76);
+  const band = svgEl("rect", { x: 0, y: bandTop, width: 0, height: bandBottom - bandTop, rx: 8, fill: "#ddebfa", opacity: 0 }, svg);
+
+  // Staff line, barlines, time signature
+  svgEl("line", { x1: barX(0), x2: barX(nb), y1: lineY, y2: lineY, stroke: ink, "stroke-width": 3 }, svg);
+  const barH = compact ? 50 : 62;
+  for (let b = 0; b <= nb; b++) svgEl("line", { x1: barX(b), x2: barX(b), y1: lineY - barH, y2: lineY + barH, stroke: ink, "stroke-width": b === nb ? 5 : 3 }, svg);
+  const tsFs = compact ? 46 : 58;
+  const tsAttrs = { x: left - 52, "text-anchor": "middle", "font-size": tsFs, "font-weight": 700, fill: ink, style: "font-family: var(--display)" };
+  svgEl("text", { ...tsAttrs, y: lineY - 8 }, svg).textContent = L.beats;
+  svgEl("text", { ...tsAttrs, y: lineY + tsFs * 0.82 }, svg).textContent = "4";
+
+  for (const lb of labels) {
+    const t = svgEl("text", { x: xAt(lb.t), y: countsY, "text-anchor": "middle", "font-size": fs, "font-weight": 600, class: lb.cls, style: "font-family: var(--display)" }, svg);
+    t.setAttribute("fill", lb.cls === "cnt n" ? "#1a7fe2" : lb.cls === "cnt r" ? "#b4bcc7" : "#cdd3db");
+    t.textContent = lb.text;
+  }
+
+  // Notes and rests
+  const beams = {};
+  for (const e of events) {
+    const x = xAt(e.t);
+    if (e.rest) { drawRest(svg, e.dur, x, lineY, k); continue; }
+    if (e.dur === 16) {
+      svgEl("ellipse", { cx: x, cy: lineY, rx: rx * 1.2, ry: ry * 1.05, fill: ink }, svg);
+      svgEl("ellipse", { cx: x, cy: lineY, rx: rx * 0.5, ry: ry * 0.62, fill: "#fff", transform: `rotate(-50 ${x} ${lineY})` }, svg);
+      continue;
+    }
+    svgEl("ellipse", { cx: x, cy: lineY, rx, ry, fill: ink, transform: `rotate(-20 ${x} ${lineY})` }, svg);
+    if (e.dur >= 8) svgEl("ellipse", { cx: x, cy: lineY, rx: rx * 0.68, ry: ry * 0.4, fill: "#fff", transform: `rotate(-32 ${x} ${lineY})` }, svg);
+    if (e.dur === 6 || e.dur === 12) svgEl("circle", { cx: x + rx * 1.8, cy: lineY - ry * 0.95, r: rx * 0.21, fill: ink }, svg);
+    const sx = x + rx * 0.92;
+    svgEl("line", { x1: sx, x2: sx, y1: lineY - ry * 0.3, y2: top, stroke: ink, "stroke-width": sw }, svg);
+    if (e.beam) (beams[e.beam] = beams[e.beam] || { xs: [], n: e.beams }).xs.push(sx);
+    else if (e.dur < 4) svgEl("path", { d: "M 0 0 C 3 22, 36 30, 23 68 C 37 36, 16 30, 0 30 Z", fill: ink, transform: `translate(${sx - sw / 2} ${top}) scale(${k})` }, svg);
+  }
+  const bt = rx * 0.42;
+  for (const id in beams) {
+    const { xs, n } = beams[id];
+    const x1 = xs[0] - sw / 2, w = xs[xs.length - 1] - xs[0] + sw;
+    for (let i = 0; i < n; i++) svgEl("rect", { x: x1, y: top + i * bt * 1.75, width: w, height: bt, fill: ink }, svg);
+  }
+
+  const place = (x, w) => { band.setAttribute("x", x); band.setAttribute("width", w); band.setAttribute("opacity", 1); };
+  return {
+    setActive(i) {
+      if (i < 0) { band.setAttribute("opacity", 0); return; }
+      const e = events[i];
+      const w = Math.min(rx * 2.8, Math.max(U * e.dur * 0.92, rx * 2.2));
+      place(xAt(e.t) - w / 2, w);
+    },
+    setBeat(t) {
+      if (t < 0) { band.setAttribute("opacity", 0); return; }
+      const x = xAt(t) - rx * 1.4;
+      place(x, 4 * U);
+    }
+  };
+}
+
+/* ---------- Sound (Web Audio, synthesised — nothing to download, works offline) ---------- */
+
+const Sound = (() => {
+  let ctx = null, noise = null, bus = null;
+
+  function ensure() {
+    if (!ctx) {
+      // iPad/iPhone: play even when the device is set to silent.
+      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function stop() {
+    if (!bus) return;
+    const b = bus, t = ctx.currentTime;
+    bus = null;
+    b.gain.cancelScheduledValues(0);
+    b.gain.setValueAtTime(b.gain.value, t);
+    b.gain.linearRampToValueAtTime(0, t + 0.03);
+    setTimeout(() => b.disconnect(), 100);
+  }
+
+  function env(g, t, peak, decay) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+  }
+
+  // Soft, mid-low "tock": filtered triangle with a small pitch drop. Beat 1 is louder and a touch longer.
+  function click(t, accent, vol) {
+    if (vol <= 0) return;
+    const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(accent ? 520 : 500, t);
+    o.frequency.exponentialRampToValueAtTime(accent ? 410 : 400, t + 0.03);
+    f.type = "lowpass";
+    f.frequency.value = 1500;
+    env(g, t, vol * (accent ? 0.5 : 0.27), accent ? 0.08 : 0.055);
+    o.connect(f); f.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.12);
+  }
+
+  // Woodblock: resonant sine body + a short band-passed noise attack.
+  function woodblock(t) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(880, t);
+    o.frequency.exponentialRampToValueAtTime(790, t + 0.08);
+    env(g, t, 0.75, 0.14);
+    o.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.16);
+
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.type = "sine";
+    o2.frequency.value = 2110;
+    env(g2, t, 0.18, 0.05);
+    o2.connect(g2); g2.connect(bus);
+    o2.start(t); o2.stop(t + 0.08);
+
+    const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g3 = ctx.createGain();
+    n.buffer = noise;
+    bp.type = "bandpass";
+    bp.frequency.value = 2400;
+    bp.Q.value = 1.2;
+    env(g3, t, 0.3, 0.025);
+    n.connect(bp); bp.connect(g3); g3.connect(bus);
+    n.start(t); n.stop(t + 0.04);
+  }
+
+  // One round: a bar of count-in, the phrase, and (for Echo) the same length again for clapping.
+  // The click runs straight through so students come in on time.
+  function schedule({ beats, bars, bpm, onsets, withClap, clickVol }) {
+    ensure();
+    stop();
+    bus = ctx.createGain();
+    bus.gain.value = 0.8;
+    bus.connect(ctx.destination);
+    const beat = 60 / bpm, unit = beat / 4;
+    const t0 = ctx.currentTime + 0.15;
+    const phraseBeats = beats * bars;
+    const totalBeats = beats + phraseBeats * (withClap ? 2 : 1);
+    for (let i = 0; i < totalBeats; i++) click(t0 + i * beat, i % beats === 0, clickVol);
+    const listen0 = t0 + beats * beat;
+    for (const u of onsets) woodblock(listen0 + u * unit);
+    return { t0, beat, unit, countIn: beats * beat, phrase: phraseBeats * beat, total: totalBeats * beat };
+  }
+
+  // Audio clock, corrected for output delay so the highlight lines up with what the room hears.
+  function now() {
+    return ctx ? ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0) : 0;
+  }
+
+  return { ensure, schedule, stop, now };
+})();
+
+/* ---------- Game ---------- */
+
+const $ = id => document.getElementById(id);
+const LETTERS = ["A", "B", "C"];
+const state = {
+  mode: "echo",
+  li: 0,
+  bpm: LEVELS[0].bpm,
+  clickVol: 0.55,
+  phase: "ready",        // ready | playing | done
+  echo: null,            // { phrase, view }
+  quiz: null,            // { options, views, answer, picked, heard, result }
+  round: null,
+  raf: 0,
+  recent: []
+};
+
+function setCue(glyph, word, pop = false) {
+  const cue = $("cue");
+  $("cueGlyph").textContent = glyph;
+  $("cueWord").textContent = word;
+  if (pop) { cue.classList.remove("pop"); void cue.offsetWidth; cue.classList.add("pop"); }
+}
+
+function setPhase(p) {
+  state.phase = p;
+  $("nextBtn").textContent = p === "ready" ? "▶ Play" : "Next ▶";
+  $("againBtn").textContent = state.mode === "echo" ? "↻ Again" : "↻ Replay";
+  $("againBtn").disabled = p === "ready";
+  if (p === "ready") setCue("▶", state.mode === "echo" ? "Press Play" : "Press Play, then pick A, B or C");
+}
+
+function updateHeader() {
+  const L = LEVELS[state.li];
+  $("levelNum").textContent = `Level ${state.li + 1}`;
+  $("levelName").textContent = L.name;
+  $("tempoMark").innerHTML = `<span class="q">♩</span> = ${state.bpm}`;
+  $("tempo").value = state.bpm;
+  $("tempoOut").textContent = state.bpm;
+  document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i === state.li)));
+}
+
+function freshPhrase(li) {
+  const p = generatePhrase(li, new Set(state.recent));
+  state.recent = [p.sig, ...state.recent].slice(0, 6);
+  return p;
+}
+
+function newContent() {
+  if (state.mode === "echo") {
+    const phrase = freshPhrase(state.li);
+    state.echo = { phrase, view: renderScore($("echoScore"), phrase, false) };
+    return;
+  }
+  const answerPhrase = freshPhrase(state.li);
+  const wrong = makeDistractors(answerPhrase);
+  const answer = Math.floor(Math.random() * 3);
+  const options = [...wrong];
+  options.splice(answer, 0, answerPhrase);
+  const views = options.map((p, i) => {
+    const row = $("qrow" + i);
+    row.classList.remove("correct", "wrong");
+    row.disabled = false;
+    return renderScore(row.querySelector(".qscore"), p, true);
+  });
+  state.quiz = { options, views, answer, picked: null, heard: false, result: null };
+}
+
+function stopRound() {
+  Sound.stop();
+  cancelAnimationFrame(state.raf);
+  state.round = null;
+  if (state.echo) state.echo.view.setActive(-1);
+  if (state.quiz) state.quiz.views.forEach(v => v.setActive(-1));
+}
+
+function setLevel(i) {
+  stopRound();
+  state.li = i;
+  state.bpm = LEVELS[i].bpm;
+  state.recent = [];
+  updateHeader();
+  newContent();
+  setPhase("ready");
+}
+
+function setMode(m) {
+  if (m === state.mode) return;
+  stopRound();
+  state.mode = m;
+  $("modeEcho").setAttribute("aria-pressed", String(m === "echo"));
+  $("modeQuiz").setAttribute("aria-pressed", String(m === "quiz"));
+  $("echoView").hidden = m !== "echo";
+  $("quizView").hidden = m !== "quiz";
+  $("stage").classList.toggle("is-quiz", m === "quiz");
+  newContent();
+  setPhase("ready");
+}
+
+function play() {
+  const L = LEVELS[state.li];
+  const echo = state.mode === "echo";
+  const phrase = echo ? state.echo.phrase : state.quiz.options[state.quiz.answer];
+  stopRound();
+  const r = Sound.schedule({ beats: L.beats, bars: L.bars, bpm: state.bpm, onsets: phrase.onsets, withClap: echo, clickVol: state.clickVol });
+  state.round = { ...r, key: "", idx: -2, notes: phrase };
+  if (!echo) state.quiz.heard = true;
+  setPhase("playing");
+  tick();
+}
+
+function primary() {
+  if (state.phase !== "ready") newContent();
+  play();
+}
+
+function again() {
+  if (state.phase !== "ready") play();
+}
+
+function lastEventAt(phrase, pos) {
+  let idx = -1;
+  for (let i = 0; i < phrase.events.length; i++) if (phrase.events[i].t <= pos + 1e-6) idx = i;
+  return idx;
+}
+
+function highlight(pos) {
+  const r = state.round;
+  if (state.mode === "echo") {
+    const idx = lastEventAt(r.notes, pos);
+    if (idx !== r.idx) { r.idx = idx; state.echo.view.setActive(idx); }
+    return;
+  }
+  const q = state.quiz;
+  if (q.picked === null) {
+    const beat = Math.floor(pos / 4) * 4;          // beat band on all three rows: shows where we are, not the answer
+    if (beat !== r.idx) { r.idx = beat; q.views.forEach(v => v.setBeat(beat)); }
+  } else {
+    const idx = lastEventAt(r.notes, pos);
+    if (idx !== r.idx) { r.idx = idx; q.views.forEach((v, i) => i === q.answer ? v.setActive(idx) : v.setBeat(-1)); }
+  }
+}
+
+function clearHighlight() {
+  if (state.echo) state.echo.view.setActive(-1);
+  if (state.quiz) state.quiz.views.forEach(v => v.setActive(-1));
+}
+
+function tick() {
+  const r = state.round;
+  if (!r) return;
+  const el = Sound.now() - r.t0;
+  const echo = state.mode === "echo";
+  if (el < r.countIn) {
+    const n = el < 0 ? 0 : Math.floor(el / r.beat) + 1;
+    const key = "c" + n;
+    if (key !== r.key) { r.key = key; clearHighlight(); r.idx = -2; setCue(n ? String(n) : "…", "Get ready…", n > 0); }
+  } else if (el < r.countIn + r.phrase) {
+    if (r.key !== "listen") { r.key = "listen"; setCue("👂", "Listen", true); }
+    highlight((el - r.countIn) / r.unit);
+  } else if (echo && el < r.total) {
+    if (r.key !== "clap") { r.key = "clap"; r.idx = -2; setCue("👏", "Clap it back!", true); }
+    highlight((el - r.countIn - r.phrase) / r.unit);
+  } else {
+    finishRound();
+    return;
+  }
+  state.raf = requestAnimationFrame(tick);
+}
+
+function finishRound() {
+  state.round = null;
+  clearHighlight();
+  setPhase("done");
+  if (state.mode === "echo") setCue("👍", "Nice! Again, or Next?", true);
+  else if (state.quiz.picked === null) setCue("🤔", "Which rhythm was it? A, B or C", true);
+  else setCue(...state.quiz.result, false);
+}
+
+function answer(i) {
+  const q = state.quiz;
+  if (state.mode !== "quiz" || !q || !q.heard || q.picked !== null || i < 0 || i > 2) return;
+  q.picked = i;
+  q.options.forEach((_, j) => { $("qrow" + j).disabled = true; });
+  $("qrow" + q.answer).classList.add("correct");
+  if (i === q.answer) {
+    q.result = ["👍", `Yes! It was ${LETTERS[q.answer]}.`];
+    confetti();
+  } else {
+    $("qrow" + i).classList.add("wrong");
+    q.result = ["👂", `It was ${LETTERS[q.answer]}. Press Replay to hear it again.`];
+  }
+  if (state.round) state.round.idx = -2;
+  setCue(...q.result, true);
+}
+
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = $("confetti"), g = c.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  const W = innerWidth, H = innerHeight;
+  c.width = W * dpr; c.height = H * dpr;
+  g.scale(dpr, dpr);
+  const colors = ["#1a7fe2", "#1d9a58", "#f2b705", "#e8553e", "#7a5cf0"];
+  const ps = Array.from({ length: 150 }, () => ({
+    x: W * (0.25 + Math.random() * 0.5), y: H * 0.6,
+    vx: (Math.random() - 0.5) * 16, vy: -(9 + Math.random() * 13),
+    s: 7 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3,
+    c: colors[Math.floor(Math.random() * colors.length)]
+  }));
+  const start = performance.now();
+  (function frame(now) {
+    const t = now - start;
+    g.clearRect(0, 0, W, H);
+    for (const p of ps) {
+      p.vy += 0.45; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      g.save(); g.translate(p.x, p.y); g.rotate(p.r);
+      g.globalAlpha = Math.max(0, 1 - t / 2200);
+      g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * 0.66);
+      g.restore();
+    }
+    if (t < 2200) requestAnimationFrame(frame); else g.clearRect(0, 0, W, H);
+  })(start);
+}
+
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else {
+      const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (_) { /* not allowed here */ }
+}
+
+/* ---------- Wiring ---------- */
+
+LEVELS.forEach((L, i) => {
+  const b = document.createElement("button");
+  b.className = "lvl" + (L.beats === 3 ? " meter3" : "");
+  b.id = "lvl" + (i + 1);
+  b.textContent = i + 1;
+  b.title = `Level ${i + 1}: ${L.name}`;
+  b.setAttribute("aria-label", b.title);
+  b.addEventListener("click", () => setLevel(i));
+  $("levels").appendChild(b);
+});
+
+$("modeEcho").addEventListener("click", () => setMode("echo"));
+$("modeQuiz").addEventListener("click", () => setMode("quiz"));
+$("nextBtn").addEventListener("click", primary);
+$("againBtn").addEventListener("click", again);
+[0, 1, 2].forEach(i => $("qrow" + i).addEventListener("click", () => answer(i)));
+$("fullscreen").addEventListener("click", toggleFullscreen);
+$("tempo").addEventListener("input", e => {
+  state.bpm = +e.target.value;
+  $("tempoOut").textContent = state.bpm;
+  $("tempoMark").innerHTML = `<span class="q">♩</span> = ${state.bpm}`;
+});
+$("clickVol").addEventListener("input", e => { state.clickVol = +e.target.value / 100; });
+$("showCounts").addEventListener("change", e => $("stage").classList.toggle("hide-counts", !e.target.checked));
+
+// Mouse clicks shouldn't leave focus on a button, or Space would press that button instead of Next.
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b && e.detail) b.blur();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target, k = e.key;
+  const nativeActivate = (k === " " || k === "Enter") && (t.tagName === "BUTTON" || t.type === "checkbox");
+  if (nativeActivate) return;
+  const onRange = t.type === "range";
+  if (k === " " || k === "Enter" || k === "PageDown" || (k === "ArrowRight" && !onRange)) { e.preventDefault(); primary(); }
+  else if (k === "r" || k === "R" || k === "PageUp" || (k === "ArrowLeft" && !onRange)) { e.preventDefault(); again(); }
+  else if (state.mode === "quiz" && /^[1-3]$/.test(k)) answer(+k - 1);
+  else if (state.mode === "quiz" && /^[abc]$/i.test(k)) answer("abc".indexOf(k.toLowerCase()));
+  else if (k === "f" || k === "F") toggleFullscreen();
+  else if (k === "Escape" && state.round) { stopRound(); setPhase("done"); setCue("⏸", "Stopped. Again, or Next?"); }
+});
+
+// Already full screen when opened from the iPad home screen, and some browsers can't do it at all.
+const rootEl = document.documentElement;
+if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) {
+  $("fullscreen").hidden = true;
+}
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+updateHeader();
+newContent();
+setPhase("ready");
+</script>
+</body>
+</html>

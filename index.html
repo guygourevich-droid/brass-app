@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brass App</title>
+<meta name="description" content="Simple tools for brass and rhythm lessons.">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #66707d;
+    --line: #e1e7ef;
+    --console: #f2f5f9;
+    --blue: #1a7fe2;
+    --wash: #ddebfa;
+    --brass: #e3a92b;
+    --brass-deep: #8f5b0e;
+    --display: "Lexend", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); color: var(--ink); }
+  body { margin: 0; font-family: var(--body); font-size: 16px; line-height: 1.5; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 48px); padding-block: clamp(28px, 6vh, 64px); display: grid; gap: clamp(28px, 5vh, 48px); }
+
+  .masthead { display: flex; align-items: center; gap: 18px; }
+  .masthead img { width: clamp(56px, 8vw, 76px); height: auto; border-radius: 22%; }
+  .masthead h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em; line-height: 1.05; }
+  .masthead p { margin: 4px 0 0; color: var(--muted); font-size: clamp(15px, 1.8vw, 18px); }
+
+  .section-k { margin: 0 0 12px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brass-deep); font-weight: 700; }
+  .tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+
+  .tool {
+    display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center;
+    padding: 20px 22px; border: 2px solid var(--line); border-radius: 18px;
+    color: inherit; text-decoration: none; background: var(--paper);
+    transition: border-color .15s, transform .15s;
+  }
+  .tool:hover { border-color: var(--blue); }
+  .tool:active { transform: scale(.99); }
+  .tool svg { width: clamp(110px, 18vw, 150px); height: auto; display: block; }
+  .tool h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: clamp(22px, 2.6vw, 26px); letter-spacing: -0.01em; }
+  .tool p { margin: 4px 0 10px; color: var(--ink-2); max-width: 44ch; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--console); color: var(--ink-2); }
+
+  .install { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 15px; max-width: 65ch; }
+  .install b { color: var(--ink-2); }
+  @media (display-mode: standalone) { .install { display: none; } }
+
+  @media (max-width: 520px) {
+    .tool { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .tool { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <img src="icons/icon-192.png" alt="">
+    <div>
+      <h1>Brass App</h1>
+      <p>Simple tools for brass and rhythm lessons</p>
+    </div>
+  </header>
+
+  <main>
+    <h2 class="section-k">Tools</h2>
+    <div class="tools">
+      <a class="tool" href="clap-along.html">
+        <svg viewBox="0 0 200 84" aria-hidden="true">
+          <rect x="17" y="2" width="32" height="80" rx="5" fill="#ddebfa"/>
+          <line x1="4" x2="196" y1="60" y2="60" stroke="#15181d" stroke-width="2.5"/>
+          <line x1="4" x2="4" y1="42" y2="78" stroke="#15181d" stroke-width="2.5"/>
+          <line x1="196" x2="196" y1="42" y2="78" stroke="#15181d" stroke-width="3.5"/>
+          <g fill="#15181d">
+            <ellipse cx="33" cy="60" rx="9" ry="6.5" transform="rotate(-20 33 60)"/>
+            <ellipse cx="85" cy="60" rx="9" ry="6.5" transform="rotate(-20 85 60)"/>
+            <ellipse cx="119" cy="60" rx="9" ry="6.5" transform="rotate(-20 119 60)"/>
+            <ellipse cx="165" cy="60" rx="9" ry="6.5" transform="rotate(-20 165 60)"/>
+            <rect x="40.5" y="18" width="2.6" height="41"/>
+            <rect x="92.5" y="18" width="2.6" height="41"/>
+            <rect x="126.5" y="18" width="2.6" height="41"/>
+            <rect x="172.5" y="18" width="2.6" height="41"/>
+            <rect x="92.5" y="18" width="36.6" height="7"/>
+          </g>
+        </svg>
+        <div>
+          <h2>Clap-Along</h2>
+          <p>Hear a rhythm and clap it back, or pick which of three rhythms you heard.</p>
+          <div class="chips"><span class="chip">Echo</span><span class="chip">Ear quiz</span><span class="chip">9 levels</span></div>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <p class="install"><b>Use it offline on iPad:</b> open this page in Safari while online, tap Share, then <b>Add to Home Screen</b>. After that it opens from the home screen without internet.</p>
+</div>
+<script>
+  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

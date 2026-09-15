@@ -1,0 +1,4 @@
+/* Self-hosted so the app works offline. Both fonts: SIL Open Font License, see OFL-*.txt */
+@font-face { font-family: "Lexend"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("lexend-400-700-latin.woff2") format("woff2"); }
+@font-face { font-family: "Atkinson Hyperlegible"; font-style: normal; font-weight: 400; font-display: swap; src: url("atkinson-hyperlegible-400-latin.woff2") format("woff2"); }
+@font-face { font-family: "Atkinson Hyperlegible"; font-style: normal; font-weight: 700; font-display: swap; src: url("atkinson-hyperlegible-700-latin.woff2") format("woff2"); }
