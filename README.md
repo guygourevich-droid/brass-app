@@ -5,6 +5,8 @@ Simple tools for brass and rhythm lessons. Plain HTML — no build step, no serv
 **Open:** https://guygourevich-droid.github.io/brass-app/
 
 ## Tools
+- **Balloon Breath** (`balloon-breath.html`) — paced breathing, then warm air through the mouthpiece. 5 levels.
+- **Buzz-Along** (`buzz-along.html`) — hear a model note, breathe, buzz it back on the mouthpiece. Long notes up to mini sirens; trumpet, trombone, horn.
 - **Clap-Along** (`clap-along.html`) — hear a rhythm and clap it back, or pick which of three rhythms you heard. 9 levels, crotchets to semiquavers.
 
 ## Use offline on iPad
