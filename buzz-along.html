@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buzz-Along · Brass App</title>
+<meta name="theme-color" content="#bfe4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #56616f;
+    --line: rgba(21, 24, 29, .12);
+    --panel: rgba(255, 255, 255, .7);
+    --blue: #1a7fe2;
+    --gold: #b7800f;
+    --coral: #e4513f;
+    --mint: #17905a;
+    --phase: #3b434e;
+    --display: "Lexend", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { background: #cfeaff; color: var(--ink); }
+  body { margin: 0; font-family: var(--body); font-size: 15px; color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e2f2ff 55%, #fff4e3 100%) fixed; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  .sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .cloud { position: absolute; left: -30vw; width: clamp(160px, 22vw, 320px); opacity: .85; animation: drift linear infinite; }
+  .cloud:nth-child(1) { top: 14%; animation-duration: 110s; animation-delay: -40s; }
+  .cloud:nth-child(2) { top: 70%; width: clamp(110px, 15vw, 220px); opacity: .7; animation-duration: 140s; animation-delay: -95s; }
+  @keyframes drift { to { transform: translateX(160vw); } }
+
+  .app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; padding-inline: clamp(16px, 3vw, 48px); }
+
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); margin-right: auto; text-decoration: none; }
+  .brand:hover { color: var(--blue); }
+  .brand-tool { font-weight: 500; color: var(--muted); }
+  .seg { display: inline-flex; background: var(--panel); border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-family: var(--display); font-weight: 500; color: var(--muted); }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .15); }
+  .k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .levels { display: inline-flex; align-items: center; gap: 4px; }
+  .lvl { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-weight: 500; cursor: pointer; color: var(--ink-2); }
+  .lvl:hover { border-color: var(--blue); }
+  .lvl[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .ctl { display: inline-flex; align-items: center; gap: 8px; }
+  .ctl input[type="range"] { width: 100px; accent-color: var(--blue); }
+  .ctl output { font-family: var(--display); font-variant-numeric: tabular-nums; min-width: 2em; color: var(--ink-2); }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle input { accent-color: var(--blue); width: 16px; height: 16px; }
+  .icon-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; height: 32px; padding: 0 10px; cursor: pointer; color: var(--ink-2); }
+
+  .stage { display: grid; grid-template-rows: auto auto 1fr; gap: clamp(8px, 1.8vh, 20px); padding-block: clamp(12px, 2.6vh, 32px); min-width: 0; }
+  .stage[data-phase="ready"], .stage[data-phase="listen"] { --phase: var(--gold); }
+  .stage[data-phase="breathe"] { --phase: var(--blue); }
+  .stage[data-phase="buzz"] { --phase: var(--coral); }
+  .stage[data-phase="rest"], .stage[data-phase="done"] { --phase: var(--mint); }
+  .stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px; font-family: var(--display); color: var(--ink-2); font-size: clamp(16px, 2.2vh, 24px); }
+  .stage-head b { color: var(--ink); font-weight: 700; margin-right: .35em; }
+  .note-info { color: var(--muted); font-size: .85em; }
+
+  .phase { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(12px, 2vw, 28px); min-height: clamp(90px, 16vh, 180px); }
+  .phase-glyph { font-size: clamp(52px, 10vh, 112px); line-height: 1; }
+  .phase-word { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(38px, 7.5vh, 88px); line-height: 1; color: var(--phase); letter-spacing: -0.02em; transition: color .3s; }
+  .phase-hint { margin: .3em 0 0; font-family: var(--display); font-weight: 500; font-size: clamp(18px, 2.9vh, 32px); line-height: 1.25; color: var(--ink-2); text-wrap: balance; }
+  .count { font-family: var(--display); font-weight: 700; font-size: clamp(64px, 14vh, 160px); line-height: .85; color: var(--phase); font-variant-numeric: tabular-nums; min-width: 1.1em; text-align: right; transition: color .3s; }
+  .pop { animation: pop .3s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes pop { from { transform: scale(.7); } to { transform: scale(1); } }
+
+  .lane { align-self: start; background: rgba(255, 255, 255, .8); border-radius: 28px; padding: clamp(6px, 1.4vw, 18px); box-shadow: 0 8px 30px rgba(40, 100, 160, .12); }
+  .lane svg { display: block; width: 100%; height: auto; max-height: 46vh; }
+
+  .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
+  .tip { color: var(--ink-2); font-size: clamp(14px, 1.9vh, 18px); max-width: 60ch; }
+  .tip b { font-family: var(--display); color: var(--ink); }
+  .transport-btns { display: flex; gap: 12px; margin-left: auto; }
+  .btn { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.4vh, 24px); border-radius: 999px; padding: .6em 1.4em; cursor: pointer; border: 2px solid transparent; }
+  .btn.primary { background: var(--blue); color: #fff; min-width: 7.5em; }
+  .btn.primary:hover { background: #0f63b8; }
+  .btn.ghost { background: var(--panel); border-color: var(--line); color: var(--ink-2); }
+  .btn.ghost:hover { border-color: var(--blue); }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  @media (max-width: 640px) {
+    .brand { width: 100%; }
+    .phase { grid-template-columns: auto 1fr; }
+    .count { display: none; }
+    .transport-btns { width: 100%; }
+    .transport-btns .btn { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cloud, .pop { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
+  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
+</div>
+
+<div class="app">
+  <header class="console" aria-label="Teacher controls">
+    <a class="brand" href="index.html" title="Back to Brass App"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool">/ Buzz-Along</span></a>
+    <div class="seg" role="group" aria-label="Instrument">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true">Trumpet</button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false">Trombone</button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false">Horn</button>
+    </div>
+    <div class="levels" role="group" aria-label="Level"><span class="k">Level</span><span id="levels" class="levels"></span></div>
+    <label class="ctl" for="tempo"><span class="k">Count speed</span><input id="tempo" type="range" min="40" max="100" step="1" value="60"><output id="tempoOut" for="tempo">60</output></label>
+    <label class="toggle" for="model"><input id="model" type="checkbox" checked><span>Model sound</span></label>
+    <label class="toggle" for="click"><input id="click" type="checkbox" checked><span>Click</span></label>
+    <button id="fullscreen" class="icon-btn" title="Full screen (F)">⛶ Full screen</button>
+  </header>
+
+  <main class="stage" id="stage" data-phase="idle">
+    <div class="stage-head">
+      <div><b id="levelNum">Level 1</b><span id="levelName"></span></div>
+      <div class="note-info" id="noteInfo"></div>
+    </div>
+    <div class="phase" aria-live="polite">
+      <div class="phase-glyph" id="phaseGlyph" aria-hidden="true">🐝</div>
+      <div>
+        <p class="phase-word" id="phaseWord">Buzz-Along</p>
+        <p class="phase-hint" id="phaseHint">Press Play</p>
+      </div>
+      <div class="count" id="count"></div>
+    </div>
+    <div class="lane" id="lane"></div>
+  </main>
+
+  <footer class="transport">
+    <div class="tip" id="tip"></div>
+    <div class="transport-btns">
+      <button id="againBtn" class="btn ghost">↻ Again</button>
+      <button id="nextBtn" class="btn primary">▶ Play</button>
+    </div>
+  </footer>
+</div>
+<script>
+"use strict";
+
+/* ---------- Buzz-Along ----------
+   One round = get ready (4) → listen to the model (the phrase) → breathe in (2) → buzz it back (the phrase) → lips rest (4).
+   Each note is a ribbon: length = how long, height = how high, a sloping ribbon = a siren. */
+
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+// Model notes: the usual first notes for each instrument, a 4th apart (concert pitch in Hz).
+const INSTRUMENTS = {
+  trumpet: { label: "Trumpet", lo: 349.23, hi: 466.16, notes: "written G & C" },
+  trombone: { label: "Trombone", lo: 174.61, hi: 233.08, notes: "F & B♭" },
+  horn: { label: "Horn", lo: 261.63, hi: 349.23, notes: "written G & C" }
+};
+
+// Patterns in beats. "L" low, "H" high, "LH" slide up, "HL" slide down, "LHL" up and back; null = rest.
+const LEVELS = [
+  { name: "First buzz · 2 counts", bars: 1, rows: 1, patterns: [[["L", 2], [null, 2]]] },
+  { name: "First buzz · 4 counts", bars: 1, rows: 1, patterns: [[["L", 4]]] },
+  { name: "Long buzz · 8 counts", bars: 2, rows: 1, patterns: [[["L", 8]]] },
+  { name: "Long & short", bars: 2, rows: 1, patterns: [
+    [["L", 4], ["L", 2], [null, 2]],
+    [["L", 2], [null, 2], ["L", 4]],
+    [["L", 3], [null, 1], ["L", 3], [null, 1]],
+    [["L", 2], ["L", 2], ["L", 2], [null, 2]],
+    [["L", 1], ["L", 1], ["L", 2], ["L", 4]],
+    [["L", 1], [null, 1], ["L", 1], [null, 1], ["L", 4]],
+    [["L", 2], [null, 1], ["L", 1], ["L", 4]]
+  ] },
+  { name: "High & low", bars: 2, rows: 2, patterns: [
+    [["L", 4], ["H", 4]],
+    [["L", 2], ["H", 2], ["L", 4]],
+    [["L", 3], [null, 1], ["H", 3], [null, 1]],
+    [["L", 2], ["L", 2], ["H", 4]],
+    [["H", 4], ["L", 4]],
+    [["L", 2], ["H", 2], ["H", 2], ["L", 2]]
+  ] },
+  { name: "Mini sirens", bars: 2, rows: 2, patterns: [
+    [["LH", 4], ["H", 2], [null, 2]],
+    [["L", 2], ["LH", 2], ["H", 2], [null, 2]],
+    [["HL", 4], [null, 4]],
+    [["LH", 4], ["HL", 4]],
+    [["LHL", 6], [null, 2]],
+    [["L", 2], ["LHL", 4], [null, 2]]
+  ] }
+];
+
+const LISTEN_HINT = ["One long, steady sound", "One long, steady sound", "One long, steady sound", "Long and short notes", "Which notes go high?", "Hear the slides"];
+const BUZZ_HINT = ["Start with your tongue, steady air", "Start with your tongue, steady air", "Keep the air going to the end", "Count the long notes", "Low and high, like you heard", "Slide smoothly, keep the air going"];
+
+const TIPS = [
+  "<b>Mouthpiece rests lightly.</b> Never press it into your lips.",
+  "<b>Breathe before every note.</b> Big relaxed breath, shoulders down.",
+  "<b>Start with your tongue,</b> not a push of air.",
+  "<b>Steady air, steady buzz.</b> Keep the air moving to the end of the note.",
+  "<b>Rest your lips</b> between buzzes. Short and often beats long and tired."
+];
+
+const COLORS = { listen: "#e3a92b", breathe: "#e3a92b", buzz: "#ff6f59", rest: "#ff6f59", done: "#ff6f59", ready: "#e3a92b" };
+
+const state = { inst: "trumpet", li: 0, bpm: 60, model: true, click: true, phase: "ready", notes: [], lane: null, run: null, prev: -1, tip: 0, last: 0 };
+
+/* ---------- Sound ---------- */
+
+const Sound = (() => {
+  let ctx = null, bus = null, noise = null;
+
+  function ensure() {
+    if (!ctx) {
+      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.1), ctx.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function open() {
+    close();
+    bus = ctx.createGain();
+    bus.gain.value = 0.8;
+    bus.connect(ctx.destination);
+  }
+
+  function close() {
+    if (!bus) return;
+    const b = bus, t = ctx.currentTime;
+    bus = null;
+    b.gain.cancelScheduledValues(0);
+    b.gain.setValueAtTime(b.gain.value, t);
+    b.gain.linearRampToValueAtTime(0, t + 0.05);
+    setTimeout(() => b.disconnect(), 150);
+  }
+
+  function env(g, t, peak, attack, decay) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  }
+
+  function tick(t, accent) {
+    const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(accent ? 520 : 500, t);
+    o.frequency.exponentialRampToValueAtTime(400, t + 0.03);
+    f.type = "lowpass";
+    f.frequency.value = 1500;
+    env(g, t, accent ? 0.24 : 0.13, 0.003, accent ? 0.08 : 0.05);
+    o.connect(f); f.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.12);
+  }
+
+  // Buzzy model note: two slightly detuned sawtooths through a soft filter, a tongue "t" at the start,
+  // and slides timed to match the ribbon shape on screen.
+  function tone(t, dur, path, lo, hi) {
+    const end = t + Math.max(0.15, dur - 0.08);
+    const v = [...path].map(c => (c === "H" ? hi : lo));
+    const f = ctx.createBiquadFilter(), g = ctx.createGain();
+    f.type = "lowpass"; f.frequency.value = 2000; f.Q.value = 1.5;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.13, t + 0.04);
+    g.gain.setValueAtTime(0.13, end - 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, end);
+    f.connect(g); g.connect(bus);
+    for (const detune of [0, 7]) {
+      const o = ctx.createOscillator(), fr = o.frequency;
+      o.type = "sawtooth";
+      o.detune.value = detune;
+      fr.setValueAtTime(v[0], t);
+      if (v.length === 2) { fr.setValueAtTime(v[0], t + dur * 0.12); fr.exponentialRampToValueAtTime(v[1], t + dur * 0.88); }
+      if (v.length === 3) { fr.setValueAtTime(v[0], t + dur * 0.1); fr.exponentialRampToValueAtTime(v[1], t + dur * 0.5); fr.exponentialRampToValueAtTime(v[2], t + dur * 0.9); }
+      o.connect(f); o.start(t); o.stop(end + 0.02);
+    }
+    const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
+    n.buffer = noise; bp.type = "bandpass"; bp.frequency.value = 2600; bp.Q.value = 1;
+    env(ng, t, 0.12, 0.002, 0.03);
+    n.connect(bp); bp.connect(ng); ng.connect(bus);
+    n.start(t); n.stop(t + 0.06);
+  }
+
+  const now = () => ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
+  return { ensure, open, close, tick, tone, now };
+})();
+
+/* ---------- Lane (the ribbon picture) ---------- */
+
+const smooth = x => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+
+// 0 = low row, 1 = high row, at fraction f through the note. Matches the timing of the audio slide.
+function pitchAt(path, f) {
+  const v = [...path].map(c => (c === "H" ? 1 : 0));
+  if (v.length === 1) return v[0];
+  if (v.length === 2) return v[0] + (v[1] - v[0]) * smooth((f - 0.12) / 0.76);
+  return f < 0.5 ? v[0] + (v[1] - v[0]) * smooth((f - 0.1) / 0.4) : v[1] + (v[2] - v[1]) * smooth((f - 0.5) / 0.4);
+}
+
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+function toNotes(pattern) {
+  const notes = [];
+  let beat = 0;
+  for (const [path, dur] of pattern) {
+    if (path) notes.push({ start: beat, dur, path });
+    beat += dur;
+  }
+  return notes;
+}
+
+function renderLane(L, pattern, notes) {
+  const VW = 1600, VH = 440, X0 = 120, X1 = 1560, R = 30;
+  const beats = L.bars * 4, bw = (X1 - X0) / beats;
+  const yLow = L.rows === 2 ? 290 : 220, yHigh = L.rows === 2 ? 140 : 220;
+  const yOf = p => yLow + (yHigh - yLow) * p;
+  const box = $("lane");
+  box.textContent = "";
+  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": "Notes shown as ribbons: longer is longer, higher is higher" }, box);
+  const defs = el("defs", {}, svg);
+  const mask = el("mask", { id: "ribbonMask", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: VW, height: VH }, defs);
+
+  // Beat grid and counts
+  const labels = [];
+  for (let b = 0; b <= beats; b++) {
+    const x = X0 + b * bw;
+    el("line", { x1: x, x2: x, y1: 60, y2: 370, stroke: b % 4 === 0 ? "#9fb3c8" : "#d6e0ea", "stroke-width": b % 4 === 0 ? 3 : 2 }, svg);
+    if (b < beats) {
+      const t = el("text", { x: x + bw / 2, y: 418, "text-anchor": "middle", "font-size": 34, "font-weight": 600, fill: "#9aa8b8", style: "font-family: var(--display)" }, svg);
+      t.textContent = (b % 4) + 1;
+      labels.push(t);
+    }
+  }
+  if (L.rows === 2) {
+    for (const [y, word] of [[yHigh, "high"], [yLow, "low"]]) {
+      el("line", { x1: X0, x2: X1, y1: y, y2: y, stroke: "#c9d6e3", "stroke-width": 2, "stroke-dasharray": "10 12" }, svg);
+      el("text", { x: X0 - 16, y: y + 10, "text-anchor": "end", "font-size": 28, "font-weight": 600, fill: "#8190a1", style: "font-family: var(--display)" }, svg).textContent = word;
+    }
+  }
+
+  // Breath marks where a rest of 2+ beats leads into another note
+  let beat = 0;
+  pattern.forEach(([path, dur], i) => {
+    if (!path && dur >= 2 && i < pattern.length - 1) {
+      el("text", { x: X0 + beat * bw + bw * 0.5, y: 110, "text-anchor": "middle", "font-size": 96, "font-weight": 700, fill: "#1a7fe2", style: "font-family: var(--display)" }, svg).textContent = "’";
+    }
+    beat += dur;
+  });
+
+  // Ribbons: an empty tube, then a coloured fill revealed by the playhead through a mask
+  const geo = notes.map(n => {
+    const x0 = X0 + n.start * bw + R + 6, x1 = Math.max(x0, X0 + (n.start + n.dur) * bw - R - 6);
+    let d;
+    if (n.path.length === 1) d = `M ${x0} ${yOf(pitchAt(n.path, 0))} L ${x1} ${yOf(pitchAt(n.path, 0))}`;
+    else {
+      d = "";
+      for (let i = 0; i <= 32; i++) { const f = i / 32; d += `${i ? "L" : "M"} ${(x0 + (x1 - x0) * f).toFixed(1)} ${yOf(pitchAt(n.path, f)).toFixed(1)} `; }
+    }
+    el("path", { d, fill: "none", stroke: "#c9d6e3", "stroke-width": 2 * R + 8, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+    el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": 2 * R, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+    el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": 2 * R, "stroke-linecap": "round", "stroke-linejoin": "round" }, mask);
+    return { ...n, x0, x1 };
+  });
+  const fill = el("rect", { x: 0, y: 0, width: 0, height: VH, fill: COLORS.listen, mask: "url(#ribbonMask)" }, svg);
+
+  const playhead = el("line", { x1: X0, x2: X0, y1: 50, y2: 380, stroke: COLORS.listen, "stroke-width": 5, "stroke-linecap": "round", opacity: 0 }, svg);
+  const sparks = el("g", {}, svg);
+  const bead = el("g", { opacity: 0 }, svg);
+  const halo = el("circle", { r: R + 14, fill: COLORS.listen, opacity: 0.28 }, bead);
+  const core = el("circle", { r: R * 0.62, fill: "#fff", stroke: COLORS.listen, "stroke-width": 7 }, bead);
+
+  const pool = Array.from({ length: 36 }, () => ({ node: el("circle", { r: 6, fill: "#fff", opacity: 0 }, sparks), life: 0, x: 0, y: 0, vx: 0, vy: 0 }));
+  let carry = 0, activeLabel = -1;
+
+  return {
+    xAt: b => X0 + Math.min(beats, Math.max(0, b)) * bw,
+    beats,
+    update(kind, beatPos, dt) {
+      const color = COLORS[kind] || COLORS.listen;
+      fill.setAttribute("fill", color);
+      playhead.setAttribute("stroke", color);
+      halo.setAttribute("fill", color);
+      core.setAttribute("stroke", color);
+      const moving = kind === "listen" || kind === "buzz";
+      const x = moving ? X0 + Math.min(beats, Math.max(0, beatPos)) * bw : kind === "ready" ? X0 : X1 + R + 10;
+      fill.setAttribute("width", Math.max(0, x));
+      playhead.setAttribute("x1", x); playhead.setAttribute("x2", x);
+      playhead.setAttribute("opacity", moving ? 0.9 : 0);
+
+      const idx = moving ? Math.min(beats - 1, Math.floor(beatPos)) : -1;
+      if (idx !== activeLabel) {
+        if (labels[activeLabel]) { labels[activeLabel].setAttribute("fill", "#9aa8b8"); labels[activeLabel].setAttribute("font-size", 34); }
+        if (labels[idx]) { labels[idx].setAttribute("fill", color); labels[idx].setAttribute("font-size", 44); }
+        activeLabel = idx;
+      }
+
+      const g = moving && geo.find(n => beatPos >= n.start && beatPos < n.start + n.dur);
+      if (g) {
+        const bx = Math.min(g.x1, Math.max(g.x0, x));
+        const by = yOf(pitchAt(g.path, g.x1 > g.x0 ? (bx - g.x0) / (g.x1 - g.x0) : 0));
+        bead.setAttribute("transform", `translate(${bx.toFixed(1)} ${by.toFixed(1)})`);
+        bead.setAttribute("opacity", 1);
+        carry += dt * 40;
+        while (carry >= 1) {
+          carry -= 1;
+          const p = pool.find(q => q.life <= 0);
+          if (!p) break;
+          Object.assign(p, { life: 1, x: bx, y: by + (Math.random() - 0.5) * 30, vx: -90 - Math.random() * 90, vy: (Math.random() - 0.5) * 80 });
+          p.node.setAttribute("fill", Math.random() < 0.5 ? "#fff" : color);
+          p.node.setAttribute("r", (3 + Math.random() * 6).toFixed(1));
+        }
+      } else {
+        bead.setAttribute("opacity", 0);
+      }
+      for (const p of pool) {
+        if (p.life <= 0) continue;
+        p.life -= dt / 0.7;
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        p.node.setAttribute("cx", p.x.toFixed(1));
+        p.node.setAttribute("cy", p.y.toFixed(1));
+        p.node.setAttribute("opacity", p.life <= 0 ? 0 : (p.life * 0.9).toFixed(2));
+      }
+    }
+  };
+}
+
+/* ---------- Game ---------- */
+
+const TEXT = {
+  idle: ["🐝", "Buzz-Along", "Press Play"],
+  ready: ["👂", "Get ready", "Listen first, mouthpiece down"],
+  breathe: ["🌬️", "Breathe in", "Mouthpiece to your lips"],
+  rest: ["😌", "Lips rest", "Mouthpiece down, relax your lips"],
+  done: ["👍", "Nice buzzing!", "Again, or Next?"]
+};
+
+function setPhaseText(glyph, word, hint) {
+  const g = $("phaseGlyph");
+  if (g.textContent !== glyph) { g.textContent = glyph; g.classList.remove("pop"); void g.offsetWidth; g.classList.add("pop"); }
+  $("phaseWord").textContent = word;
+  $("phaseHint").textContent = hint;
+}
+
+function setCount(v) {
+  const c = $("count"), text = String(v);
+  if (c.textContent === text) return;
+  c.textContent = text;
+  c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop");
+}
+
+function show(kind, count) {
+  $("stage").dataset.phase = kind;
+  if (kind === "listen") setPhaseText("👂", "Listen", LISTEN_HINT[state.li]);
+  else if (kind === "buzz") setPhaseText("🐝", "Buzz!", BUZZ_HINT[state.li]);
+  else setPhaseText(...TEXT[kind]);
+  setCount(count ?? "");
+}
+
+function updateHeader() {
+  const L = LEVELS[state.li], I = INSTRUMENTS[state.inst];
+  $("levelNum").textContent = `Level ${state.li + 1}`;
+  $("levelName").textContent = L.name;
+  $("noteInfo").textContent = state.model ? `${I.label} · model notes ${I.notes}` : `${I.label} · model sound off: demonstrate live`;
+  document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i === state.li)));
+  for (const k in INSTRUMENTS) $("in" + INSTRUMENTS[k].label).setAttribute("aria-pressed", String(k === state.inst));
+}
+
+function updateButtons() {
+  $("nextBtn").textContent = state.phase === "ready" ? "▶ Play" : "Next ▶";
+  $("againBtn").disabled = state.phase === "ready";
+}
+
+function newPattern() {
+  const L = LEVELS[state.li];
+  let i = Math.floor(Math.random() * L.patterns.length);
+  if (L.patterns.length > 1 && i === state.prev) i = (i + 1) % L.patterns.length;
+  state.prev = i;
+  const pattern = L.patterns[i];
+  state.notes = toNotes(pattern);
+  state.lane = renderLane(L, pattern, state.notes);
+  state.lane.update("ready", 0, 0);
+}
+
+function stopRun() {
+  Sound.close();
+  state.run = null;
+}
+
+function ready() {
+  stopRun();
+  state.phase = "ready";
+  show("idle");
+  if (state.lane) state.lane.update("ready", 0, 0);
+  updateButtons();
+}
+
+function play() {
+  const L = LEVELS[state.li], I = INSTRUMENTS[state.inst], beat = 60 / state.bpm, beats = L.bars * 4;
+  const ctx = Sound.ensure();
+  Sound.open();
+  const segs = [];
+  let t = ctx.currentTime + 0.2;
+  const add = (kind, n) => { segs.push({ kind, beats: n, start: t, end: t + n * beat }); t += n * beat; };
+  add("ready", 4); add("listen", beats); add("breathe", 2); add("buzz", beats); add("rest", 4);
+  if (state.click) {
+    for (const s of segs) {
+      if (s.kind === "rest") continue;
+      for (let i = 0; i < s.beats; i++) Sound.tick(s.start + i * beat, s.kind !== "breathe" && i % 4 === 0);
+    }
+  }
+  if (state.model) for (const n of state.notes) Sound.tone(segs[1].start + n.start * beat, n.dur * beat, n.path, I.lo, I.hi);
+  state.tip++;
+  $("tip").innerHTML = TIPS[state.tip % TIPS.length];
+  state.run = { segs, beat, end: t, key: "" };
+  state.phase = "playing";
+  updateButtons();
+}
+
+function primary() {
+  if (state.phase !== "ready") newPattern();
+  play();
+}
+
+function again() {
+  if (state.phase !== "ready") play();
+}
+
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - (state.last || ts)) / 1000);
+  state.last = ts;
+  const run = state.run;
+  if (run) {
+    const now = Sound.now();
+    if (now >= run.end) {
+      stopRun();
+      state.phase = "done";
+      show("done");
+      state.lane.update("done", 0, dt);
+      updateButtons();
+    } else {
+      const seg = run.segs.find(s => now < s.end);
+      const beatPos = Math.max(0, now - seg.start) / run.beat;
+      const moving = seg.kind === "listen" || seg.kind === "buzz";
+      const count = moving ? (Math.floor(beatPos) % 4) + 1 : Math.min(seg.beats, Math.floor(beatPos) + 1);
+      const key = seg.kind + count;
+      if (key !== run.key) { run.key = key; show(seg.kind, count); }
+      state.lane.update(seg.kind, beatPos, dt);
+    }
+  } else if (state.lane) {
+    state.lane.update(state.phase === "done" ? "done" : "ready", 0, dt);
+  }
+  requestAnimationFrame(frame);
+}
+
+function toggleFullscreen() {
+  const d = document, root = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else {
+      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (_) { /* not allowed here */ }
+}
+
+/* ---------- Wiring ---------- */
+
+LEVELS.forEach((L, i) => {
+  const b = document.createElement("button");
+  b.className = "lvl";
+  b.id = "lvl" + (i + 1);
+  b.textContent = i + 1;
+  b.title = `Level ${i + 1}: ${L.name}`;
+  b.setAttribute("aria-label", b.title);
+  b.addEventListener("click", () => { state.li = i; state.prev = -1; updateHeader(); newPattern(); ready(); });
+  $("levels").appendChild(b);
+});
+
+for (const k in INSTRUMENTS) {
+  $("in" + INSTRUMENTS[k].label).addEventListener("click", () => { state.inst = k; updateHeader(); ready(); });
+}
+$("nextBtn").addEventListener("click", primary);
+$("againBtn").addEventListener("click", again);
+$("tempo").addEventListener("input", e => { state.bpm = +e.target.value; $("tempoOut").textContent = state.bpm; });
+$("model").addEventListener("change", e => { state.model = e.target.checked; updateHeader(); });
+$("click").addEventListener("change", e => { state.click = e.target.checked; });
+$("fullscreen").addEventListener("click", toggleFullscreen);
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b && e.detail) b.blur();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target, k = e.key;
+  if ((k === " " || k === "Enter") && (t.tagName === "BUTTON" || t.type === "checkbox")) return;
+  const onRange = t.type === "range";
+  if (k === " " || k === "Enter" || k === "PageDown" || (k === "ArrowRight" && !onRange)) { e.preventDefault(); primary(); }
+  else if (k === "r" || k === "R" || k === "PageUp" || (k === "ArrowLeft" && !onRange)) { e.preventDefault(); again(); }
+  else if (k === "f" || k === "F") toggleFullscreen();
+  else if (k === "Escape" && state.run) { stopRun(); state.phase = "done"; show("done"); $("phaseWord").textContent = "Stopped"; updateButtons(); }
+});
+
+const rootEl = document.documentElement;
+if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+$("tip").innerHTML = TIPS[0];
+updateHeader();
+newPattern();
+ready();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

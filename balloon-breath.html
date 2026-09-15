@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balloon Breath · Brass App</title>
+<meta name="theme-color" content="#bfe4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #56616f;
+    --line: rgba(21, 24, 29, .12);
+    --panel: rgba(255, 255, 255, .7);
+    --blue: #1a7fe2;
+    --coral: #e4513f;
+    --mint: #17905a;
+    --phase: #3b434e;
+    --display: "Lexend", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { background: #cfeaff; color: var(--ink); }
+  body { margin: 0; font-family: var(--body); font-size: 15px; color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e2f2ff 55%, #fff4e3 100%) fixed; }
+  button, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  .sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .cloud { position: absolute; left: -30vw; width: clamp(160px, 22vw, 320px); opacity: .85; animation: drift linear infinite; }
+  .cloud:nth-child(1) { top: 18%; animation-duration: 95s; animation-delay: -20s; }
+  .cloud:nth-child(2) { top: 42%; width: clamp(110px, 15vw, 220px); opacity: .7; animation-duration: 130s; animation-delay: -80s; }
+  .cloud:nth-child(3) { top: 8%; width: clamp(90px, 12vw, 170px); opacity: .6; animation-duration: 160s; animation-delay: -120s; }
+  @keyframes drift { to { transform: translateX(160vw); } }
+
+  .app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; padding-inline: clamp(16px, 3vw, 48px); }
+
+  /* Teacher console */
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); margin-right: auto; text-decoration: none; }
+  .brand:hover { color: var(--blue); }
+  .brand-tool { font-weight: 500; color: var(--muted); }
+  .seg { display: inline-flex; background: var(--panel); border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-family: var(--display); font-weight: 500; color: var(--muted); }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .15); }
+  .k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .levels { display: inline-flex; align-items: center; gap: 4px; }
+  .lvl { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-weight: 500; cursor: pointer; color: var(--ink-2); }
+  .lvl:hover { border-color: var(--blue); }
+  .lvl[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .ctl { display: inline-flex; align-items: center; gap: 8px; }
+  .ctl input[type="range"] { width: 100px; accent-color: var(--blue); }
+  .ctl output { font-family: var(--display); font-variant-numeric: tabular-nums; min-width: 2em; color: var(--ink-2); }
+  .ctl select { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; height: 32px; padding: 0 6px; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle input { accent-color: var(--blue); width: 16px; height: 16px; }
+  .icon-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; height: 32px; padding: 0 10px; cursor: pointer; color: var(--ink-2); }
+
+  /* Stage */
+  .stage { display: grid; grid-template-rows: auto auto auto 1fr; gap: clamp(6px, 1.6vh, 18px); padding-block: clamp(12px, 2.6vh, 32px); min-width: 0; }
+  .stage[data-phase="in"] { --phase: var(--blue); }
+  .stage[data-phase="out"] { --phase: var(--coral); }
+  .stage[data-phase="rest"], .stage[data-phase="done"] { --phase: var(--mint); }
+  .stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px; font-family: var(--display); color: var(--ink-2); font-size: clamp(16px, 2.2vh, 24px); }
+  .stage-head b { color: var(--ink); font-weight: 700; margin-right: .35em; }
+  .round { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  .phase { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; min-height: clamp(96px, 17vh, 190px); }
+  .phase-word { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(38px, 7.5vh, 88px); line-height: 1; color: var(--phase); letter-spacing: -0.02em; transition: color .3s; }
+  .phase-hint { margin: .3em 0 0; font-family: var(--display); font-weight: 500; font-size: clamp(18px, 2.9vh, 32px); line-height: 1.25; color: var(--ink-2); text-wrap: balance; }
+  .count { font-family: var(--display); font-weight: 700; font-size: clamp(72px, 16vh, 180px); line-height: .85; color: var(--phase); font-variant-numeric: tabular-nums; min-width: 1.3em; text-align: right; transition: color .3s; }
+  .count.pop { animation: pop .28s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes pop { from { transform: scale(.75); } to { transform: scale(1); } }
+
+  .dots { display: flex; flex-wrap: wrap; gap: clamp(6px, 1vw, 12px); min-height: clamp(16px, 2.6vh, 28px); }
+  .dot { width: clamp(16px, 2.6vh, 28px); aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--phase); opacity: .5; transition: background-color .15s, opacity .15s; }
+  .dot.on { background: var(--phase); opacity: 1; }
+
+  .scene { min-height: 0; display: flex; align-items: center; }
+  .scene svg { display: block; width: 100%; height: auto; max-height: 50vh; }
+  #balloonBob { animation: bob 3.2s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-10px); } }
+
+  /* Transport */
+  .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
+  .tip { color: var(--ink-2); font-size: clamp(14px, 1.9vh, 18px); max-width: 60ch; }
+  .tip b { font-family: var(--display); color: var(--ink); }
+  .transport-btns { display: flex; gap: 12px; margin-left: auto; }
+  .btn { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.4vh, 24px); border-radius: 999px; padding: .6em 1.4em; cursor: pointer; border: 2px solid transparent; }
+  .btn.primary { background: var(--blue); color: #fff; min-width: 7.5em; }
+  .btn.primary:hover { background: #0f63b8; }
+  .btn.ghost { background: var(--panel); border-color: var(--line); color: var(--ink-2); }
+  .btn.ghost:hover { border-color: var(--blue); }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+  @media (max-width: 640px) {
+    .brand { width: 100%; }
+    .transport-btns { width: 100%; }
+    .transport-btns .btn { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cloud, #balloonBob, .count.pop { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
+  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
+  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
+</div>
+
+<div class="app">
+  <header class="console" aria-label="Teacher controls">
+    <a class="brand" href="index.html" title="Back to Brass App"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool">/ Balloon Breath</span></a>
+    <div class="seg" role="group" aria-label="Stage">
+      <button id="stBreathe" class="seg-btn" aria-pressed="true">1 · Breathe</button>
+      <button id="stAir" class="seg-btn" aria-pressed="false">2 · Mouthpiece air</button>
+    </div>
+    <div class="levels" role="group" aria-label="Level"><span class="k">Level</span><span id="levels" class="levels"></span></div>
+    <label class="ctl" for="tempo"><span class="k">Count speed</span><input id="tempo" type="range" min="40" max="90" step="1" value="60"><output id="tempoOut" for="tempo">60</output></label>
+    <label class="ctl" for="rounds"><span class="k">Rounds</span><select id="rounds"><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+    <label class="toggle" for="sound"><input id="sound" type="checkbox" checked><span>Sound</span></label>
+    <button id="fullscreen" class="icon-btn" title="Full screen (F)">⛶ Full screen</button>
+  </header>
+
+  <main class="stage" id="stage" data-phase="idle">
+    <div class="stage-head">
+      <div><b id="levelNum">Level 1</b><span id="levelName"></span></div>
+      <div class="round" id="roundInfo"></div>
+    </div>
+    <div class="phase" aria-live="polite">
+      <div>
+        <p class="phase-word" id="phaseWord">Balloon Breath</p>
+        <p class="phase-hint" id="phaseHint">Press Start</p>
+      </div>
+      <div class="count" id="count"></div>
+    </div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div class="scene">
+      <svg id="scene" viewBox="0 0 1600 640" role="img" aria-label="A balloon that fills as you breathe in and empties as you breathe out">
+        <defs>
+          <radialGradient id="balloonFill" cx="36%" cy="30%" r="78%">
+            <stop offset="0" stop-color="#ffa08c"/>
+            <stop offset=".55" stop-color="#ff6f59"/>
+            <stop offset="1" stop-color="#d63f2d"/>
+          </radialGradient>
+          <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f6f8fa"/>
+            <stop offset=".5" stop-color="#b6bec8"/>
+            <stop offset="1" stop-color="#e5e9ee"/>
+          </linearGradient>
+        </defs>
+
+        <g id="balloonPos" transform="translate(400 0)">
+          <g id="balloonBob">
+            <path d="M 400 574 C 376 600, 424 620, 400 640" fill="none" stroke="#56616f" stroke-width="3" stroke-linecap="round"/>
+            <g id="balloonScale">
+              <path d="M 400 130 C 515 130 595 222 595 335 C 595 448 495 535 410 558 L 390 558 C 305 535 205 448 205 335 C 205 222 285 130 400 130 Z" fill="url(#balloonFill)"/>
+              <ellipse cx="322" cy="248" rx="30" ry="64" transform="rotate(-24 322 248)" fill="#fff" opacity=".45"/>
+              <path d="M 387 555 L 413 555 L 406 574 L 394 574 Z" fill="#c9392a"/>
+            </g>
+          </g>
+        </g>
+
+        <g id="airParts" style="display:none">
+          <g id="particles"></g>
+          <g aria-label="Mouthpiece">
+            <rect x="672" y="296" width="30" height="128" rx="12" fill="url(#silver)" stroke="#7d8794" stroke-width="3"/>
+            <path d="M 702 304 C 758 304 790 342 808 350 L 1020 343 L 1020 377 L 808 370 C 790 378 758 416 702 416 Z" fill="url(#silver)" stroke="#7d8794" stroke-width="3" stroke-linejoin="round"/>
+          </g>
+          <rect x="1293" y="300" width="14" height="340" rx="7" fill="#b9874b"/>
+          <g transform="translate(1300 300)">
+            <g id="blades">
+              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#e3a92b"/>
+              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#ff6f59" transform="rotate(90)"/>
+              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#1a7fe2" transform="rotate(180)"/>
+              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#3cc48a" transform="rotate(270)"/>
+            </g>
+            <circle r="14" fill="#fff" stroke="#8f5b0e" stroke-width="4"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </main>
+
+  <footer class="transport">
+    <div class="tip" id="tip"></div>
+    <div class="transport-btns">
+      <button id="nextBtn" class="btn ghost">Next level ▶</button>
+      <button id="startBtn" class="btn primary">▶ Start</button>
+    </div>
+  </footer>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<script>
+"use strict";
+
+/* ---------- Balloon Breath ----------
+   One set = get ready (4 counts) → rounds of [breathe in, breathe out] with no hold → rest.
+   Breathing in eases the balloon full; breathing out empties it at a constant rate, because the air should be steady. */
+
+const $ = id => document.getElementById(id);
+
+const LEVELS = [
+  { inC: 4, outC: 4, name: "In 4 · Out 4" },
+  { inC: 4, outC: 8, name: "In 4 · Out 8" },
+  { inC: 2, outC: 8, name: "Quick breath · In 2 · Out 8" },
+  { inC: 4, outC: 12, name: "In 4 · Out 12" },
+  { inC: 4, outC: 16, name: "Challenge · In 4 · Out 16" }
+];
+
+const STAGES = {
+  breathe: {
+    ready: "Sit tall, feet flat, shoulders relaxed",
+    in: ["Breathe in", "Through your mouth, like a yawn"],
+    out: ["Breathe out", "Ssss… slow and steady"]
+  },
+  air: {
+    ready: "Mouthpiece resting lightly at your lips",
+    in: ["Breathe in", "Big, relaxed breath through your mouth"],
+    out: ["Blow", "Warm air through the mouthpiece. No buzz yet!"]
+  }
+};
+
+const TIPS = [
+  "<b>No holding your breath.</b> Breathe in, then turn the air straight around.",
+  "<b>Shoulders stay still.</b> The air goes low, into your belly and back.",
+  "<b>Steady air.</b> The same amount from the first count to the last.",
+  "<b>Feeling dizzy?</b> Stop, sit, and breathe normally."
+];
+
+const S_MIN = 0.42, S_MAX = 1, S_IDLE = 0.55, REST_SECONDS = 10;
+
+const state = { stage: "breathe", li: 0, bpm: 60, rounds: 3, sound: true, run: null, scale: S_IDLE, spin: 0, angle: 0, tip: 0, last: 0 };
+
+/* ---------- Sound ---------- */
+
+const Sound = (() => {
+  let ctx = null, bus = null, noise = null;
+
+  function ensure() {
+    if (!ctx) {
+      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function open() {
+    close();
+    bus = ctx.createGain();
+    bus.gain.value = 0.8;
+    bus.connect(ctx.destination);
+  }
+
+  function close() {
+    if (!bus) return;
+    const b = bus, t = ctx.currentTime;
+    bus = null;
+    b.gain.cancelScheduledValues(0);
+    b.gain.setValueAtTime(b.gain.value, t);
+    b.gain.linearRampToValueAtTime(0, t + 0.05);
+    setTimeout(() => b.disconnect(), 150);
+  }
+
+  function env(g, t, peak, attack, decay) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  }
+
+  // Soft mid-low tick, first count of each phase a little stronger.
+  function tick(t, accent) {
+    const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(accent ? 520 : 500, t);
+    o.frequency.exponentialRampToValueAtTime(400, t + 0.03);
+    f.type = "lowpass";
+    f.frequency.value = 1500;
+    env(g, t, accent ? 0.24 : 0.13, 0.003, accent ? 0.08 : 0.05);
+    o.connect(f); f.connect(g); g.connect(bus);
+    o.start(t); o.stop(t + 0.12);
+  }
+
+  // Airy whoosh: rising for breathing in, falling for breathing out.
+  function breath(t, dur, rising) {
+    const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    n.buffer = noise;
+    f.type = "bandpass";
+    f.Q.value = 0.9;
+    f.frequency.setValueAtTime(rising ? 500 : 1400, t);
+    f.frequency.exponentialRampToValueAtTime(rising ? 1400 : 500, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.1, t + dur * 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    n.connect(f); f.connect(g); g.connect(bus);
+    n.start(t); n.stop(t + dur + 0.05);
+  }
+
+  function chime(t) {
+    [523.25, 659.25, 783.99].forEach((hz, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), at = t + i * 0.12;
+      o.type = "sine";
+      o.frequency.value = hz;
+      env(g, at, 0.22, 0.01, 1.1);
+      o.connect(g); g.connect(bus);
+      o.start(at); o.stop(at + 1.2);
+    });
+  }
+
+  const now = () => ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
+  return { ensure, open, close, tick, breath, chime, now };
+})();
+
+/* ---------- Timeline ---------- */
+
+function buildRun() {
+  const L = LEVELS[state.li], beat = 60 / state.bpm;
+  const ctx = Sound.ensure();
+  Sound.open();
+  const segs = [];
+  let t = ctx.currentTime + 0.25;
+  const add = (type, counts, round, seconds) => {
+    const dur = seconds || counts * beat;
+    segs.push({ type, counts, round, start: t, end: t + dur });
+    t += dur;
+  };
+  add("ready", 4, 0);
+  for (let r = 1; r <= state.rounds; r++) { add("in", L.inC, r); add("out", L.outC, r); }
+  add("rest", 0, 0, REST_SECONDS);
+
+  if (state.sound) {
+    for (const s of segs) {
+      if (s.type === "rest") { Sound.chime(s.start); continue; }
+      for (let i = 0; i < s.counts; i++) Sound.tick(s.start + i * beat, i === 0);
+      if (s.type === "in") Sound.breath(s.start, Math.min(1, (s.end - s.start) * 0.8), true);
+      if (s.type === "out") Sound.breath(s.start, 1, false);
+    }
+  }
+  return { segs, beat, end: t, key: "", celebrated: false };
+}
+
+/* ---------- Screen ---------- */
+
+function setText(word, hint) {
+  $("phaseWord").textContent = word;
+  $("phaseHint").textContent = hint;
+}
+
+function setCount(value) {
+  const el = $("count");
+  const text = value === "" ? "" : String(value);
+  if (el.textContent === text) return;
+  el.textContent = text;
+  el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+}
+
+function setDots(n, on) {
+  const box = $("dots");
+  if (box.children.length !== n) {
+    box.textContent = "";
+    for (let i = 0; i < n; i++) box.appendChild(Object.assign(document.createElement("span"), { className: "dot" }));
+  }
+  [...box.children].forEach((d, i) => d.classList.toggle("on", i < on));
+}
+
+function showIdle(word = state.stage === "air" ? "Mouthpiece air" : "Balloon Breath", hint = "Press Start") {
+  $("stage").dataset.phase = "idle";
+  setText(word, hint);
+  setCount("");
+  setDots(0, 0);
+  $("roundInfo").textContent = "";
+}
+
+function showSegment(run, seg, count) {
+  const st = STAGES[state.stage];
+  $("stage").dataset.phase = seg.type;
+  if (seg.type === "rest") {
+    if (!run.celebrated) { run.celebrated = true; confetti(); }
+    setText("Rest", "Great breathing! Now breathe normally.");
+    setCount(count);
+    setDots(0, 0);
+    $("roundInfo").textContent = "";
+    return;
+  }
+  if (seg.type === "ready") {
+    setText("Get ready", st.ready);
+    $("roundInfo").textContent = "";
+  } else {
+    setText(...st[seg.type]);
+    $("roundInfo").textContent = `Round ${seg.round} of ${state.rounds}`;
+  }
+  setCount(count);
+  setDots(seg.counts, count);
+}
+
+function updateButtons() {
+  const running = !!state.run;
+  $("startBtn").textContent = running ? "■ Stop" : $("stage").dataset.phase === "done" ? "↻ Again" : "▶ Start";
+  $("nextBtn").disabled = running || state.li === LEVELS.length - 1;
+}
+
+function updateHeader() {
+  $("levelNum").textContent = `Level ${state.li + 1}`;
+  $("levelName").textContent = LEVELS[state.li].name;
+  document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i === state.li)));
+}
+
+function showTip() {
+  $("tip").innerHTML = TIPS[state.tip % TIPS.length];
+}
+
+/* ---------- Control ---------- */
+
+function start() {
+  state.tip++;
+  showTip();
+  state.run = buildRun();
+  updateButtons();
+}
+
+function stop(message) {
+  Sound.close();
+  state.run = null;
+  showIdle(message ? "Stopped" : undefined, message ? "Press Start to begin again" : undefined);
+  updateButtons();
+}
+
+function finish() {
+  Sound.close();
+  state.run = null;
+  $("stage").dataset.phase = "done";
+  setText("Well done!", LEVELS[state.li + 1] ? "Again, or try the next level?" : "You finished the challenge level!");
+  setCount("");
+  setDots(0, 0);
+  updateButtons();
+}
+
+function setLevel(i) {
+  if (state.run) stop();
+  state.li = i;
+  updateHeader();
+  showIdle();
+  updateButtons();
+}
+
+function setStage(s) {
+  if (state.run) stop();
+  state.stage = s;
+  $("stBreathe").setAttribute("aria-pressed", String(s === "breathe"));
+  $("stAir").setAttribute("aria-pressed", String(s === "air"));
+  $("airParts").style.display = s === "air" ? "" : "none";
+  $("balloonPos").setAttribute("transform", s === "air" ? "translate(0 0)" : "translate(400 0)");
+  showIdle(s === "air" ? "Mouthpiece air" : "Balloon Breath");
+  updateButtons();
+}
+
+/* ---------- Animation ---------- */
+
+const SVGNS = "http://www.w3.org/2000/svg";
+const particles = Array.from({ length: 48 }, () => {
+  const el = document.createElementNS(SVGNS, "circle");
+  el.setAttribute("fill", "#ffffff");
+  el.setAttribute("stroke", "#8cc8f5");
+  el.setAttribute("stroke-width", "2");
+  el.setAttribute("opacity", "0");
+  $("particles").appendChild(el);
+  return { el, life: 0, x: 0, y: 0, vx: 0, vy: 0 };
+});
+let emitCarry = 0;
+
+function updateParticles(dt, emitting) {
+  if (emitting) {
+    emitCarry += dt * 28;
+    while (emitCarry >= 1) {
+      emitCarry -= 1;
+      const p = particles.find(q => q.life <= 0);
+      if (!p) break;
+      p.life = 1; p.x = 1024; p.y = 360 + (Math.random() - 0.5) * 18;
+      p.vx = 290 + Math.random() * 70; p.vy = -60 + (Math.random() - 0.5) * 60;
+      p.el.setAttribute("r", (5 + Math.random() * 5).toFixed(1));
+    }
+  }
+  for (const p of particles) {
+    if (p.life <= 0) continue;
+    p.life -= dt / 0.95;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.el.setAttribute("cx", p.x.toFixed(1));
+    p.el.setAttribute("cy", p.y.toFixed(1));
+    p.el.setAttribute("opacity", p.life <= 0 ? "0" : (Math.min(1, p.life * 3) * 0.9).toFixed(2));
+  }
+}
+
+function frame(ts) {
+  const dt = Math.min(0.05, ((ts - (state.last || ts)) / 1000));
+  state.last = ts;
+  let spinTarget = 0, emitting = false;
+  const run = state.run;
+
+  if (run) {
+    const now = Sound.now();
+    if (now >= run.end) finish();
+    else {
+      const seg = run.segs.find(s => now < s.end);
+      const into = Math.max(0, now - seg.start);
+      const p = Math.min(1, into / (seg.end - seg.start));
+      const count = seg.type === "rest" ? Math.max(1, Math.ceil(seg.end - now)) : Math.min(seg.counts, Math.floor(into / run.beat) + 1);
+      const key = `${seg.type}${seg.round}:${count}`;
+      if (key !== run.key) { run.key = key; showSegment(run, seg, count); }
+      if (seg.type === "in") state.scale = S_MIN + (S_MAX - S_MIN) * (0.5 - Math.cos(Math.PI * p) / 2);
+      else if (seg.type === "out") { state.scale = S_MAX - (S_MAX - S_MIN) * p; spinTarget = 9; emitting = state.stage === "air"; }
+      else state.scale += (S_MIN - state.scale) * Math.min(1, dt * 3);
+    }
+  } else {
+    state.scale += (S_IDLE - state.scale) * Math.min(1, dt * 3);
+  }
+
+  $("balloonScale").setAttribute("transform", `translate(400 574) scale(${state.scale.toFixed(4)}) translate(-400 -574)`);
+  state.spin += (spinTarget - state.spin) * Math.min(1, dt * (spinTarget ? 4 : 1.2));
+  state.angle = (state.angle + state.spin * dt * 57.3) % 360;
+  $("blades").setAttribute("transform", `rotate(${state.angle.toFixed(2)})`);
+  if (state.stage === "air") updateParticles(dt, emitting);
+  requestAnimationFrame(frame);
+}
+
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = $("confetti"), g = c.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  const W = innerWidth, H = innerHeight;
+  c.width = W * dpr; c.height = H * dpr;
+  g.scale(dpr, dpr);
+  const colors = ["#1a7fe2", "#17905a", "#e3a92b", "#ff6f59", "#7a5cf0"];
+  const ps = Array.from({ length: 140 }, () => ({
+    x: W * (0.25 + Math.random() * 0.5), y: H * 0.6,
+    vx: (Math.random() - 0.5) * 16, vy: -(9 + Math.random() * 13),
+    s: 7 + Math.random() * 7, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3,
+    c: colors[Math.floor(Math.random() * colors.length)]
+  }));
+  const t0 = performance.now();
+  (function draw(now) {
+    const t = now - t0;
+    g.clearRect(0, 0, W, H);
+    for (const p of ps) {
+      p.vy += 0.45; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      g.save(); g.translate(p.x, p.y); g.rotate(p.r);
+      g.globalAlpha = Math.max(0, 1 - t / 2200);
+      g.fillStyle = p.c; g.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * 0.66);
+      g.restore();
+    }
+    if (t < 2200) requestAnimationFrame(draw); else g.clearRect(0, 0, W, H);
+  })(t0);
+}
+
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else {
+      const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (_) { /* not allowed here */ }
+}
+
+/* ---------- Wiring ---------- */
+
+LEVELS.forEach((L, i) => {
+  const b = document.createElement("button");
+  b.className = "lvl";
+  b.id = "lvl" + (i + 1);
+  b.textContent = i + 1;
+  b.title = `Level ${i + 1}: ${L.name}`;
+  b.setAttribute("aria-label", b.title);
+  b.addEventListener("click", () => setLevel(i));
+  $("levels").appendChild(b);
+});
+
+$("stBreathe").addEventListener("click", () => setStage("breathe"));
+$("stAir").addEventListener("click", () => setStage("air"));
+$("startBtn").addEventListener("click", () => (state.run ? stop(true) : start()));
+$("nextBtn").addEventListener("click", () => { if (state.li < LEVELS.length - 1) setLevel(state.li + 1); });
+$("tempo").addEventListener("input", e => { state.bpm = +e.target.value; $("tempoOut").textContent = state.bpm; });
+$("rounds").addEventListener("change", e => { state.rounds = +e.target.value; });
+$("sound").addEventListener("change", e => { state.sound = e.target.checked; });
+$("fullscreen").addEventListener("click", toggleFullscreen);
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b && e.detail) b.blur();
+});
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target, k = e.key;
+  if ((k === " " || k === "Enter") && (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.type === "checkbox")) return;
+  const onRange = t.type === "range";
+  if (k === " " || k === "Enter" || k === "PageDown") { e.preventDefault(); state.run ? stop(true) : start(); }
+  else if ((k === "ArrowRight" && !onRange) && !state.run && state.li < LEVELS.length - 1) { e.preventDefault(); setLevel(state.li + 1); }
+  else if (k === "f" || k === "F") toggleFullscreen();
+});
+
+const rootEl = document.documentElement;
+if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+updateHeader();
+showIdle();
+showTip();
+updateButtons();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
