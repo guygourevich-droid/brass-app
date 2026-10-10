@@ -24,6 +24,7 @@ Music teacher's toolkit for brass and rhythm lessons: kids 9–12, projected in 
 - `note-names.html` — note reading: `INSTRUMENTS` holds clef, transposition and first notes in teaching order (trumpet/horn written C4→C5, trombone B♭2→B♭3); level n = first n+1 notes. Clefs/notes drawn with the Bravura font (SMuFL code points).
 - `ramzor.html` — the traffic light: three lamps (octagon/triangle/circle), teacher-controlled, optional hold bar, works from a presentation clicker. No microphone, no network: this is the fallback if anything else fails.
 - `sound-game.html` — microphone games. Level 1 any sound fills a balloon (no pitch), level 2 the bird mirrors pitch (no target), level 3 one target note with a band, hold ring and balloon. `detect()` is McLeod-style on a signal decimated to ~8 kHz, searched only within ±7 semitones of the target. `?test=1` injects a tone so detection can be checked without a microphone (`&cents=100`, `?test=harm` for a missing fundamental).
+- `right-note.html` — the staff exercise: target note + the note actually played, teacher picks which written notes are in play (per instrument, saved in localStorage), hold to win, then it moves to another chosen note. Hebrew note names only.
 - `clap-along.html` — rhythm game. Sections: rhythm model (`LEVELS`, `STARTS`, generator, quiz distractors) → SVG notation → Web Audio (`Sound`) → game state and wiring.
 - `fonts/Bravura.woff2` — music symbol font (SIL OFL), needed offline for Note Names.
 - `sw.js` — network-first with 3 s timeout, cache fallback.

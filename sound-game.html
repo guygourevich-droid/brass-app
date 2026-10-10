@@ -86,7 +86,7 @@
     <div class="seg" role="group" aria-label="שלב">
       <button id="lv1" class="seg-btn" aria-pressed="true">1</button>
       <button id="lv2" class="seg-btn" aria-pressed="false">2</button>
-      <button id="lv3" class="seg-btn" aria-pressed="false">3</button>
+      <a id="lv3link" class="seg-btn" href="right-note.html" style="text-decoration:none;line-height:40px">צליל נכון ←</a>
     </div>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
@@ -558,7 +558,7 @@ function bump() {
 function updateHeader() {
   const I = INSTRUMENTS[state.inst];
   for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
-  [1, 2, 3].forEach(n => $("lv" + n).setAttribute("aria-pressed", String(n === state.level)));
+  [1, 2].forEach(n => $("lv" + n).setAttribute("aria-pressed", String(n === state.level)));
   $("targetName").innerHTML = state.level === 3 ? `${I.name} <bdi lang="en">(${I.latin})</bdi>` : "";
   $("tone").hidden = state.level !== 3;
 }
@@ -621,8 +621,9 @@ function frame(now) {
 /* ---------- Wiring ---------- */
 
 for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
-[1, 2, 3].forEach(n => $("lv" + n).addEventListener("click", () => setLevel(n)));
+[1, 2].forEach(n => $("lv" + n).addEventListener("click", () => setLevel(n)));
 $("startBtn").addEventListener("click", startMic);
+$("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });  // the whole start screen is the button
 $("tone").addEventListener("click", playReference);
 $("fullscreen").addEventListener("click", toggleFullscreen);
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
@@ -635,7 +636,7 @@ document.addEventListener("keydown", e => {
   if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); nextTurn(); }
   else if (c === "Digit1") setLevel(1);
   else if (c === "Digit2") setLevel(2);
-  else if (c === "Digit3") setLevel(3);
+  else if (c === "Digit3") location.href = "right-note.html";
   else if (c === "KeyT") playReference();
   else if (c === "KeyR") { state.noiseFloor = 0.002; }
   else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
@@ -647,7 +648,7 @@ let saved = null;
 try { saved = localStorage.getItem("brass-inst"); } catch (_) {}
 if (INSTRUMENTS[params.get("inst")]) state.inst = params.get("inst");
 else if (INSTRUMENTS[saved]) state.inst = saved;
-if (/^[123]$/.test(params.get("level") || "")) state.level = +params.get("level");
+if (/^[12]$/.test(params.get("level") || "")) state.level = +params.get("level");
 if (params.get("diag") === "1") $("diag").hidden = false;
 
 if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
