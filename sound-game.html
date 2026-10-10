@@ -142,10 +142,11 @@ const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
 // A written midi note -> the nearest line or space, plus any accidental and how far off it is.
 function spell(midi) {
   const pc = ((Math.round(midi) % 12) + 12) % 12;
-  const octave = Math.floor(Math.round(midi) / 12) - 1;
+  let octave = Math.floor(Math.round(midi) / 12) - 1;
   let step = 0, alter = 0;
   for (let i = 6; i >= 0; i--) if (SEMITONE[i] <= pc) { step = i; alter = pc - SEMITONE[i]; break; }
-  if (alter > 1) { step = (step + 1) % 7; alter = -1; }      // prefer a flat over a double sharp
+  // Brass reads flats: B♭ and E♭, never A♯ or D♯.
+  if (alter > 0) { step = (step + 1) % 7; alter = -1; if (step === 0) octave += 1; }      // prefer a flat over a double sharp
   return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
 }
 const diatonicOf = sp => sp.octave * 7 + sp.step;
@@ -613,7 +614,7 @@ function frame(now) {
       `עוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\n` +
       `צליל   ${state.freq ? state.freq.toFixed(0) + " Hz" : "—"}\n` +
       `דיוק   ${state.cents === null ? "—" : (state.cents > 0 ? "+" : "") + state.cents.toFixed(0)}\n` +
-      `v6`;
+      `v8`;
   }
   requestAnimationFrame(frame);
 }

@@ -176,10 +176,11 @@ const state = {
 
 function spell(midi) {
   const pc = ((Math.round(midi) % 12) + 12) % 12;
-  const octave = Math.floor(Math.round(midi) / 12) - 1;
+  let octave = Math.floor(Math.round(midi) / 12) - 1;
   let step = 0, alter = 0;
   for (let i = 6; i >= 0; i--) if (SEMITONE[i] <= pc) { step = i; alter = pc - SEMITONE[i]; break; }
-  if (alter > 1) { step = (step + 1) % 7; alter = -1; }
+  // Brass reads flats: B♭ and E♭, never A♯ or D♯.
+  if (alter > 0) { step = (step + 1) % 7; alter = -1; if (step === 0) octave += 1; }
   return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
 }
 const diatonicOf = sp => sp.octave * 7 + sp.step;
@@ -454,7 +455,7 @@ function frame(now) {
   if (!$("diag").hidden) {
     const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
     const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
-    $("diag").textContent = `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.freq ? state.freq.toFixed(0) + " Hz" : "—"}\nדיוק   ${state.cents === null ? "—" : (state.cents > 0 ? "+" : "") + state.cents.toFixed(0)}\nv7`;
+    $("diag").textContent = `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.freq ? state.freq.toFixed(0) + " Hz" : "—"}\nדיוק   ${state.cents === null ? "—" : (state.cents > 0 ? "+" : "") + state.cents.toFixed(0)}\nv8`;
   }
   requestAnimationFrame(frame);
 }
