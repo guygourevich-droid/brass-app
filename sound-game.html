@@ -61,7 +61,7 @@
   .big-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .6em 1.6em; cursor: pointer; min-height: 56px; }
   .big-btn:hover { background: #0f63b8; }
 
-  .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; background: rgba(13, 17, 23, .82); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; direction: ltr; text-align: left; font-variant-numeric: tabular-nums; white-space: pre; }
+  .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; direction: rtl; text-align: right; background: rgba(13, 17, 23, .82); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; font-variant-numeric: tabular-nums; white-space: pre; }
   .diag[hidden] { display: none; }
 
   .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
@@ -125,13 +125,32 @@
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
 
+// written = concert + toWritten. The child always sees the written note in their own clef.
 const INSTRUMENTS = {
-  trumpet:  { he: "חצוצרה", target: 349.23, name: "סוֹל", latin: "G", lo: 180, hi: 900 },
-  trombone: { he: "טרומבון", target: 174.61, name: "פָה",  latin: "F", lo: 90,  hi: 500 },
-  horn:     { he: "קרן",    target: 261.63, name: "סוֹל", latin: "G", lo: 140, hi: 700 }
+  trumpet:  { he: "חצוצרה", target: 349.23, written: 67, toWritten: 2, clef: "treble", name: "סוֹל", latin: "G", lo: 180, hi: 900 },
+  trombone: { he: "טרומבון", target: 174.61, written: 53, toWritten: 0, clef: "bass",   name: "פָה",  latin: "F", lo: 90,  hi: 500 },
+  horn:     { he: "קרן",    target: 261.63, written: 67, toWritten: 7, clef: "treble", name: "סוֹל", latin: "G", lo: 140, hi: 700 }
 };
 
-const HOLD_SECONDS = 1.5;       // level 3: how long the note must stay in the band
+// Bravura (SMuFL): font-size = 4 staff spaces, every symbol sits on its reference line.
+const GLYPH = { gClef: "\uE050", fClef: "\uE062", flat: "\uE260", sharp: "\uE262", head: "\uE0A4", headOpen: "\uE0A3" };
+const MUSIC_FONT = "font-family: Bravura";
+const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
+const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
+
+// A written midi note -> the nearest line or space, plus any accidental and how far off it is.
+function spell(midi) {
+  const pc = ((Math.round(midi) % 12) + 12) % 12;
+  const octave = Math.floor(Math.round(midi) / 12) - 1;
+  let step = 0, alter = 0;
+  for (let i = 6; i >= 0; i--) if (SEMITONE[i] <= pc) { step = i; alter = pc - SEMITONE[i]; break; }
+  if (alter > 1) { step = (step + 1) % 7; alter = -1; }      // prefer a flat over a double sharp
+  return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
+}
+const diatonicOf = sp => sp.octave * 7 + sp.step;
+
+const HOLD_SECONDS = 3;         // level 3: hold the right note this long for the reward
 const GOAL_SECONDS = [2, 3, 4]; // level 1: the three marks on the way up
 const IN_CENTS = 50, OUT_CENTS = 65;  // hysteresis, so a wobble does not reset the ring
 const GATE_DB = 12;             // decibels above the rolling noise floor
@@ -215,7 +234,6 @@ function startTestTone() {
   $("overlay").hidden = true;
   $("micDot").classList.add("on");
   $("micText").textContent = "בדיקה " + hz.toFixed(1) + " Hz";
-  $("diag").hidden = false;
 }
 
 function fail(message) {
@@ -280,8 +298,8 @@ function analyse() {
 
   const I = INSTRUMENTS[state.inst];
   let fMin, fMax;
-  if (state.level === 3) { fMin = I.target / 1.5; fMax = I.target * 1.5; }  // ±7 semitones: an octave error is impossible
-  else { fMin = I.lo; fMax = I.hi; }
+  // Level 3 must be able to show the note they really played, so it listens across the whole range.
+  fMin = I.lo; fMax = I.hi;
 
   const got = detect(deci, sr2, fMin, fMax);
   if (!got) { state.clarity = 0; return; }
@@ -355,12 +373,8 @@ function buildScene() {
   }
 
   if (state.level === 3) {
-    scene.band = el("rect", { x: 60, width: VW - 120, fill: "url(#hatch)", rx: 10 }, svg);
-    scene.bandTop = el("line", { x1: 60, x2: VW - 60, stroke: "#2fa36b", "stroke-width": 4, "stroke-dasharray": "18 14" }, svg);
-    scene.bandBottom = el("line", { x1: 60, x2: VW - 60, stroke: "#2fa36b", "stroke-width": 4, "stroke-dasharray": "18 14" }, svg);
-    scene.balloon = el("g", { opacity: 1 }, svg);
-    el("path", { d: "M 0 -54 C 30 -54 48 -34 48 -10 C 48 14 22 30 6 34 L -6 34 C -22 30 -48 14 -48 -10 C -48 -34 -30 -54 0 -54 Z", fill: "#ff6f59" }, scene.balloon);
-    el("path", { d: "M -7 33 L 7 33 L 4 44 L -4 44 Z", fill: "#c9392a" }, scene.balloon);
+    buildStaff(svg);
+    return;
   }
 
   scene.trail = el("path", { fill: "none", stroke: "#1a7fe2", "stroke-width": 6, "stroke-linecap": "round", opacity: .3 }, svg);
@@ -371,6 +385,52 @@ function buildScene() {
   scene.wing = el("path", { d: "M -10 -6 C -46 -42 -76 -30 -74 -6 C -52 2 -26 6 -10 -6 Z", fill: "#e09b00" }, scene.bird);
   el("circle", { cx: 26, cy: -12, r: 7, fill: "#15181d" }, scene.bird);
   el("path", { d: "M 52 -4 L 82 4 L 52 12 Z", fill: "#e2641f" }, scene.bird);
+}
+
+const S = 46, STAFF_X0 = 150, STAFF_X1 = 950, STAFF_TOP = 170;   // one staff space = S
+
+const staffY = diatonic => {
+  const bottom = INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;   // E4 or G2 on the bottom line
+  return STAFF_TOP + 4 * S - (diatonic - bottom) * S / 2;
+};
+
+function buildStaff(svg) {
+  const I = INSTRUMENTS[state.inst];
+  for (let i = 0; i < 5; i++)
+    el("line", { x1: STAFF_X0, x2: STAFF_X1, y1: STAFF_TOP + i * S, y2: STAFF_TOP + i * S, stroke: "#15181d", "stroke-width": Math.max(2, S * 0.1) }, svg);
+  const treble = I.clef === "treble";
+  el("text", { x: STAFF_X0 + 20, y: treble ? STAFF_TOP + 3 * S : STAFF_TOP + S, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, svg)
+    .textContent = treble ? GLYPH.gClef : GLYPH.fClef;
+
+  // The target: a hollow note the class is aiming at.
+  const tSpell = spell(I.written), tY = staffY(diatonicOf(tSpell));
+  scene.targetLedger = el("g", {}, svg);
+  ledgers(scene.targetLedger, 690, diatonicOf(tSpell));
+  scene.ring = el("circle", { cx: 716, cy: tY, r: 1.9 * S, fill: "none", stroke: "#2fa36b", "stroke-width": 12,
+    "stroke-linecap": "round", "stroke-dasharray": 2 * Math.PI * 1.9 * S, "stroke-dashoffset": 2 * Math.PI * 1.9 * S,
+    transform: `rotate(-90 716 ${tY})`, opacity: 0 }, svg);
+  scene.target = el("text", { x: 690, y: tY, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, svg);
+  scene.target.textContent = GLYPH.headOpen;
+
+  // Where the player actually is: a solid note that moves to whatever they play.
+  scene.playedG = el("g", { opacity: 0 }, svg);
+  scene.playedLedger = el("g", {}, svg);
+  scene.playedG.appendChild(scene.playedLedger);
+  scene.playedAcc = el("text", { "font-size": 4 * S, fill: "#1a7fe2", style: MUSIC_FONT }, scene.playedG);
+  scene.played = el("text", { "font-size": 4 * S, fill: "#1a7fe2", style: MUSIC_FONT }, scene.playedG);
+  scene.played.textContent = GLYPH.head;
+  scene.playedName = el("text", { "text-anchor": "middle", "font-size": 46, "font-weight": 800, fill: "#1a7fe2", style: "font-family: var(--display)", direction: "rtl" }, scene.playedG);
+  scene.arrow = el("path", { fill: "#1a7fe2", opacity: 0 }, svg);
+  scene.star = el("text", { x: 716, y: STAFF_TOP - 50, "text-anchor": "middle", "font-size": 90, opacity: 0 }, svg);
+  scene.star.textContent = "⭐";
+}
+
+function ledgers(group, x, diatonic) {
+  group.textContent = "";
+  const bottom = INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;
+  const pos = diatonic - bottom;                       // 0 = bottom line, 8 = top line
+  for (let q = -2; q >= pos; q -= 2) el("line", { x1: x - 18, x2: x + 1.9 * S + 18, y1: staffY(bottom + q), y2: staffY(bottom + q), stroke: "#15181d", "stroke-width": Math.max(2, S * 0.12) }, group);
+  for (let q = 10; q <= pos; q += 2) el("line", { x1: x - 18, x2: x + 1.9 * S + 18, y1: staffY(bottom + q), y2: staffY(bottom + q), stroke: "#15181d", "stroke-width": Math.max(2, S * 0.12) }, group);
 }
 
 function pitchToY(cents) {
@@ -397,7 +457,9 @@ function draw(dt) {
     return;
   }
 
-  // Levels 2 and 3: the bird follows the pitch. With no sound it simply waits where it is.
+  if (state.level === 3) return drawStaffLevel(dt);
+
+  // Level 2: the bird follows the pitch. With no sound it simply waits where it is.
   const heard = state.cents !== null && state.clarity > 0.5;
   if (heard) state.smoothCents += (state.cents - state.smoothCents) * Math.min(1, dt * 9);
   const y = heard ? pitchToY(state.smoothCents) : pitchToY(state.level === 3 ? 0 : state.smoothCents);
@@ -409,28 +471,62 @@ function draw(dt) {
   if (state.trail.length > 90) state.trail.shift();
   scene.trail.setAttribute("d", state.trail.map((p, i) => `${i ? "L" : "M"} ${(VW / 2 - (state.trail.length - i) * 4).toFixed(0)} ${p.y.toFixed(0)}`).join(" "));
 
-  if (state.level === 3) {
-    const half = (IN_CENTS / 350) * ((BOTTOM - TOP) / 2);
-    const mid = pitchToY(0);
-    scene.band.setAttribute("y", mid - half);
-    scene.band.setAttribute("height", half * 2);
-    scene.bandTop.setAttribute("y1", mid - half); scene.bandTop.setAttribute("y2", mid - half);
-    scene.bandBottom.setAttribute("y1", mid + half); scene.bandBottom.setAttribute("y2", mid + half);
-    scene.balloon.setAttribute("transform", `translate(${VW - 150} ${mid}) scale(1.1)`);
+}
 
-    const limit = state.inBand ? OUT_CENTS : IN_CENTS;
-    state.inBand = heard && Math.abs(state.smoothCents) < limit;
-    state.holdProgress = state.inBand
-      ? Math.min(1, state.holdProgress + dt / HOLD_SECONDS)
-      : Math.max(0, state.holdProgress - dt / (HOLD_SECONDS * 2));   // drains, never snaps
-    scene.ring.setAttribute("opacity", state.holdProgress > 0.02 ? 1 : 0);
-    scene.ring.setAttribute("stroke-dashoffset", 465 * (1 - state.holdProgress));
-    if (state.holdProgress >= 1) {
-      state.holdProgress = 0;
-      scene.balloon.setAttribute("opacity", 0);
-      burst(VW - 150, mid);
-      setTimeout(() => scene.balloon.setAttribute("opacity", 1), 1400);
+// Level 3: the target note and the note actually being played, on one staff.
+function drawStaffLevel(dt) {
+  const I = INSTRUMENTS[state.inst];
+  const heard = state.freq > 0 && state.clarity > 0.6 && state.soundOn && performance.now() > state.muteUntil;
+
+  if (heard) {
+    const writtenMidi = 69 + 12 * Math.log2(state.freq / 440) + I.toWritten;
+    const sp = spell(writtenMidi);
+    const offset = writtenMidi - Math.round(writtenMidi);          // sharp or flat within the note
+    const y = staffY(diatonicOf(sp)) - offset * S * 0.45;          // rides a little high or low
+    scene.playedG.setAttribute("opacity", 1);
+    scene.played.setAttribute("x", 400);
+    scene.played.setAttribute("y", y.toFixed(1));
+    scene.playedAcc.setAttribute("x", 400 - 1.4 * S);
+    scene.playedAcc.setAttribute("y", staffY(diatonicOf(sp)).toFixed(1));
+    scene.playedAcc.textContent = sp.alter === -1 ? GLYPH.flat : sp.alter === 1 ? GLYPH.sharp : "";
+    scene.playedName.setAttribute("x", 400 + 0.95 * S);
+    scene.playedName.setAttribute("y", STAFF_TOP + 4 * S + 2.6 * S);
+    scene.playedName.textContent = SOLFEGE[sp.step] + " (" + LETTERS[sp.step] + ")";
+    ledgers(scene.playedLedger, 400, diatonicOf(sp));
+
+    // An arrow only while they are on the wrong note, pointing the way to go.
+    const tY = staffY(diatonicOf(spell(I.written)));
+    const far = Math.abs(y - tY) > S * 0.5;
+    scene.arrow.setAttribute("opacity", far ? 1 : 0);
+    if (far) {
+      const up = y > tY, ax = 560, ay = (y + tY) / 2;
+      scene.arrow.setAttribute("d", up
+        ? `M ${ax} ${ay - 60} L ${ax + 42} ${ay + 20} L ${ax + 14} ${ay + 20} L ${ax + 14} ${ay + 70} L ${ax - 14} ${ay + 70} L ${ax - 14} ${ay + 20} L ${ax - 42} ${ay + 20} Z`
+        : `M ${ax} ${ay + 60} L ${ax + 42} ${ay - 20} L ${ax + 14} ${ay - 20} L ${ax + 14} ${ay - 70} L ${ax - 14} ${ay - 70} L ${ax - 14} ${ay - 20} L ${ax - 42} ${ay - 20} Z`);
     }
+  } else {
+    scene.playedG.setAttribute("opacity", 0);
+    scene.arrow.setAttribute("opacity", 0);
+  }
+
+  const cents = heard ? 1200 * Math.log2(state.freq / I.target) : null;
+  const limit = state.inBand ? OUT_CENTS : IN_CENTS;
+  state.inBand = cents !== null && Math.abs(cents) < limit;
+  state.holdProgress = state.inBand
+    ? Math.min(1, state.holdProgress + dt / HOLD_SECONDS)
+    : Math.max(0, state.holdProgress - dt / (HOLD_SECONDS * 2));    // drains, never snaps
+  const circ = 2 * Math.PI * 1.9 * S;
+  scene.ring.setAttribute("opacity", state.holdProgress > 0.02 ? 1 : 0);
+  scene.ring.setAttribute("stroke-dashoffset", circ * (1 - state.holdProgress));
+  scene.target.setAttribute("fill", state.inBand ? "#1b8f58" : "#15181d");
+
+  if (state.holdProgress >= 1) {
+    state.holdProgress = 0;
+    state.inBand = false;
+    const tY = staffY(diatonicOf(spell(I.written)));
+    burst(716, tY);
+    scene.star.setAttribute("opacity", 1);
+    setTimeout(() => scene.star.setAttribute("opacity", 0), 1800);
   }
 }
 
@@ -508,14 +604,16 @@ function frame(now) {
   const dt = Math.min(0.05, (now - (last || now)) / 1000);
   last = now;
   if (now - state.lastAnalyse > ANALYSE_MS) { state.lastAnalyse = now; analyse(); }
-  if (scene.bird || scene.balloon) draw(dt);
+  if (scene.bird || scene.balloon || scene.target) draw(dt);
   if (!$("diag").hidden) {
     const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
+    const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
     $("diag").textContent =
-      `v5  ${ctx ? ctx.sampleRate : "-"} Hz\n` +
-      `level ${db.toFixed(0)} dB  floor ${(20 * Math.log10(Math.max(state.noiseFloor, 1e-7))).toFixed(0)}\n` +
-      `pitch ${state.freq ? state.freq.toFixed(1) : "-"} Hz  clarity ${state.clarity.toFixed(2)}\n` +
-      `cents ${state.cents === null ? "-" : state.cents.toFixed(0)}  hold ${(state.holdProgress * 100).toFixed(0)}%`;
+      `בדיקת מיקרופון (D)\n` +
+      `עוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\n` +
+      `צליל   ${state.freq ? state.freq.toFixed(0) + " Hz" : "—"}\n` +
+      `דיוק   ${state.cents === null ? "—" : (state.cents > 0 ? "+" : "") + state.cents.toFixed(0)}\n` +
+      `v6`;
   }
   requestAnimationFrame(frame);
 }
