@@ -1,15 +1,19 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "brass-app-v4";
+const CACHE = "brass-app-v5";
 const FILES = [
   "./",
   "index.html",
+  "ramzor.html",
+  "sound-game.html",
   "balloon-breath.html",
   "buzz-along.html",
   "clap-along.html",
   "note-names.html",
   "manifest.json",
   "fonts/fonts.css",
+  "fonts/rubik-hebrew.woff2",
+  "fonts/rubik-latin.woff2",
   "fonts/Bravura.woff2",
   "fonts/lexend-400-700-latin.woff2",
   "fonts/atkinson-hyperlegible-400-latin.woff2",
@@ -20,7 +24,8 @@ const FILES = [
 ];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
+  // One missing file must not stop the whole update from installing.
+  event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(FILES.map(f => cache.add(f)))));
   self.skipWaiting();
 });
 
@@ -43,21 +48,25 @@ function fromNetwork(request) {
   });
 }
 
+// Store a copy, but never store a captive-portal page or an error over a good file.
+function keep(event, request, response) {
+  if (!response || !response.ok || response.type !== "basic") return;
+  const copy = response.clone();
+  event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
+}
+
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET" || new URL(request.url).origin !== location.origin) return;
   event.respondWith(
     fromNetwork(request)
       .then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put(request, copy));
-        }
+        keep(event, request, response);
         return response;
       })
       .catch(() =>
         caches.match(request, { ignoreSearch: true })
-          .then(saved => saved || (request.mode === "navigate" ? caches.match("index.html") : fetch(request)))
+          .then(saved => saved || (request.mode === "navigate" ? caches.match("index.html") : fetch(request).then(late => { keep(event, request, late); return late; })))
       )
   );
 });

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>רמזור · Brass App</title>
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --panel: #0d1117;
+    --ring: #d7dee8;
+    --red: #ef4136;
+    --red-ring: #ff9a93;
+    --amber: #f0a81e;
+    --amber-ring: #ffd27d;
+    --green: #22b268;
+    --green-ring: #87e3b4;
+    --chrome: #8b97a6;
+    --display: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--panel); color: #eef2f7; font-family: var(--display); overflow: hidden; }
+  button, select { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px var(--panel), 0 0 0 7px #7fb2ff; border-radius: 10px; }
+
+  .app { height: 100%; display: grid; grid-template-rows: 1fr auto; }
+
+  /* Stage: lamps on the inline-start side, the word beside them. Nothing in the bottom fifth — heads are there. */
+  .stage { display: flex; align-items: center; justify-content: center; gap: clamp(24px, 6vw, 120px); padding: 5vh 5vw 20vh; cursor: pointer; }
+  .lamps { display: flex; flex-direction: column; gap: 3vh; }
+  .lamp { height: clamp(90px, 20vh, 260px); width: auto; display: block; transform: scale(.9); transition: transform .2s; }
+  .shape { fill: none; stroke: var(--ring); stroke-width: 5; opacity: .5; transition: fill 120ms, opacity 120ms, stroke 120ms; }
+
+  .stage[data-light="red"] .lamp-red,
+  .stage[data-light="amber"] .lamp-amber,
+  .stage[data-light="green"] .lamp-green { transform: scale(1.15); }
+  .stage[data-light="red"] .lamp-red .shape { fill: var(--red); stroke: var(--red-ring); opacity: 1; transition-duration: 200ms; }
+  .stage[data-light="amber"] .lamp-amber .shape { fill: var(--amber); stroke: var(--amber-ring); opacity: 1; transition-duration: 200ms; }
+  .stage[data-light="green"] .lamp-green .shape { fill: var(--green); stroke: var(--green-ring); opacity: 1; transition-duration: 200ms; }
+
+  .word { font-weight: 900; font-size: clamp(44px, 11vh, 170px); line-height: 1.5; letter-spacing: 0; min-width: 5ch; text-align: center; }
+  .stage[data-light="red"] .word { color: var(--red); }
+  .stage[data-light="amber"] .word { color: var(--amber); }
+  .stage[data-light="green"] .word { color: var(--green); }
+  .stage.no-words .word { visibility: hidden; }
+
+  /* Hold bar: green shows its own end, so nobody plays until they collapse. */
+  .hold { position: fixed; inset-inline: 0; top: 0; height: 2.2vh; background: rgba(255, 255, 255, .08); }
+  .hold-bar { height: 100%; width: 100%; background: var(--green); transform-origin: right center; }
+
+  .chrome { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 10px clamp(12px, 3vw, 32px) 14px; border-top: 1px solid rgba(255, 255, 255, .12); color: var(--chrome); font-size: 14px; }
+  .chrome a { color: var(--chrome); text-decoration: none; }
+  .chrome a:hover { color: #cfe0ff; }
+  .spacer { margin-inline-start: auto; }
+  .ctl { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+  .ctl input { accent-color: #7fb2ff; width: 20px; height: 20px; }
+  .ctl select { background: #182029; border: 1px solid rgba(255, 255, 255, .18); border-radius: 10px; min-height: 36px; padding: 0 8px; }
+  .icon-btn { background: #182029; border: 1px solid rgba(255, 255, 255, .18); border-radius: 10px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; }
+  kbd { font-family: var(--display); font-size: 12px; border: 1px solid rgba(255, 255, 255, .25); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+  @media (prefers-reduced-motion: reduce) { .lamp, .shape { transition: none; } }
+  @media (prefers-contrast: more) { .shape { stroke-width: 7; opacity: .75; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="stage" id="stage" data-light="red" role="img" aria-label="רמזור">
+    <div class="lamps">
+      <svg class="lamp lamp-red" viewBox="0 0 100 100" aria-hidden="true"><polygon class="shape" points="31,3 69,3 97,31 97,69 69,97 31,97 3,69 3,31"/></svg>
+      <svg class="lamp lamp-amber" viewBox="0 0 100 100" aria-hidden="true"><polygon class="shape" points="50,5 97,93 3,93"/></svg>
+      <svg class="lamp lamp-green" viewBox="0 0 100 100" aria-hidden="true"><circle class="shape" cx="50" cy="50" r="46"/></svg>
+    </div>
+    <div class="word" id="word">עֲצוֹר</div>
+  </main>
+
+  <div class="hold" id="hold" hidden><div class="hold-bar" id="holdBar"></div></div>
+
+  <footer class="chrome">
+    <a href="index.html">‹ Brass App</a>
+    <span class="spacer"></span>
+    <label class="ctl" for="hold-len">החזקה<select id="hold-len">
+      <option value="0" selected>—</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+    </select></label>
+    <label class="ctl" for="words"><input id="words" type="checkbox" checked>מילים</label>
+    <label class="ctl" for="sound"><input id="sound" type="checkbox" checked>צליל</label>
+    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
+    <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> · <kbd>Space</kbd> · <kbd>B</kbd></span>
+    <span id="version">v5</span>
+  </footer>
+</div>
+<script>
+"use strict";
+
+/* ---------- Ramzor ----------
+   Teacher-controlled only. Red = instrument down, amber = get ready and breathe, green = play.
+   Colour is never the only channel: position (red on top), shape (octagon / triangle / circle),
+   fill versus outline, size, the word, and a short sound. The red lamp never flashes. */
+
+const $ = id => document.getElementById(id);
+const ORDER = ["red", "amber", "green"];
+const WORDS = { red: "עֲצוֹר", amber: "מוּכָנִים", green: "נַגְּנוּ", off: "" };
+const LABELS = { red: "אדום: כלי למטה", amber: "צהוב: מוכנים, נושמים", green: "ירוק: מנגנים", off: "רמזור כבוי" };
+const TONE = { red: 180, amber: 400, green: 620 };
+const MIN_GAP_MS = 250; // a projected full-screen colour change must never repeat faster than this
+
+const state = { light: "red", words: true, sound: true, hold: 0, lastChange: 0, holdTimer: 0, queued: 0 };
+
+/* ---------- Sound ---------- */
+
+let ctx = null;
+function beep(colour) {
+  if (!state.sound || colour === "off") return;
+  try {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume();
+    const t = ctx.currentTime + 0.01;
+    const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    o.type = colour === "red" ? "sine" : "triangle";
+    o.frequency.setValueAtTime(TONE[colour], t);
+    if (colour === "red") o.frequency.exponentialRampToValueAtTime(TONE.red * 0.7, t + 0.12);
+    f.type = "lowpass"; f.frequency.value = 2200;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.25, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (colour === "red" ? 0.25 : 0.16));
+    o.connect(f); f.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + 0.3);
+  } catch (_) { /* audio is a bonus here, never required */ }
+}
+
+/* ---------- The light ---------- */
+
+function setLight(colour, force) {
+  const now = performance.now();
+  // Never change a projected full-screen colour faster than MIN_GAP_MS, but don't lose the press either:
+  // hold it and apply it the moment the window opens.
+  if (!force && now - state.lastChange < MIN_GAP_MS) {
+    clearTimeout(state.queued);
+    state.queued = setTimeout(() => setLight(colour, true), MIN_GAP_MS - (now - state.lastChange));
+    return;
+  }
+  clearTimeout(state.queued);
+  state.lastChange = now;
+  state.light = colour;
+  const stage = $("stage");
+  stage.dataset.light = colour;
+  stage.setAttribute("aria-label", LABELS[colour]);
+  $("word").textContent = WORDS[colour];
+  beep(colour);
+  clearTimeout(state.holdTimer);
+  $("hold").hidden = true;
+  if (colour === "green" && state.hold > 0) startHold();
+}
+
+function advance(step) {
+  const i = ORDER.indexOf(state.light);
+  if (i < 0) { setLight("red"); return; }
+  setLight(ORDER[(i + step + ORDER.length) % ORDER.length]);
+}
+
+// Green shows its own end: the bar empties over the chosen count, then the light goes back to red.
+function startHold() {
+  const seconds = state.hold;
+  const bar = $("holdBar");
+  $("hold").hidden = false;
+  bar.style.transition = "none";
+  bar.style.transform = "scaleX(1)";
+  requestAnimationFrame(() => {
+    bar.style.transition = `transform ${seconds}s linear`;
+    bar.style.transform = "scaleX(0)";
+  });
+  state.holdTimer = setTimeout(() => setLight("red", true), seconds * 1000);
+}
+
+function toggleFullscreen() {
+  const d = document, root = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else {
+      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+      if (p && p.catch) p.catch(() => {});
+    }
+  } catch (_) { /* not allowed here */ }
+}
+
+/* ---------- Wiring ---------- */
+
+$("stage").addEventListener("click", () => advance(1));
+$("hold-len").addEventListener("change", e => { state.hold = +e.target.value; });
+$("words").addEventListener("change", e => { state.words = e.target.checked; $("stage").classList.toggle("no-words", !state.words); });
+$("sound").addEventListener("change", e => { state.sound = e.target.checked; });
+$("fullscreen").addEventListener("click", toggleFullscreen);
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b && e.detail) b.blur();
+});
+
+/* Keys are read from e.code, so they keep working with a Hebrew keyboard layout.
+   A presentation clicker sends PageDown/PageUp or the arrows; its blank-screen button sends B or period. */
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT") return;
+  const c = e.code;
+  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight" || c === "ArrowDown") { e.preventDefault(); advance(1); }
+  else if (c === "PageUp" || c === "ArrowLeft" || c === "ArrowUp") { e.preventDefault(); advance(-1); }
+  else if (c === "Digit1" || c === "Numpad1") setLight("red");
+  else if (c === "Digit2" || c === "Numpad2") setLight("amber");
+  else if (c === "Digit3" || c === "Numpad3") setLight("green");
+  else if (c === "KeyB" || c === "Period" || c === "Escape") setLight("off", true);
+  else if (c === "KeyF") toggleFullscreen();
+  else if (c === "KeyW") $("words").click();
+});
+
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+setLight("red", true);
+</script>
+</body>
+</html>

@@ -428,7 +428,7 @@ function updateHeader() {
   $("levelNotes").textContent = levelNotes().map(nameOf).join(" · ");
   $("info").textContent = I.info;
   document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i + 1 === state.level)));
-  for (const k in INSTRUMENTS) $("in" + INSTRUMENTS[k].label).setAttribute("aria-pressed", String(k === state.inst));
+  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
   $("mLearn").setAttribute("aria-pressed", String(state.mode === "learn"));
   $("mQuiz").setAttribute("aria-pressed", String(state.mode === "quiz"));
   $("nSolfege").setAttribute("aria-pressed", String(state.names === "solfege"));
@@ -506,7 +506,7 @@ for (let n = 1; n <= LEVEL_COUNT; n++) {
   $("levels").appendChild(b);
 }
 
-for (const k in INSTRUMENTS) $("in" + INSTRUMENTS[k].label).addEventListener("click", () => setInstrument(k));
+for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 $("mLearn").addEventListener("click", () => setMode("learn"));
 $("mQuiz").addEventListener("click", () => setMode("quiz"));
 $("nSolfege").addEventListener("click", () => setNames("solfege"));
@@ -527,9 +527,9 @@ document.addEventListener("keydown", e => {
   const native = t.tagName === "BUTTON" || t.type === "checkbox" || (t.classList && t.classList.contains("learn-note"));
   if ((k === " " || k === "Enter") && native) return;
   if (k === " " || k === "Enter" || k === "PageDown" || k === "ArrowRight") { e.preventDefault(); primary(); }
-  else if (state.mode === "quiz" && /^[1-9]$/.test(k)) { const b = $("answers").children[+k - 1]; if (b) answer(b.dataset.name); }
-  else if ((k === "h" || k === "H") && state.mode === "quiz") hear();
-  else if (k === "f" || k === "F") toggleFullscreen();
+  else if (state.mode === "quiz" && /^Digit[1-9]$/.test(e.code)) { const b = $("answers").children[+e.code.slice(5) - 1]; if (b) answer(b.dataset.name); }
+  else if (e.code === "KeyH" && state.mode === "quiz") hear();
+  else if (e.code === "KeyF") toggleFullscreen();
 });
 
 const rootEl = document.documentElement;

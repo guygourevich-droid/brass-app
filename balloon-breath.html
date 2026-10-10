@@ -182,9 +182,9 @@
           <g transform="translate(1300 300)">
             <g id="blades">
               <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#e3a92b"/>
-              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#ff6f59" transform="rotate(90)"/>
-              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#1a7fe2" transform="rotate(180)"/>
-              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#3cc48a" transform="rotate(270)"/>
+              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#d79a1f" transform="rotate(90)"/>
+              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#f0c871" transform="rotate(180)"/>
+              <path d="M 0 0 L 0 -132 C 72 -122 106 -60 0 0 Z" fill="#c2870d" transform="rotate(270)"/>
             </g>
             <circle r="14" fill="#fff" stroke="#8f5b0e" stroke-width="4"/>
           </g>
@@ -240,6 +240,9 @@ const TIPS = [
 ];
 
 const S_MIN = 0.42, S_MAX = 1, S_IDLE = 0.55, REST_SECONDS = 10;
+// Four blades at 2 Hz or more read as a flashing light on a projector; keep the spin well under that, and off entirely for reduced motion.
+const REDUCED_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const SPIN_MAX = REDUCED_MOTION ? 0 : 3.1;
 
 const state = { stage: "breathe", li: 0, bpm: 60, rounds: 3, sound: true, run: null, scale: S_IDLE, spin: 0, angle: 0, tip: 0, last: 0 };
 
@@ -522,7 +525,7 @@ function frame(ts) {
       const key = `${seg.type}${seg.round}:${count}`;
       if (key !== run.key) { run.key = key; showSegment(run, seg, count); }
       if (seg.type === "in") state.scale = S_MIN + (S_MAX - S_MIN) * (0.5 - Math.cos(Math.PI * p) / 2);
-      else if (seg.type === "out") { state.scale = S_MAX - (S_MAX - S_MIN) * p; spinTarget = 9; emitting = state.stage === "air"; }
+      else if (seg.type === "out") { state.scale = S_MAX - (S_MAX - S_MIN) * p; spinTarget = SPIN_MAX; emitting = state.stage === "air" && !REDUCED_MOTION; }
       else state.scale += (S_MIN - state.scale) * Math.min(1, dt * 3);
     }
   } else {
@@ -610,7 +613,7 @@ document.addEventListener("keydown", e => {
   const onRange = t.type === "range";
   if (k === " " || k === "Enter" || k === "PageDown") { e.preventDefault(); state.run ? stop(true) : start(); }
   else if ((k === "ArrowRight" && !onRange) && !state.run && state.li < LEVELS.length - 1) { e.preventDefault(); setLevel(state.li + 1); }
-  else if (k === "f" || k === "F") toggleFullscreen();
+  else if (e.code === "KeyF") toggleFullscreen();
 });
 
 const rootEl = document.documentElement;

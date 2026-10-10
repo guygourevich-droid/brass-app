@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>צליל · Brass App</title>
+<meta name="theme-color" content="#bfe4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #56616f;
+    --line: rgba(21, 24, 29, .14);
+    --panel: rgba(255, 255, 255, .92);
+    --sky-1: #bfe4ff;
+    --sky-2: #e8f4ff;
+    --sky-3: #fff4e3;
+    --go: #1b8f58;
+    --accent: #1a7fe2;
+    --display: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 55%, var(--sky-3) 100%) fixed; overflow: hidden; }
+  button, select { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); border-radius: 12px; }
+
+  .app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px clamp(12px, 3vw, 28px); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .console a { color: var(--muted); text-decoration: none; }
+  .spacer { margin-inline-start: auto; }
+  .seg { display: inline-flex; background: var(--panel); border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; min-height: 38px; padding: 0 14px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 500; }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .18); }
+  .icon-btn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; }
+  .mic-dot { width: 12px; height: 12px; border-radius: 50%; background: #c3ccd8; display: inline-block; vertical-align: -1px; }
+  .mic-dot.on { background: var(--go); }
+
+  /* Stage */
+  .stage { position: relative; min-height: 0; padding: 1vh clamp(8px, 2vw, 24px) 0; }
+  .scene { width: 100%; height: 100%; display: block; direction: ltr; }
+
+  .headline { position: absolute; inset-inline: 0; top: 2vh; text-align: center; pointer-events: none; }
+  .target-name { font-weight: 900; font-size: clamp(32px, 9vh, 120px); line-height: 1; color: var(--ink); }
+  .target-name bdi { color: var(--muted); font-size: .45em; font-weight: 700; }
+
+  /* Start / error overlay */
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .82); text-align: center; padding: 4vh 6vw; }
+  .overlay[hidden] { display: none; }
+  .overlay p { margin: 0 0 2vh; font-size: clamp(18px, 3.2vh, 30px); font-weight: 500; max-width: 24ch; line-height: 1.5; }
+  .big-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .6em 1.6em; cursor: pointer; min-height: 56px; }
+  .big-btn:hover { background: #0f63b8; }
+
+  .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; background: rgba(13, 17, 23, .82); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; direction: ltr; text-align: left; font-variant-numeric: tabular-nums; white-space: pre; }
+  .diag[hidden] { display: none; }
+
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .turns { display: inline-flex; gap: 8px; }
+  .turn { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--accent); opacity: .45; }
+  .turn.on { background: var(--accent); opacity: 1; }
+  .count { font-weight: 800; font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="console">
+    <a href="index.html">‹ Brass App</a>
+    <div class="seg" role="group" aria-label="כלי">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true">חצוצרה</button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false">קרן</button>
+    </div>
+    <div class="seg" role="group" aria-label="שלב">
+      <button id="lv1" class="seg-btn" aria-pressed="true">1</button>
+      <button id="lv2" class="seg-btn" aria-pressed="false">2</button>
+      <button id="lv3" class="seg-btn" aria-pressed="false">3</button>
+    </div>
+    <span class="spacer"></span>
+    <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
+    <button id="tone" class="icon-btn" title="לשמוע את הצליל (T)">🔊</button>
+    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="משחק הצליל"></svg>
+    <div class="headline"><div class="target-name" id="targetName"></div></div>
+    <div class="overlay" id="overlay">
+      <div>
+        <p id="overlayText">נלחץ ונתחיל להקשיב</p>
+        <button class="big-btn" id="startBtn">התחלה</button>
+      </div>
+    </div>
+    <div class="diag" id="diag" hidden></div>
+  </main>
+
+  <footer class="transport">
+    <span class="turns" id="turns" aria-label="תורות"></span>
+    <span class="count" id="counter">0</span>
+    <span class="spacer"></span>
+    <span><kbd>Space</kbd> תור הבא · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> שלב · <kbd>T</kbd> צליל · <kbd>R</kbd> כיול · <kbd>D</kbd> מידע</span>
+  </footer>
+</div>
+<script>
+"use strict";
+
+/* ---------- Sound game ----------
+   Level 1: any sound at all fills a balloon (no pitch).
+   Level 2: the bird mirrors the pitch, with no target and no score.
+   Level 3: one target note, a wide band, hold it and a balloon pops.
+   Silence is a waiting state, never a failure: nothing ever turns red and nothing falls. */
+
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+const INSTRUMENTS = {
+  trumpet:  { he: "חצוצרה", target: 349.23, name: "סוֹל", latin: "G", lo: 180, hi: 900 },
+  trombone: { he: "טרומבון", target: 174.61, name: "פָה",  latin: "F", lo: 90,  hi: 500 },
+  horn:     { he: "קרן",    target: 261.63, name: "סוֹל", latin: "G", lo: 140, hi: 700 }
+};
+
+const HOLD_SECONDS = 1.5;       // level 3: how long the note must stay in the band
+const GOAL_SECONDS = [2, 3, 4]; // level 1: the three marks on the way up
+const IN_CENTS = 50, OUT_CENTS = 65;  // hysteresis, so a wobble does not reset the ring
+const GATE_DB = 12;             // decibels above the rolling noise floor
+const ANALYSE_MS = 50;
+
+const state = {
+  inst: "trumpet", level: 1, turns: 6, turn: 0, counter: 0,
+  listening: false, level1Held: 0, holdProgress: 0, inBand: false,
+  rms: 0, smoothRms: 0, cents: null, smoothCents: 0, freq: 0, clarity: 0,
+  noiseFloor: 0.002, soundOn: false, soundSince: 0, muteUntil: 0, lastAnalyse: 0, trail: []
+};
+
+/* ---------- Audio ---------- */
+
+let ctx = null, analyser = null, micStream = null, raw = null, deci = null;
+
+function ensureCtx() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+async function startMic() {
+  ensureCtx();                                  // created inside the click, before any await
+  if (new URLSearchParams(location.search).get("test")) return startTestTone();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+  }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+  } catch (err) {
+    const msg = err && err.name === "NotAllowedError" ? "אין אישור למיקרופון"
+      : err && err.name === "NotFoundError" ? "לא נמצא מיקרופון"
+      : err && err.name === "NotReadableError" ? "המיקרופון תפוס בתוכנה אחרת"
+      : "לא הצלחנו לפתוח את המיקרופון";
+    return fail(msg);
+  }
+  const src = ctx.createMediaStreamSource(micStream);
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  src.connect(analyser);                        // never connected to the speakers
+  raw = new Float32Array(analyser.fftSize);
+  state.listening = true;
+  state.noiseFloor = 0.002;
+  $("overlay").hidden = true;
+  $("micDot").classList.add("on");
+  $("micText").textContent = "מקשיב";
+  micStream.getAudioTracks().forEach(t => {
+    t.addEventListener("ended", () => fail("המיקרופון נותק"));
+    t.addEventListener("mute", () => { $("micText").textContent = "מושתק"; });
+    t.addEventListener("unmute", () => { $("micText").textContent = "מקשיב"; });
+  });
+}
+
+// Test hook: feed a known tone straight into the analyser so detection can be checked without a microphone.
+// ?test=1 plays the target; ?test=1&cents=100 plays a semitone above; ?test=harm plays harmonics 2-5 only.
+function startTestTone() {
+  const q = new URLSearchParams(location.search);
+  const I = INSTRUMENTS[state.inst];
+  const hz = I.target * Math.pow(2, (+(q.get("cents") || 0)) / 1200);
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  const g = ctx.createGain();
+  g.gain.value = 0.25;
+  const partials = q.get("test") === "harm" ? [2, 3, 4, 5] : [1];
+  for (const n of partials) {
+    const o = ctx.createOscillator();
+    o.type = "sine";
+    o.frequency.value = hz * n;
+    o.connect(g);
+    o.start();
+  }
+  g.connect(analyser);
+  raw = new Float32Array(analyser.fftSize);
+  state.listening = true;
+  state.noiseFloor = 0.00001;
+  $("overlay").hidden = true;
+  $("micDot").classList.add("on");
+  $("micText").textContent = "בדיקה " + hz.toFixed(1) + " Hz";
+  $("diag").hidden = false;
+}
+
+function fail(message) {
+  state.listening = false;
+  $("overlay").hidden = false;
+  $("overlayText").textContent = message;
+  $("startBtn").textContent = "לנסות שוב";
+  $("micDot").classList.remove("on");
+  $("micText").textContent = "ללא מיקרופון";
+}
+
+function stopMic() {
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  micStream = null;
+  state.listening = false;
+  $("micDot").classList.remove("on");
+}
+addEventListener("pagehide", stopMic);
+document.addEventListener("visibilitychange", () => { if (document.hidden) stopMic(); });
+
+// The reference tone must never be heard as the child: the detector is muted while it sounds.
+function playReference() {
+  const c = ensureCtx(), t = c.currentTime + 0.05, hz = INSTRUMENTS[state.inst].target;
+  const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+  o.type = "sawtooth"; o.frequency.value = hz;
+  f.type = "lowpass"; f.frequency.value = Math.min(5000, hz * 6); f.Q.value = 1;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.16, t + 0.05);
+  g.gain.setValueAtTime(0.16, t + 1.1);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+  o.connect(f); f.connect(g); g.connect(c.destination);
+  o.start(t); o.stop(t + 1.5);
+  state.muteUntil = performance.now() + 1900;
+}
+
+/* ---------- Pitch detection (McLeod-style, on a decimated signal) ---------- */
+
+function analyse() {
+  if (!state.listening || !analyser) return;
+  analyser.getFloatTimeDomainData(raw);
+
+  let sum = 0;
+  for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
+  state.rms = Math.sqrt(sum / raw.length);
+
+  // Track the quietest recent level as the room's noise floor; AGC moves it around.
+  state.noiseFloor = state.rms < state.noiseFloor ? state.rms * 0.2 + state.noiseFloor * 0.8 : state.noiseFloor * 0.999 + state.rms * 0.001;
+  const gate = Math.max(state.noiseFloor * Math.pow(10, GATE_DB / 20), 0.0015);
+  const muted = performance.now() < state.muteUntil;
+  const sounding = state.rms > gate && !muted;
+
+  if (sounding && !state.soundOn) { state.soundOn = true; state.soundSince = performance.now(); bump(); }
+  else if (!sounding && state.soundOn) { state.soundOn = false; }
+
+  if (!sounding || state.level === 1) { state.cents = null; state.clarity = 0; return; }
+  if (performance.now() - state.soundSince < 250) return;   // beginner attacks are a splat; ignore them
+
+  // Decimate to about 8 kHz: cheaper, and the averaging removes the breath noise that ruins detection.
+  const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+  if (!deci || deci.length !== n) deci = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
+
+  const I = INSTRUMENTS[state.inst];
+  let fMin, fMax;
+  if (state.level === 3) { fMin = I.target / 1.5; fMax = I.target * 1.5; }  // ±7 semitones: an octave error is impossible
+  else { fMin = I.lo; fMax = I.hi; }
+
+  const got = detect(deci, sr2, fMin, fMax);
+  if (!got) { state.clarity = 0; return; }
+  state.freq = got.freq;
+  state.clarity = got.clarity;
+  state.cents = 1200 * Math.log2(got.freq / I.target);
+}
+
+function detect(buf, sampleRate, fMin, fMax) {
+  const n = buf.length;
+  const minLag = Math.max(2, Math.floor(sampleRate / fMax));
+  const maxLag = Math.min(Math.floor(sampleRate / fMin), n - 2);
+  if (maxLag <= minLag) return null;
+  const nsdf = new Float32Array(maxLag + 2);
+  let peak = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let ac = 0, m = 0;
+    for (let i = 0, end = n - lag; i < end; i++) { const a = buf[i], b = buf[i + lag]; ac += a * b; m += a * a + b * b; }
+    const v = m > 0 ? (2 * ac) / m : 0;
+    nsdf[lag] = v;
+    if (v > peak) peak = v;
+  }
+  if (peak < 0.4) return null;
+  const threshold = peak * 0.9;
+  for (let lag = minLag + 1; lag < maxLag; lag++) {
+    if (nsdf[lag] > threshold && nsdf[lag] >= nsdf[lag - 1] && nsdf[lag] >= nsdf[lag + 1]) {
+      const y1 = nsdf[lag - 1], y2 = nsdf[lag], y3 = nsdf[lag + 1];
+      const denom = 2 * (2 * y2 - y1 - y3);
+      const shift = Math.abs(denom) > 1e-9 ? (y3 - y1) / denom : 0;
+      return { freq: sampleRate / (lag + shift), clarity: y2 };
+    }
+  }
+  return null;
+}
+
+/* ---------- Scene ---------- */
+
+const el = (tag, attrs, parent) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+const VW = 1000, VH = 620, TOP = 90, BOTTOM = 500;   // the scene never uses the bottom of the screen
+let scene = {};
+
+function buildScene() {
+  const svg = $("scene");
+  svg.textContent = "";
+  scene = {};
+  const defs = el("defs", {}, svg);
+  const hatch = el("pattern", { id: "hatch", width: 16, height: 16, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+  el("rect", { width: 16, height: 16, fill: "#2fa36b", opacity: .13 }, hatch);
+  el("line", { x1: 0, y1: 0, x2: 0, y2: 16, stroke: "#2fa36b", "stroke-width": 5, opacity: .22 }, hatch);
+
+  if (state.level === 1) {
+    scene.goalMarks = GOAL_SECONDS.map((s, i) => {
+      const y = BOTTOM - (BOTTOM - TOP) * (s / GOAL_SECONDS[GOAL_SECONDS.length - 1]);
+      const g = el("g", {}, svg);
+      el("line", { x1: 300, x2: 700, y1: y, y2: y, stroke: "#9fb6cc", "stroke-width": 3, "stroke-dasharray": "14 12" }, g);
+      const t = el("text", { x: 724, y: y + 12, "font-size": 34, "font-weight": 700, fill: "#6b7a8c", style: "font-family: var(--display)" }, g);
+      t.textContent = s;
+      return { y, g };
+    });
+    scene.balloon = el("g", {}, svg);
+    el("path", { d: "M 0 -120 C 62 -120 100 -74 100 -26 C 100 20 48 54 12 64 L -12 64 C -48 54 -100 20 -100 -26 C -100 -74 -62 -120 0 -120 Z", fill: "#ff6f59" }, scene.balloon);
+    el("ellipse", { cx: -44, cy: -72, rx: 16, ry: 32, transform: "rotate(-24 -44 -72)", fill: "#fff", opacity: .45 }, scene.balloon);
+    el("path", { d: "M -13 62 L 13 62 L 6 82 L -6 82 Z", fill: "#c9392a" }, scene.balloon);
+    return;
+  }
+
+  if (state.level === 3) {
+    scene.band = el("rect", { x: 60, width: VW - 120, fill: "url(#hatch)", rx: 10 }, svg);
+    scene.bandTop = el("line", { x1: 60, x2: VW - 60, stroke: "#2fa36b", "stroke-width": 4, "stroke-dasharray": "18 14" }, svg);
+    scene.bandBottom = el("line", { x1: 60, x2: VW - 60, stroke: "#2fa36b", "stroke-width": 4, "stroke-dasharray": "18 14" }, svg);
+    scene.balloon = el("g", { opacity: 1 }, svg);
+    el("path", { d: "M 0 -54 C 30 -54 48 -34 48 -10 C 48 14 22 30 6 34 L -6 34 C -22 30 -48 14 -48 -10 C -48 -34 -30 -54 0 -54 Z", fill: "#ff6f59" }, scene.balloon);
+    el("path", { d: "M -7 33 L 7 33 L 4 44 L -4 44 Z", fill: "#c9392a" }, scene.balloon);
+  }
+
+  scene.trail = el("path", { fill: "none", stroke: "#1a7fe2", "stroke-width": 6, "stroke-linecap": "round", opacity: .3 }, svg);
+  scene.bird = el("g", {}, svg);
+  scene.ring = el("circle", { r: 74, fill: "none", stroke: "#2fa36b", "stroke-width": 14, "stroke-linecap": "round",
+    "stroke-dasharray": 465, "stroke-dashoffset": 465, transform: "rotate(-90)", opacity: 0 }, scene.bird);
+  el("ellipse", { rx: 54, ry: 40, fill: "#f2b705" }, scene.bird);
+  scene.wing = el("path", { d: "M -10 -6 C -46 -42 -76 -30 -74 -6 C -52 2 -26 6 -10 -6 Z", fill: "#e09b00" }, scene.bird);
+  el("circle", { cx: 26, cy: -12, r: 7, fill: "#15181d" }, scene.bird);
+  el("path", { d: "M 52 -4 L 82 4 L 52 12 Z", fill: "#e2641f" }, scene.bird);
+}
+
+function pitchToY(cents) {
+  const span = state.level === 3 ? 350 : 1200;          // level 3 shows a 5th; level 2 an octave
+  const t = Math.max(-1, Math.min(1, cents / span));
+  return (TOP + BOTTOM) / 2 - t * ((BOTTOM - TOP) / 2);
+}
+
+function draw(dt) {
+  const I = INSTRUMENTS[state.inst];
+  state.smoothRms += (state.rms - state.smoothRms) * Math.min(1, dt * 12);
+  const loud = Math.min(1, state.smoothRms / 0.08);
+
+  if (state.level === 1) {
+    if (state.soundOn) state.level1Held += dt; else state.level1Held = Math.max(0, state.level1Held - dt * 1.2);
+    const goal = GOAL_SECONDS[GOAL_SECONDS.length - 1];
+    const p = Math.min(1, state.level1Held / goal);
+    const y = BOTTOM - (BOTTOM - TOP) * p;
+    const s = 0.55 + 0.75 * p;
+    scene.balloon.setAttribute("transform", `translate(${VW / 2} ${y}) scale(${s.toFixed(3)})`);
+    scene.balloon.setAttribute("opacity", 0.55 + 0.45 * Math.min(1, loud + (state.soundOn ? 0.4 : 0)));
+    scene.goalMarks.forEach(m => m.g.setAttribute("opacity", y <= m.y + 6 ? 1 : .45));
+    if (state.level1Held >= goal) { state.level1Held = 0; burst(VW / 2, TOP); }
+    return;
+  }
+
+  // Levels 2 and 3: the bird follows the pitch. With no sound it simply waits where it is.
+  const heard = state.cents !== null && state.clarity > 0.5;
+  if (heard) state.smoothCents += (state.cents - state.smoothCents) * Math.min(1, dt * 9);
+  const y = heard ? pitchToY(state.smoothCents) : pitchToY(state.level === 3 ? 0 : state.smoothCents);
+  const x = VW / 2;
+  scene.bird.setAttribute("transform", `translate(${x} ${y.toFixed(1)})`);
+  scene.wing.setAttribute("transform", heard ? "rotate(0)" : `rotate(${Math.sin(performance.now() / 260) * 12})`);
+
+  state.trail.push({ x, y });
+  if (state.trail.length > 90) state.trail.shift();
+  scene.trail.setAttribute("d", state.trail.map((p, i) => `${i ? "L" : "M"} ${(VW / 2 - (state.trail.length - i) * 4).toFixed(0)} ${p.y.toFixed(0)}`).join(" "));
+
+  if (state.level === 3) {
+    const half = (IN_CENTS / 350) * ((BOTTOM - TOP) / 2);
+    const mid = pitchToY(0);
+    scene.band.setAttribute("y", mid - half);
+    scene.band.setAttribute("height", half * 2);
+    scene.bandTop.setAttribute("y1", mid - half); scene.bandTop.setAttribute("y2", mid - half);
+    scene.bandBottom.setAttribute("y1", mid + half); scene.bandBottom.setAttribute("y2", mid + half);
+    scene.balloon.setAttribute("transform", `translate(${VW - 150} ${mid}) scale(1.1)`);
+
+    const limit = state.inBand ? OUT_CENTS : IN_CENTS;
+    state.inBand = heard && Math.abs(state.smoothCents) < limit;
+    state.holdProgress = state.inBand
+      ? Math.min(1, state.holdProgress + dt / HOLD_SECONDS)
+      : Math.max(0, state.holdProgress - dt / (HOLD_SECONDS * 2));   // drains, never snaps
+    scene.ring.setAttribute("opacity", state.holdProgress > 0.02 ? 1 : 0);
+    scene.ring.setAttribute("stroke-dashoffset", 465 * (1 - state.holdProgress));
+    if (state.holdProgress >= 1) {
+      state.holdProgress = 0;
+      scene.balloon.setAttribute("opacity", 0);
+      burst(VW - 150, mid);
+      setTimeout(() => scene.balloon.setAttribute("opacity", 1), 1400);
+    }
+  }
+}
+
+function burst(x, y) {
+  const svg = $("scene");
+  const colours = ["#f2b705", "#ff6f59", "#1a7fe2", "#2fa36b", "#7a5cf0"];
+  for (let i = 0; i < 14; i++) {
+    const a = (Math.PI * 2 * i) / 14, d = 90 + Math.random() * 70;
+    const c = el("circle", { cx: x, cy: y, r: 9 + Math.random() * 8, fill: colours[i % colours.length] }, svg);
+    const t0 = performance.now();
+    (function fly(now) {
+      const p = (now - t0) / 900;
+      if (p >= 1) { c.remove(); return; }
+      c.setAttribute("cx", x + Math.cos(a) * d * p);
+      c.setAttribute("cy", y + Math.sin(a) * d * p + 60 * p * p);
+      c.setAttribute("opacity", 1 - p);
+      requestAnimationFrame(fly);
+    })(t0);
+  }
+}
+
+function bump() {
+  state.counter++;
+  $("counter").textContent = state.counter;
+}
+
+/* ---------- Screen ---------- */
+
+function updateHeader() {
+  const I = INSTRUMENTS[state.inst];
+  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
+  [1, 2, 3].forEach(n => $("lv" + n).setAttribute("aria-pressed", String(n === state.level)));
+  $("targetName").innerHTML = state.level === 3 ? `${I.name} <bdi lang="en">(${I.latin})</bdi>` : "";
+  $("tone").hidden = state.level !== 3;
+}
+
+function setLevel(n) {
+  state.level = n;
+  state.level1Held = 0; state.holdProgress = 0; state.inBand = false; state.trail = [];
+  updateHeader();
+  buildScene();
+}
+
+function setInstrument(k) {
+  state.inst = k;
+  try { localStorage.setItem("brass-inst", k); } catch (_) {}
+  updateHeader();
+  buildScene();
+}
+
+function setTurns(n) {
+  const box = $("turns");
+  box.textContent = "";
+  for (let i = 0; i < n; i++) box.appendChild(Object.assign(document.createElement("span"), { className: "turn" + (i === state.turn ? " on" : "") }));
+}
+
+function nextTurn() {
+  state.turn = (state.turn + 1) % state.turns;
+  state.holdProgress = 0; state.trail = [];
+  setTurns(state.turns);
+}
+
+function toggleFullscreen() {
+  const d = document, root = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root); if (p && p.catch) p.catch(() => {}); }
+  } catch (_) {}
+}
+
+/* ---------- Loop ---------- */
+
+let last = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - (last || now)) / 1000);
+  last = now;
+  if (now - state.lastAnalyse > ANALYSE_MS) { state.lastAnalyse = now; analyse(); }
+  if (scene.bird || scene.balloon) draw(dt);
+  if (!$("diag").hidden) {
+    const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
+    $("diag").textContent =
+      `v5  ${ctx ? ctx.sampleRate : "-"} Hz\n` +
+      `level ${db.toFixed(0)} dB  floor ${(20 * Math.log10(Math.max(state.noiseFloor, 1e-7))).toFixed(0)}\n` +
+      `pitch ${state.freq ? state.freq.toFixed(1) : "-"} Hz  clarity ${state.clarity.toFixed(2)}\n` +
+      `cents ${state.cents === null ? "-" : state.cents.toFixed(0)}  hold ${(state.holdProgress * 100).toFixed(0)}%`;
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Wiring ---------- */
+
+for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
+[1, 2, 3].forEach(n => $("lv" + n).addEventListener("click", () => setLevel(n)));
+$("startBtn").addEventListener("click", startMic);
+$("tone").addEventListener("click", playReference);
+$("fullscreen").addEventListener("click", toggleFullscreen);
+document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT") return;
+  const c = e.code;
+  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); nextTurn(); }
+  else if (c === "Digit1") setLevel(1);
+  else if (c === "Digit2") setLevel(2);
+  else if (c === "Digit3") setLevel(3);
+  else if (c === "KeyT") playReference();
+  else if (c === "KeyR") { state.noiseFloor = 0.002; }
+  else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
+  else if (c === "KeyF") toggleFullscreen();
+});
+
+const params = new URLSearchParams(location.search);
+let saved = null;
+try { saved = localStorage.getItem("brass-inst"); } catch (_) {}
+if (INSTRUMENTS[params.get("inst")]) state.inst = params.get("inst");
+else if (INSTRUMENTS[saved]) state.inst = saved;
+if (/^[123]$/.test(params.get("level") || "")) state.level = +params.get("level");
+if (params.get("diag") === "1") $("diag").hidden = false;
+
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if (location.protocol === "file:") fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+updateHeader();
+buildScene();
+setTurns(state.turns);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

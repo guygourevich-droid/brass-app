@@ -477,7 +477,7 @@ function updateHeader() {
   const notes = L.semis ? `siren ${I.start} → ${I.tops[L.top]}` : `model note ${I.start}`;
   $("noteInfo").textContent = state.model ? `${I.label} · ${notes}` : `${I.label} · model sound off: demonstrate live`;
   document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i === state.li)));
-  for (const k in INSTRUMENTS) $("in" + INSTRUMENTS[k].label).setAttribute("aria-pressed", String(k === state.inst));
+  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
   $("br2").setAttribute("aria-pressed", String(state.breath === 2));
   $("br1").setAttribute("aria-pressed", String(state.breath === 1));
 }
@@ -593,7 +593,7 @@ LEVELS.forEach((L, i) => {
 });
 
 for (const k in INSTRUMENTS) {
-  $("in" + INSTRUMENTS[k].label).addEventListener("click", () => { state.inst = k; updateHeader(); toIdle(); });
+  $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => { state.inst = k; updateHeader(); toIdle(); });
 }
 $("br2").addEventListener("click", () => { state.breath = 2; updateHeader(); toIdle(); });
 $("br1").addEventListener("click", () => { state.breath = 1; updateHeader(); toIdle(); });
@@ -615,8 +615,8 @@ document.addEventListener("keydown", e => {
   if ((k === " " || k === "Enter") && (t.tagName === "BUTTON" || t.type === "checkbox")) return;
   const onRange = t.type === "range";
   if (k === " " || k === "Enter" || k === "PageDown" || (k === "ArrowRight" && !onRange)) { e.preventDefault(); primary(); }
-  else if (k === "r" || k === "R" || k === "PageUp" || (k === "ArrowLeft" && !onRange)) { e.preventDefault(); again(); }
-  else if (k === "f" || k === "F") toggleFullscreen();
+  else if (e.code === "KeyR" || k === "PageUp" || (k === "ArrowLeft" && !onRange)) { e.preventDefault(); again(); }
+  else if (e.code === "KeyF") toggleFullscreen();
   else if (k === "Escape" && state.run) toIdle();
 });
 
