@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>נינג'ה · Brass App</title>
+<meta name="theme-color" content="#bfe4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #56616f;
+    --line: rgba(21, 24, 29, .14);
+    --panel: rgba(255, 255, 255, .92);
+    --go: #1b8f58;
+    --accent: #1a7fe2;
+    --belt: #7a5cf0;
+    --display: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e8f4ff 55%, #fff4e3 100%) fixed; overflow: hidden; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); border-radius: 12px; }
+
+  .app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px clamp(12px, 3vw, 28px); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .console a { color: var(--muted); text-decoration: none; }
+  .spacer { margin-inline-start: auto; }
+  .seg { display: inline-flex; flex-wrap: wrap; background: var(--panel); border-radius: 22px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; min-height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 500; }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .18); }
+  .icon-btn { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; }
+  .mic-dot { width: 12px; height: 12px; border-radius: 50%; background: #c3ccd8; display: inline-block; vertical-align: -1px; }
+  .mic-dot.on { background: var(--go); }
+
+  .stage { position: relative; min-height: 0; padding: 1vh clamp(8px, 2vw, 24px) 0; overflow: hidden; }
+  .scene { width: 100%; height: 100%; display: block; direction: ltr; overflow: visible; }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .84); text-align: center; padding: 4vh 6vw; }
+  .overlay[hidden] { display: none; }
+  .overlay p { margin: 0 0 2vh; font-size: clamp(18px, 3.2vh, 30px); font-weight: 500; max-width: 24ch; line-height: 1.5; }
+  .big-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .6em 1.6em; cursor: pointer; min-height: 56px; }
+
+  /* Between rounds: the next child steps up. */
+  .card { position: absolute; inset-inline: 0; bottom: 6vh; display: grid; justify-items: center; gap: 1.5vh; pointer-events: none; }
+  .card[hidden] { display: none; }
+  .card h2 { margin: 0; font-size: clamp(34px, 8vh, 96px); font-weight: 900; }
+  .card .big-btn { pointer-events: auto; background: var(--belt); }
+
+  /* Settings */
+  .sheet { position: absolute; inset: 0; background: rgba(255, 255, 255, .97); overflow: auto; padding: 2vh clamp(16px, 4vw, 48px) 4vh; }
+  .sheet[hidden] { display: none; }
+  .sheet h2 { font-size: clamp(20px, 3vh, 30px); margin: 2vh 0 1vh; font-weight: 700; }
+  .sheet .hint { margin: -0.5vh 0 1vh; color: var(--muted); font-size: 15px; }
+  .notes { display: flex; flex-wrap: wrap; gap: 10px; }
+  .note-chip { min-width: 84px; min-height: 60px; border-radius: 16px; border: 3px solid var(--line); background: #fff; font-size: clamp(18px, 2.6vh, 26px); font-weight: 700; cursor: pointer; }
+  .note-chip[aria-pressed="true"] { border-color: var(--accent); background: #e8f2fe; color: #0f4f96; }
+  .note-chip small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 1vh 0; }
+  .row > span:first-child { min-width: 9ch; color: var(--muted); }
+  .done-btn { background: var(--go); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(18px, 2.6vh, 26px); padding: .55em 1.8em; cursor: pointer; min-height: 52px; margin-top: 2vh; }
+
+  .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; background: rgba(13, 17, 23, .85); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; white-space: pre; font-variant-numeric: tabular-nums; }
+  .diag[hidden] { display: none; }
+
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="console">
+    <a href="index.html">‹ Brass App</a>
+    <div class="seg" role="group" aria-label="כלי">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true">חצוצרה</button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false">קרן</button>
+    </div>
+    <span class="spacer"></span>
+    <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
+    <button id="tone" class="icon-btn" title="לשמוע את הצליל (T)">🔊</button>
+    <button id="settings" class="icon-btn" title="הגדרות (S)">⚙</button>
+    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="נינג'ה"></svg>
+
+    <div class="card" id="card" hidden>
+      <h2>נינג'ה הבא</h2>
+      <button class="big-btn" id="goBtn">▶</button>
+    </div>
+
+    <div class="overlay" id="overlay">
+      <div>
+        <p id="overlayText">נלחץ ונתחיל להקשיב</p>
+        <button class="big-btn" id="startBtn">התחלה</button>
+      </div>
+    </div>
+
+    <section class="sheet" id="sheet" hidden aria-label="הגדרות">
+      <h2>אילו צלילים?</h2>
+      <p class="hint">אותה בחירה כמו בצליל נכון</p>
+      <div class="notes" id="noteChips"></div>
+      <h2>סיבוב</h2>
+      <div class="row"><span>צלילים בסיבוב</span><div class="seg" role="group" id="countSeg"></div></div>
+      <div class="row"><span>שניות לכל צליל</span><div class="seg" role="group" id="timeSeg"></div></div>
+      <div class="row"><span>מה רואים</span><div class="seg" role="group" id="showSeg"></div></div>
+      <div class="row"><span>משמיעים קודם</span><div class="seg" role="group" id="refSeg"></div></div>
+      <button class="done-btn" id="sheetDone">סגירה</button>
+    </section>
+
+    <div class="diag" id="diag" hidden></div>
+  </main>
+
+  <footer class="transport">
+    <span class="spacer"></span>
+    <span><kbd>Space</kbd> נינג'ה הבא · <kbd>T</kbd> להשמיע · <kbd>S</kbd> הגדרות · <kbd>Esc</kbd> עצירה · <kbd>R</kbd> כיול · <kbd>D</kbd> בדיקה</span>
+  </footer>
+</div>
+<script>
+"use strict";
+
+/* ---------- Note Ninja ----------
+   One child, one round: notes fly in one at a time on the staff. Play the note and hold it briefly,
+   and the ninja leaps and slices it. If the time runs out the note simply drifts away and the round goes on.
+   The round ends with a celebration that grows with the notes sliced; no score ever reaches the screen. */
+
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+const GLYPH = { gClef: "", fClef: "", flat: "", sharp: "", head: "", headOpen: "" };
+const MUSIC_FONT = "font-family: Bravura";
+const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
+const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
+const PC_NAME = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+
+// Same instruments and note lists as right-note.html, so the shared note choice means the same notes.
+// written = concert + toWritten.
+const INSTRUMENTS = {
+  trumpet:  { he: "חצוצרה", clef: "treble", toWritten: 2, lo: 180, hi: 1000,
+              notes: [60, 62, 64, 65, 67, 69, 71, 72], open: [60, 67, 72], def: [67] },
+  trombone: { he: "טרומבון", clef: "bass",  toWritten: 0, lo: 80, hi: 500,
+              notes: [46, 48, 50, 51, 53, 55, 57, 58], open: [46, 53, 58], def: [53] },
+  horn:     { he: "קרן",    clef: "treble", toWritten: 7, lo: 130, hi: 800,
+              notes: [60, 62, 64, 65, 67, 69, 71, 72, 76], open: [60, 67, 72, 76], def: [67] }
+};
+
+// Real recordings (University of Iowa MIS, ff), named by CONCERT pitch, with how many cents each
+// measured off equal temperament; playback corrects it.
+const SAMPLES = {
+  trumpet:  { Bb3: -10, C4: 16, D4: 13, Eb4: 3, F4: -3, G4: 11, A4: 7, Bb4: 8 },
+  trombone: { Bb2: -5, C3: -7, D3: -16, Eb3: -24, F3: 2, G3: 1, A3: 1, Bb3: 10 },
+  horn:     { F2: -34, C3: 5, F3: 13, G3: 4, A3: -14, Bb3: 10, C4: -7, D4: 9, E4: 8, Eb4: 11, F4: 14, G4: 18, A4: 7, C5: 2 }
+};
+
+const TOL_CENTS = 50;           // same as right-note "normal"
+const HIT_HOLD_MS = 500;        // hold this long and the ninja slices
+const GRACE_MS = 150;           // a tiny wobble out of tune does not restart the hold
+const COUNTS = [3, 5, 8, 10];
+const TIMES = [4, 6, 8, 12];
+const SHOWS = [["both", "תו ושם"], ["staff", "רק תו"], ["name", "רק שם"]];
+
+const state = {
+  inst: "trumpet", chosen: [], count: 5, time: 8, show: "both", ref: true,
+  phase: "idle",        // idle → card → note (listen/play) → slice | drift → … → end → card
+  round: [], index: 0, hits: 0, target: 67, roundId: 0,
+  elapsed: 0, lastTick: 0, inBandSince: null, lastInBand: 0, hold: 0,
+  listening: false, rms: 0, freq: 0, clarity: 0, cents: null, heard: false, noiseFloor: 0.002,
+  soundOn: false, soundSince: 0, muteUntil: 0, lastAnalyse: 0
+};
+
+/* ---------- Notes ---------- */
+
+function spell(midi) {
+  const pc = ((Math.round(midi) % 12) + 12) % 12;
+  let octave = Math.floor(Math.round(midi) / 12) - 1;
+  let step = 0, alter = 0;
+  for (let i = 6; i >= 0; i--) if (SEMITONE[i] <= pc) { step = i; alter = pc - SEMITONE[i]; break; }
+  // Brass reads flats: B♭ and E♭, never A♯ or D♯.
+  if (alter > 0) { step = (step + 1) % 7; alter = -1; if (step === 0) octave += 1; }
+  return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
+}
+const diatonicOf = sp => sp.octave * 7 + sp.step;
+const nameOf = midi => { const sp = spell(midi); return SOLFEGE[sp.step] + (sp.alter === -1 ? "♭" : sp.alter === 1 ? "♯" : ""); };
+const concertHz = written => 440 * Math.pow(2, (written - INSTRUMENTS[state.inst].toWritten - 69) / 12);
+
+/* ---------- Settings ----------
+   The note choice is shared with right-note.html (its saved object keeps its other fields);
+   the round settings are this game's own, per instrument. */
+
+function load() {
+  const I = INSTRUMENTS[state.inst];
+  let shared = null, own = null;
+  try { shared = JSON.parse(localStorage.getItem("right-note-" + state.inst) || "null"); } catch (_) {}
+  try { own = JSON.parse(localStorage.getItem("ninja-" + state.inst) || "null"); } catch (_) {}
+  state.chosen = shared && Array.isArray(shared.chosen) ? shared.chosen.filter(n => I.notes.includes(n)) : [];
+  if (!state.chosen.length) state.chosen = I.def.slice();
+  state.count = own && COUNTS.includes(own.count) ? own.count : 5;
+  state.time = own && TIMES.includes(own.time) ? own.time : 8;
+  state.show = own && SHOWS.some(s => s[0] === own.show) ? own.show : "both";
+  state.ref = !own || own.ref !== false;
+}
+
+function save() {
+  try {
+    localStorage.setItem("brass-inst", state.inst);
+    localStorage.setItem("ninja-" + state.inst, JSON.stringify({ count: state.count, time: state.time, show: state.show, ref: state.ref }));
+    let shared = null;
+    try { shared = JSON.parse(localStorage.getItem("right-note-" + state.inst) || "null"); } catch (_) {}
+    localStorage.setItem("right-note-" + state.inst, JSON.stringify(Object.assign(shared || {}, { chosen: state.chosen })));
+  } catch (_) {}
+}
+
+/* ---------- Audio ---------- */
+
+let ctx = null, analyser = null, micStream = null, raw = null, deci = null, testOsc = null;
+const buffers = {};
+
+function ensureCtx() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+function loadSamples(inst) {
+  ensureCtx();
+  return Promise.all(Object.keys(SAMPLES[inst]).map(name => {
+    const key = inst + "/" + name;
+    if (buffers[key]) return null;
+    return fetch("sounds/" + key + ".m4a")
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(a => new Promise((ok, bad) => ctx.decodeAudioData(a, ok, bad)))
+      .then(b => { buffers[key] = b; })
+      .catch(() => {});
+  }));
+}
+
+async function startMic() {
+  ensureCtx();
+  loadSamples(state.inst);
+  if (params.get("test")) return startTestTone();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (err) {
+    const n = err && err.name;
+    return fail(n === "NotAllowedError" ? "אין אישור למיקרופון"
+      : n === "NotFoundError" ? "לא נמצא מיקרופון"
+      : n === "NotReadableError" ? "המיקרופון תפוס בתוכנה אחרת"
+      : "לא הצלחנו לפתוח את המיקרופון");
+  }
+  const src = ctx.createMediaStreamSource(micStream);
+  makeAnalyser();
+  src.connect(analyser);
+  listening("מקשיב");
+  micStream.getAudioTracks().forEach(t => {
+    t.addEventListener("ended", () => fail("המיקרופון נותק"));
+    t.addEventListener("mute", () => { $("micText").textContent = "מושתק"; });
+    t.addEventListener("unmute", () => { $("micText").textContent = "מקשיב"; });
+  });
+}
+
+function makeAnalyser() {
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  raw = new Float32Array(analyser.fftSize);
+}
+
+function listening(text) {
+  state.listening = true;
+  $("overlay").hidden = true;
+  $("micDot").classList.add("on");
+  $("micText").textContent = text;
+  showCard();
+}
+
+// ?test=1: no microphone. From the console, testTone(writtenMidi, cents) sounds a note into the detector;
+// testTone(null) is silence.
+function startTestTone() {
+  makeAnalyser();
+  state.noiseFloor = 0.00001;
+  listening("בדיקה");
+  window.testTone = (written, cents = 0) => {
+    if (testOsc) { try { testOsc.stop(); } catch (_) {} testOsc = null; }
+    if (!written) return;
+    const g = ctx.createGain();
+    g.gain.value = 0.25;
+    testOsc = ctx.createOscillator();
+    testOsc.type = "sine";
+    testOsc.frequency.value = concertHz(written) * Math.pow(2, cents / 1200);
+    testOsc.connect(g); g.connect(analyser); testOsc.start();
+  };
+}
+
+function fail(message) {
+  state.listening = false;
+  state.phase = "idle";
+  $("card").hidden = true;
+  $("overlay").hidden = false;
+  $("overlayText").textContent = message;
+  $("startBtn").textContent = "לנסות שוב";
+  $("micDot").classList.remove("on");
+  $("micText").textContent = "ללא מיקרופון";
+}
+
+function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
+addEventListener("pagehide", stopMic);
+document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) { stopMic(); fail("נלחץ ונמשיך להקשיב"); } });
+
+function sampleFor(written) {
+  const concert = written - INSTRUMENTS[state.inst].toWritten;
+  const table = SAMPLES[state.inst];
+  let best = null, dist = 99;
+  for (const name in table) {
+    const pc = PC_NAME.indexOf(name.slice(0, -1)), midi = (+name.slice(-1) + 1) * 12 + pc;
+    if (Math.abs(midi - concert) < dist && buffers[state.inst + "/" + name]) { best = { name, midi }; dist = Math.abs(midi - concert); }
+  }
+  if (!best || dist > 3) return null;
+  const hz = 440 * Math.pow(2, (best.midi - 69 + table[best.name] / 100) / 12);
+  return { buffer: buffers[state.inst + "/" + best.name], rate: concertHz(written) / hz };
+}
+
+// Play the note on the real instrument. Listening pauses until it has finished, and so does the clock.
+function playReference(written) {
+  if (typeof written !== "number") written = state.target;
+  const c = ensureCtx(), t = c.currentTime + 0.03, s = sampleFor(written), g = c.createGain();
+  g.connect(c.destination);
+  let dur;
+  if (s) {
+    const src = c.createBufferSource();
+    src.buffer = s.buffer;
+    src.playbackRate.value = s.rate;
+    g.gain.value = 0.6;
+    src.connect(g);
+    src.start(t);
+    dur = s.buffer.duration / s.rate;
+  } else {
+    loadSamples(state.inst);
+    const o = c.createOscillator(), f = c.createBiquadFilter(), hz = concertHz(written);
+    o.type = "sawtooth"; o.frequency.value = hz;
+    f.type = "lowpass"; f.frequency.value = Math.min(3000, hz * 4);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.06);
+    g.gain.setValueAtTime(0.12, t + 1.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    o.connect(f); f.connect(g); o.start(t); o.stop(t + 1.8);
+    dur = 1.8;
+  }
+  mute(dur * 1000 + 400);
+}
+
+function mute(ms) { state.muteUntil = Math.max(state.muteUntil, performance.now() + ms); }
+
+let noise = null;
+function playSwoosh() {
+  const c = ensureCtx(), t = c.currentTime + 0.01;
+  if (!noise) {
+    noise = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate);
+    const d = noise.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  s.buffer = noise;
+  f.type = "bandpass"; f.Q.value = 1.2;
+  f.frequency.setValueAtTime(700, t);
+  f.frequency.exponentialRampToValueAtTime(4200, t + 0.22);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.5, t + 0.05);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  s.connect(f); f.connect(g); g.connect(c.destination);
+  s.start(t); s.stop(t + 0.35);
+  mute(500);
+}
+
+function playNotes(freqs, gap, length, level) {
+  const c = ensureCtx();
+  freqs.forEach((hz, i) => {
+    const t = c.currentTime + 0.05 + i * gap;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle";
+    o.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(level, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + length);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + length + 0.05);
+  });
+  mute(freqs.length * gap * 1000 + length * 1000 + 300);
+}
+
+/* ---------- Detection ---------- */
+
+function analyse() {
+  if (!state.listening || !analyser) return;
+  analyser.getFloatTimeDomainData(raw);
+  let sum = 0;
+  for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
+  state.rms = Math.sqrt(sum / raw.length);
+  // The floor follows room noise up slowly, but not while a clear note is sounding.
+  if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
+  else if (!state.heard) state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
+  const gate = Math.max(state.noiseFloor * Math.pow(10, 12 / 20), 0.0015);
+  const sounding = state.rms > gate && performance.now() > state.muteUntil;
+  if (sounding && !state.soundOn) { state.soundOn = true; state.soundSince = performance.now(); }
+  else if (!sounding) state.soundOn = false;
+  state.heard = false;
+  if (!sounding || performance.now() - state.soundSince < 200) { state.clarity = 0; return; }
+
+  const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+  if (!deci || deci.length !== n) deci = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
+
+  const I = INSTRUMENTS[state.inst];
+  const got = detect(deci, sr2, I.lo, I.hi);
+  if (!got || got.clarity < 0.6) { state.clarity = 0; return; }
+  state.freq = got.freq;
+  state.clarity = got.clarity;
+  state.cents = 1200 * Math.log2(got.freq / concertHz(state.target));
+  state.heard = true;
+}
+
+function detect(buf, sampleRate, fMin, fMax) {
+  const n = buf.length;
+  const minLag = Math.max(2, Math.floor(sampleRate / fMax));
+  const maxLag = Math.min(Math.floor(sampleRate / fMin), n - 2);
+  if (maxLag <= minLag) return null;
+  const nsdf = new Float32Array(maxLag + 2);
+  let peak = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let ac = 0, m = 0;
+    for (let i = 0, end = n - lag; i < end; i++) { const a = buf[i], b = buf[i + lag]; ac += a * b; m += a * a + b * b; }
+    const v = m > 0 ? (2 * ac) / m : 0;
+    nsdf[lag] = v;
+    if (v > peak) peak = v;
+  }
+  if (peak < 0.4) return null;
+  const threshold = peak * 0.9;
+  for (let lag = minLag + 1; lag < maxLag; lag++) {
+    if (nsdf[lag] > threshold && nsdf[lag] >= nsdf[lag - 1] && nsdf[lag] >= nsdf[lag + 1]) {
+      const y1 = nsdf[lag - 1], y2 = nsdf[lag], y3 = nsdf[lag + 1];
+      const denom = 2 * (2 * y2 - y1 - y3);
+      return { freq: sampleRate / (lag + (Math.abs(denom) > 1e-9 ? (y3 - y1) / denom : 0)), clarity: y2 };
+    }
+  }
+  return null;
+}
+
+/* ---------- Scene ---------- */
+
+const el = (tag, attrs, parent) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+const S = 40, STAFF_X0 = 250, STAFF_X1 = 950, STAFF_TOP = 170;
+const NOTE_X = 660, PLAYED_X = 470, RING_R = 78, GROUND = 560, HOME_X = 120;
+const staffY = diatonic => {
+  const bottom = INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;
+  return STAFF_TOP + 4 * S - (diatonic - bottom) * S / 2;
+};
+let g = {};
+
+function buildScene() {
+  const svg = $("scene");
+  svg.textContent = "";
+  g = {};
+  const I = INSTRUMENTS[state.inst];
+  const staffOn = state.show !== "name";
+
+  // Night-blue hills and a rooftop for the ninja to stand on.
+  el("path", { d: "M -600 470 C -200 420 120 440 380 470 C 620 498 820 430 1600 450 L 1600 700 L -600 700 Z", fill: "#cfe0f2" }, svg);
+  el("path", { d: `M -600 ${GROUND} L 1600 ${GROUND} L 1600 700 L -600 700 Z`, fill: "#5b6b82" }, svg);
+  for (let x = -600; x < 1600; x += 46) el("path", { d: `M ${x} ${GROUND} q 23 18 46 0`, fill: "none", stroke: "#475569", "stroke-width": 4 }, svg);
+
+  g.dots = el("g", {}, svg);
+
+  g.staff = el("g", { opacity: staffOn ? 1 : 0 }, svg);
+  for (let i = 0; i < 5; i++)
+    el("line", { x1: STAFF_X0, x2: STAFF_X1, y1: STAFF_TOP + i * S, y2: STAFF_TOP + i * S, stroke: "#15181d", "stroke-width": 4 }, g.staff);
+  const treble = I.clef === "treble";
+  el("text", { x: STAFF_X0 + 16, y: treble ? STAFF_TOP + 3 * S : STAFF_TOP + S, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, g.staff)
+    .textContent = treble ? GLYPH.gClef : GLYPH.fClef;
+
+  // What the child is playing right now, as a blue note (staff modes only).
+  g.played = el("g", { opacity: 0 }, svg);
+  g.playedLedger = el("g", {}, g.played);
+  g.playedAcc = el("text", { "font-size": 4 * S, fill: "#1a7fe2", style: MUSIC_FONT }, g.played);
+  g.playedHead = el("text", { x: PLAYED_X, "font-size": 4 * S, fill: "#1a7fe2", style: MUSIC_FONT }, g.played);
+  g.playedHead.textContent = GLYPH.head;
+
+  g.ring = el("circle", { r: RING_R, fill: "none", stroke: "#1a7fe2", "stroke-width": 9, "stroke-linecap": "round", opacity: 0,
+    "stroke-dasharray": 2 * Math.PI * RING_R }, svg);
+  g.holdRing = el("circle", { r: RING_R - 16, fill: "none", stroke: "#1b8f58", "stroke-width": 12, "stroke-linecap": "round", opacity: 0,
+    "stroke-dasharray": 2 * Math.PI * (RING_R - 16) }, svg);
+  g.noteLayer = el("g", {}, svg);
+  g.fx = el("g", {}, svg);
+  buildNinja(svg);
+  g.banner = el("text", { x: 560, y: 120, "text-anchor": "middle", "font-size": 92, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)", direction: "rtl", opacity: 0 }, svg);
+  drawDots();
+}
+
+// The note the child must play: head (+ accidental + ledger lines) on the staff, name underneath,
+// or just a big name. Built as one group so it can fly in, drift away, or be sliced in two.
+function makeNote(written) {
+  const sp = spell(written), group = el("g", {}, null);
+  const cx = NOTE_X + 0.57 * S;
+  let cy;
+  if (state.show !== "name") {
+    const y = staffY(diatonicOf(sp));
+    const bottom = INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18, pos = diatonicOf(sp) - bottom;
+    const line = q => el("line", { x1: NOTE_X - 16, x2: NOTE_X + 1.15 * S + 16, y1: staffY(bottom + q), y2: staffY(bottom + q), stroke: "#15181d", "stroke-width": 5 }, group);
+    for (let q = -2; q >= pos; q -= 2) line(q);
+    for (let q = 10; q <= pos; q += 2) line(q);
+    if (sp.alter) el("text", { x: NOTE_X - 1.3 * S, y, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, group).textContent = sp.alter === -1 ? GLYPH.flat : GLYPH.sharp;
+    el("text", { x: NOTE_X, y, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT, class: "head" }, group).textContent = GLYPH.head;
+    if (state.show === "both")
+      el("text", { x: cx, y: Math.max(STAFF_TOP + 4 * S + 2.6 * S, y + RING_R + 62), "text-anchor": "middle", "font-size": 64, "font-weight": 800, fill: "#15181d", style: "font-family: var(--display)", class: "head" }, group).textContent = nameOf(written);
+    cy = y;
+  } else {
+    cy = 300;
+    el("text", { x: cx, y: cy + 55, "text-anchor": "middle", "font-size": 160, "font-weight": 900, fill: "#15181d", style: "font-family: var(--display)", class: "head" }, group).textContent = nameOf(written);
+  }
+  return { group, cx, cy, r: state.show === "name" ? 150 : RING_R };
+}
+
+function placePlayed(written) {
+  const sp = spell(written), y = staffY(diatonicOf(sp)) - (written - Math.round(written)) * S * 0.45;
+  g.playedHead.setAttribute("y", y.toFixed(1));
+  g.playedAcc.setAttribute("x", PLAYED_X - 1.3 * S);
+  g.playedAcc.setAttribute("y", staffY(diatonicOf(sp)).toFixed(1));
+  g.playedAcc.textContent = sp.alter === -1 ? GLYPH.flat : sp.alter === 1 ? GLYPH.sharp : "";
+  g.playedLedger.textContent = "";
+  const bottom = INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18, pos = diatonicOf(sp) - bottom;
+  const line = q => el("line", { x1: PLAYED_X - 16, x2: PLAYED_X + 1.15 * S + 16, y1: staffY(bottom + q), y2: staffY(bottom + q), stroke: "#1a7fe2", "stroke-width": 5 }, g.playedLedger);
+  for (let q = -2; q >= pos; q -= 2) line(q);
+  for (let q = 10; q <= pos; q += 2) line(q);
+}
+
+function drawDots() {
+  g.dots.textContent = "";
+  const n = state.round.length;
+  if (!n || state.phase === "card" || state.phase === "idle") return;
+  const gap = 46, x0 = 560 - (n - 1) * gap / 2;
+  for (let i = 0; i < n; i++) {
+    const done = i < state.index || state.phase === "end", now = i === state.index && state.phase !== "end";
+    el("circle", { cx: x0 + i * gap, cy: 48, r: now ? 15 : 13, fill: done ? "#7a5cf0" : "#fff", stroke: "#7a5cf0", "stroke-width": now ? 6 : 4 }, g.dots);
+  }
+}
+
+/* ---------- Ninja ----------
+   Origin between the feet. Idle: breathing bob. Slice: a spinning leap to the note and back. */
+
+const ninja = { x: HOME_X, y: GROUND, rot: 0, anim: null };
+const SUIT = "#2b3445", SKIN = "#f0cfa6";
+
+function buildNinja(svg) {
+  const n = el("g", {}, svg);
+  g.ninja = n;
+  el("ellipse", { cx: 0, cy: 2, rx: 34, ry: 7, fill: "#000", opacity: .18, class: "shadow" }, n);
+  const body = el("g", {}, n);
+  g.ninjaBody = body;
+  g.tails = el("path", { fill: "#7a5cf0" }, body);
+  el("line", { x1: -34, y1: -36, x2: 30, y2: -168, stroke: "#cfd8e3", "stroke-width": 6, "stroke-linecap": "round" }, body);   // sword on the back
+  el("line", { x1: 30, y1: -168, x2: 40, y2: -190, stroke: "#3b2a1a", "stroke-width": 9, "stroke-linecap": "round" }, body);
+  el("rect", { x: -22, y: -46, width: 17, height: 46, rx: 8, fill: SUIT }, body);
+  el("rect", { x: 5, y: -46, width: 17, height: 46, rx: 8, fill: SUIT }, body);
+  el("rect", { x: -28, y: -116, width: 56, height: 78, rx: 22, fill: SUIT }, body);
+  el("rect", { x: -28, y: -72, width: 56, height: 10, fill: "#7a5cf0" }, body);
+  g.armL = el("path", { d: "M -24 -104 Q -48 -80 -40 -58", fill: "none", stroke: SUIT, "stroke-width": 15, "stroke-linecap": "round" }, body);
+  g.armR = el("path", { d: "M 24 -104 Q 48 -80 40 -58", fill: "none", stroke: SUIT, "stroke-width": 15, "stroke-linecap": "round" }, body);
+  el("circle", { cx: 0, cy: -146, r: 32, fill: SUIT }, body);
+  el("rect", { x: -24, y: -158, width: 48, height: 20, rx: 10, fill: SKIN }, body);
+  el("rect", { x: -32, y: -172, width: 64, height: 9, rx: 4, fill: "#7a5cf0" }, body);
+  g.eyes = el("g", {}, body);
+  el("ellipse", { cx: -9, cy: -148, rx: 4.5, ry: 5, fill: "#15181d" }, g.eyes);
+  el("ellipse", { cx: 9, cy: -148, rx: 4.5, ry: 5, fill: "#15181d" }, g.eyes);
+  el("path", { d: "M -17 -157 L -4 -154 M 17 -157 L 4 -154", stroke: "#15181d", "stroke-width": 3, "stroke-linecap": "round" }, g.eyes);
+}
+
+function animateNinja(kind, to) {
+  ninja.anim = { kind, start: performance.now(), to };
+}
+
+function drawNinja(now) {
+  let x = HOME_X, y = GROUND, rot = 0, lift = 0;
+  const a = ninja.anim;
+  if (a) {
+    const t = now - a.start;
+    if (a.kind === "slice") {
+      // Out in 260 ms (spinning), a beat at the note, home in 420 ms.
+      if (t < 260) { const p = t / 260; x = HOME_X + (a.to.x - HOME_X) * p; y = GROUND + (a.to.y - GROUND) * p - Math.sin(p * Math.PI) * 120; rot = 360 * p; }
+      else if (t < 420) { x = a.to.x; y = a.to.y; }
+      else if (t < 840) { const p = (t - 420) / 420, e = 1 - Math.pow(1 - p, 2); x = a.to.x + (HOME_X - a.to.x) * e; y = a.to.y + (GROUND - a.to.y) * e - Math.sin(p * Math.PI) * 140; rot = -360 * e; }
+      else ninja.anim = null;
+    } else if (a.kind === "flip") {
+      const p = (t % 900) / 900;
+      lift = Math.sin(p * Math.PI) * (a.to || 110); rot = 360 * p;
+      if (t > (a.until || 900)) ninja.anim = null;
+    } else if (a.kind === "bow") {
+      rot = t < 1400 ? Math.sin(Math.min(1, t / 400) * Math.PI / 2) * 28 * (t < 1000 ? 1 : (1400 - t) / 400) : 0;
+      if (t > 1400) ninja.anim = null;
+    }
+  }
+  const bob = !a ? Math.sin(now / 420) * 3 : 0;
+  g.ninja.setAttribute("transform", `translate(${x.toFixed(1)} ${(y - lift + bob).toFixed(1)})`);
+  g.ninjaBody.setAttribute("transform", `rotate(${rot.toFixed(1)} 0 -95)`);
+  const flap = Math.sin(now / 110) * 6;
+  g.tails.setAttribute("d", `M 30 -170 Q 52 ${-176 + flap} 70 ${-160 + flap} L 66 ${-152 + flap} Q 50 ${-164 + flap} 30 -162 Z`);
+}
+
+/* ---------- Round ---------- */
+
+function showCard() {
+  if (!state.listening) return;
+  state.phase = "card";
+  state.roundId++;
+  state.round = [];
+  g.noteLayer.textContent = "";
+  hideRings();
+  $("card").hidden = false;
+  drawDots();
+}
+
+function startRound() {
+  if (!state.listening || !$("sheet").hidden) return;
+  ensureCtx();
+  loadSamples(state.inst);
+  const list = state.chosen;
+  state.round = [];
+  for (let i = 0; i < state.count; i++) {
+    let n;
+    do n = list[Math.floor(Math.random() * list.length)];
+    while (list.length > 1 && i > 0 && n === state.round[i - 1]);
+    state.round.push(n);
+  }
+  state.index = 0;
+  state.hits = 0;
+  state.roundId++;
+  $("card").hidden = true;
+  g.banner.setAttribute("opacity", 0);
+  nextNote();
+}
+
+let current = null;
+function nextNote() {
+  if (state.index >= state.round.length) return endRound();
+  state.target = state.round[state.index];
+  state.phase = "note";
+  state.elapsed = 0;
+  state.inBandSince = null;
+  state.hold = 0;
+  g.noteLayer.textContent = "";
+  current = makeNote(state.target);
+  current.born = performance.now();
+  g.noteLayer.appendChild(current.group);
+  drawDots();
+  const id = state.roundId;
+  if (state.ref) setTimeout(() => { if (state.phase === "note" && state.roundId === id) playReference(); }, 380);
+}
+
+function hideRings() { g.ring.setAttribute("opacity", 0); g.holdRing.setAttribute("opacity", 0); g.played.setAttribute("opacity", 0); }
+
+function slice() {
+  state.phase = "slice";
+  state.hits++;
+  hideRings();
+  playSwoosh();
+  animateNinja("slice", { x: current.cx - 150, y: current.cy + 130 });
+  const { group, cx, cy } = current, id = state.roundId;
+  setTimeout(() => {
+    if (state.roundId !== id) return;
+    group.remove();
+    // Two halves along the slash, flying apart, plus a white slash line and sparks.
+    const defs = el("defs", {}, g.fx);
+    const halves = [[-1, "a"], [1, "b"]].map(([side, id]) => {
+      const cp = el("clipPath", { id: "half" + id, clipPathUnits: "userSpaceOnUse" }, defs);
+      const far = 2000, dx = Math.cos(-0.5) * far, dy = Math.sin(-0.5) * far;
+      el("polygon", { points: side < 0
+        ? `${cx - dx},${cy - dy} ${cx + dx},${cy + dy} ${cx + dx - far},${cy + dy - far * 2} ${cx - dx - far},${cy - dy - far * 2}`
+        : `${cx - dx},${cy - dy} ${cx + dx},${cy + dy} ${cx + dx + far},${cy + dy + far * 2} ${cx - dx + far},${cy - dy + far * 2}` }, cp);
+      const wrap = el("g", {}, g.fx), half = el("g", { "clip-path": `url(#half${id})` }, wrap);
+      half.appendChild(group.cloneNode(true));
+      half.querySelectorAll(".head").forEach(h => h.setAttribute("fill", "#1b8f58"));
+      return { wrap, side };
+    });
+    const slash = el("line", { x1: cx - 150, y1: cy + 80, x2: cx + 150, y2: cy - 80, stroke: "#fff", "stroke-width": 10, "stroke-linecap": "round" }, g.fx);
+    sparks(cx, cy, 14);
+    const t0 = performance.now();
+    (function fly(now) {
+      const p = Math.min(1, (now - t0) / 650);
+      halves.forEach(({ wrap, side }) => wrap.setAttribute("transform", `translate(${side * 90 * p} ${side * -40 * p + 140 * p * p}) rotate(${side * 25 * p} ${cx} ${cy})`));
+      halves.forEach(({ wrap }) => wrap.setAttribute("opacity", 1 - p));
+      slash.setAttribute("opacity", Math.max(0, 1 - p * 2.5));
+      if (p < 1) requestAnimationFrame(fly);
+      else { g.fx.textContent = ""; if (state.roundId === id) { state.index++; nextNote(); } }
+    })(t0);
+  }, 250);
+}
+
+function drift() {
+  state.phase = "drift";
+  hideRings();
+  const group = current.group, t0 = performance.now(), id = state.roundId;
+  (function go(now) {
+    const p = Math.min(1, (now - t0) / 1100);
+    group.setAttribute("transform", `translate(${160 * p} ${-120 * p})`);
+    group.setAttribute("opacity", 1 - p);
+    if (p < 1) requestAnimationFrame(go);
+    else { group.remove(); if (state.roundId === id) { state.index++; nextNote(); } }
+  })(t0);
+}
+
+// The celebration grows with the notes sliced. Words only, never a number.
+function endRound() {
+  state.phase = "end";
+  drawDots();
+  const all = state.hits === state.round.length, some = state.hits > 0;
+  g.banner.textContent = all ? "נינג'ה אמיתי!" : some ? "יפה מאוד!" : "כל הכבוד!";
+  g.banner.setAttribute("opacity", 1);
+  if (all) {
+    playNotes([523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5], 0.12, 0.5, 0.2);
+    animateNinja("flip", 150); ninja.anim.until = 2600;
+    for (let i = 0; i < 6; i++) setTimeout(() => fireworks(260 + Math.random() * 600, 110 + Math.random() * 200), i * 380);
+  } else if (some) {
+    playNotes([523.25, 659.25, 783.99, 1046.5], 0.09, 0.45, 0.2);
+    animateNinja("flip", 110);
+    fireworks(560, 260);
+  } else {
+    playNotes([523.25, 659.25], 0.15, 0.5, 0.14);
+    animateNinja("bow");
+  }
+  const id = state.roundId;
+  setTimeout(() => { if (state.phase === "end" && state.roundId === id) { g.banner.setAttribute("opacity", 0); showCard(); } }, all ? 3800 : 3000);
+}
+
+function sparks(x, y, count) {
+  const colours = ["#f2b705", "#ffffff", "#7a5cf0", "#1a7fe2", "#2fa36b"];
+  for (let i = 0; i < count; i++) {
+    const a = (Math.PI * 2 * i) / count, d = 70 + Math.random() * 80;
+    const c = el("text", { x, y, "font-size": 22 + Math.random() * 16, "text-anchor": "middle", fill: colours[i % colours.length] }, $("scene"));
+    c.textContent = "✦";
+    const t0 = performance.now();
+    (function fly(now) {
+      const p = (now - t0) / 800;
+      if (p >= 1) { c.remove(); return; }
+      c.setAttribute("x", x + Math.cos(a) * d * p);
+      c.setAttribute("y", y + Math.sin(a) * d * p + 50 * p * p);
+      c.setAttribute("opacity", 1 - p);
+      requestAnimationFrame(fly);
+    })(t0);
+  }
+}
+
+function fireworks(x, y) {
+  const colours = ["#f2b705", "#ff6f59", "#1a7fe2", "#2fa36b", "#7a5cf0"];
+  const colour = colours[Math.floor(Math.random() * colours.length)];
+  for (let i = 0; i < 22; i++) {
+    const a = (Math.PI * 2 * i) / 22, d = 110 + Math.random() * 40;
+    const c = el("circle", { cx: x, cy: y, r: 7, fill: colour }, $("scene"));
+    const t0 = performance.now();
+    (function fly(now) {
+      const p = (now - t0) / 1300;
+      if (p >= 1) { c.remove(); return; }
+      const e = 1 - Math.pow(1 - p, 3);
+      c.setAttribute("cx", x + Math.cos(a) * d * e);
+      c.setAttribute("cy", y + Math.sin(a) * d * e + 60 * p * p);
+      c.setAttribute("opacity", 1 - p);
+      requestAnimationFrame(fly);
+    })(t0);
+  }
+}
+
+/* ---------- Loop ---------- */
+
+function frame(now) {
+  if (now - state.lastAnalyse > 50) { state.lastAnalyse = now; analyse(); }
+  const dt = Math.min(250, now - (state.lastTick || now));
+  state.lastTick = now;
+  if (state.phase === "note") playing(now, dt);
+  drawNinja(now);
+  if (!$("diag").hidden) {
+    const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
+    const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
+    $("diag").textContent = `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.heard ? state.freq.toFixed(0) + " Hz" : "—"}\nדיוק   ${state.heard ? (state.cents > 0 ? "+" : "") + state.cents.toFixed(0) : "—"}`;
+  }
+  requestAnimationFrame(frame);
+}
+
+function playing(now, dt) {
+  // Fly in from the right.
+  const pIn = Math.min(1, (now - current.born) / 420), eIn = 1 - Math.pow(1 - pIn, 3);
+  current.group.setAttribute("transform", `translate(${(1 - eIn) * 420} 0)`);
+  current.group.setAttribute("opacity", eIn);
+
+  // The clock runs only while nothing is playing from the loudspeaker and settings are closed.
+  const waiting = now < state.muteUntil || !$("sheet").hidden || pIn < 1;
+  if (!waiting) state.elapsed += dt;
+  const left = Math.max(0, 1 - state.elapsed / (state.time * 1000));
+  const circ = 2 * Math.PI * current.r;
+  g.ring.setAttribute("r", current.r); g.ring.setAttribute("stroke-dasharray", circ);
+  g.ring.setAttribute("cx", current.cx); g.ring.setAttribute("cy", current.cy);
+  g.ring.setAttribute("transform", `rotate(-90 ${current.cx} ${current.cy})`);
+  g.ring.setAttribute("stroke-dashoffset", circ * (1 - left));
+  g.ring.setAttribute("opacity", pIn < 1 ? 0 : waiting && state.elapsed === 0 ? 0.35 : 1);
+
+  // What is being played, and whether it is the note.
+  const heard = state.heard && now > state.muteUntil;
+  if (heard && state.show !== "name") {
+    const written = 69 + 12 * Math.log2(state.freq / 440) + INSTRUMENTS[state.inst].toWritten;
+    placePlayed(written);
+    g.played.setAttribute("opacity", 1);
+  } else g.played.setAttribute("opacity", 0);
+
+  const inBand = heard && !waiting && Math.abs(state.cents) < TOL_CENTS;
+  if (inBand) { state.lastInBand = now; if (state.inBandSince === null) state.inBandSince = now; }
+  else if (state.inBandSince !== null && now - state.lastInBand > GRACE_MS) state.inBandSince = null;
+  state.hold = state.inBandSince === null ? 0 : Math.min(1, (now - state.inBandSince) / HIT_HOLD_MS);
+  const hc = 2 * Math.PI * (current.r - 16);
+  g.holdRing.setAttribute("r", current.r - 16); g.holdRing.setAttribute("stroke-dasharray", hc);
+  g.holdRing.setAttribute("cx", current.cx); g.holdRing.setAttribute("cy", current.cy);
+  g.holdRing.setAttribute("transform", `rotate(-90 ${current.cx} ${current.cy})`);
+  g.holdRing.setAttribute("stroke-dashoffset", hc * (1 - state.hold));
+  g.holdRing.setAttribute("opacity", state.hold > 0 ? 1 : 0);
+  current.group.querySelectorAll(".head").forEach(h => h.setAttribute("fill", state.inBandSince !== null ? "#1b8f58" : "#15181d"));
+
+  if (state.hold >= 1) slice();
+  else if (left <= 0) drift();
+}
+
+/* ---------- Settings panel ---------- */
+
+function segButtons(box, items, isOn, pick) {
+  box.textContent = "";
+  items.forEach(([value, label]) => {
+    const b = document.createElement("button");
+    b.className = "seg-btn";
+    b.textContent = label;
+    b.setAttribute("aria-pressed", String(isOn(value)));
+    b.addEventListener("click", () => { pick(value); save(); buildSheet(); });
+    box.appendChild(b);
+  });
+}
+
+function buildSheet() {
+  const I = INSTRUMENTS[state.inst];
+  const box = $("noteChips");
+  box.textContent = "";
+  I.notes.forEach(n => {
+    const b = document.createElement("button");
+    b.className = "note-chip";
+    b.setAttribute("aria-pressed", String(state.chosen.includes(n)));
+    b.innerHTML = nameOf(n) + (I.open.includes(n) ? "<small>בלי אצבעות</small>" : "");
+    b.addEventListener("click", () => {
+      const i = state.chosen.indexOf(n);
+      if (i >= 0) { if (state.chosen.length > 1) state.chosen.splice(i, 1); }
+      else state.chosen.push(n);
+      state.chosen.sort((a, c) => a - c);
+      save(); buildSheet();
+    });
+    box.appendChild(b);
+  });
+  segButtons($("countSeg"), COUNTS.map(c => [c, String(c)]), c => state.count === c, c => { state.count = c; });
+  segButtons($("timeSeg"), TIMES.map(t => [t, String(t)]), t => state.time === t, t => { state.time = t; });
+  segButtons($("showSeg"), SHOWS, s => state.show === s, s => { state.show = s; });
+  segButtons($("refSeg"), [[true, "כן"], [false, "לא"]], r => state.ref === r, r => { state.ref = r; });
+  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
+}
+
+// Changing anything mid-round starts over at the "next ninja" card.
+function toggleSheet(show) {
+  const open = show === undefined ? $("sheet").hidden : show;
+  $("sheet").hidden = !open;
+  if (open) { buildSheet(); $("card").hidden = true; }
+  else { buildScene(); showCard(); }
+}
+
+function setInstrument(k) {
+  state.inst = k;
+  load();
+  save();
+  buildSheet();
+  buildScene();
+  if (ctx) loadSamples(k);
+  showCard();
+}
+
+function stopRound() {
+  if (state.phase !== "card" && state.phase !== "idle") { g.banner.setAttribute("opacity", 0); g.fx.textContent = ""; ninja.anim = null; showCard(); }
+}
+
+function toggleFullscreen() {
+  const d = document, root = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root); if (p && p.catch) p.catch(() => {}); }
+  } catch (_) {}
+}
+
+/* ---------- Wiring ---------- */
+
+for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
+$("startBtn").addEventListener("click", startMic);
+$("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });
+$("goBtn").addEventListener("click", startRound);
+$("tone").addEventListener("click", () => { if (state.phase === "note") playReference(); });
+$("settings").addEventListener("click", () => toggleSheet());
+$("sheetDone").addEventListener("click", () => toggleSheet(false));
+$("fullscreen").addEventListener("click", toggleFullscreen);
+document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT") return;
+  const c = e.code;
+  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); if (state.phase === "card") startRound(); }
+  else if (c === "KeyT" || c === "PageUp" || c === "ArrowLeft") { e.preventDefault(); if (state.phase === "note") playReference(); }
+  else if (c === "KeyS") toggleSheet();
+  else if (c === "Escape") { if (!$("sheet").hidden) toggleSheet(false); else stopRound(); }
+  else if (c === "KeyR") state.noiseFloor = 0.002;
+  else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
+  else if (c === "KeyF") toggleFullscreen();
+});
+
+const params = new URLSearchParams(location.search);
+let savedInst = null;
+try { savedInst = localStorage.getItem("brass-inst"); } catch (_) {}
+if (INSTRUMENTS[params.get("inst")]) state.inst = params.get("inst");
+else if (INSTRUMENTS[savedInst]) state.inst = savedInst;
+load();
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if (location.protocol === "file:") fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+buildScene();
+buildSheet();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
