@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שירים · Brass App</title>
+<meta name="theme-color" content="#bfe4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #56616f;
+    --line: rgba(21, 24, 29, .14);
+    --panel: rgba(255, 255, 255, .92);
+    --go: #1b8f58;
+    --accent: #1a7fe2;
+    --display: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e8f4ff 55%, #fff4e3 100%) fixed; overflow: hidden; }
+  button, select { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); border-radius: 12px; }
+
+  .app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+
+  .console, .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px clamp(12px, 3vw, 28px); color: var(--muted); font-size: 14px; }
+  .console { border-bottom: 1px solid var(--line); }
+  .transport { border-top: 1px solid var(--line); padding-bottom: 12px; }
+  .console a { color: var(--muted); text-decoration: none; }
+  .spacer { margin-inline-start: auto; }
+  .seg { display: inline-flex; flex-wrap: wrap; background: var(--panel); border-radius: 22px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; min-height: 40px; padding: 0 14px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 500; }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .18); }
+  .icon-btn { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; }
+  .play-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; min-height: 48px; padding: 0 22px; font-weight: 700; font-size: 18px; cursor: pointer; }
+  .play-btn.stop { background: var(--ink-2); }
+  .mic-dot { width: 12px; height: 12px; border-radius: 50%; background: #c3ccd8; display: inline-block; vertical-align: -1px; }
+  .mic-dot.on { background: var(--go); }
+  .bars select { min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: #fff; padding: 0 6px; }
+  .hide { display: none !important; }
+
+  .stage { position: relative; min-height: 0; padding: 1vh clamp(8px, 2vw, 24px) 0; overflow: hidden; }
+  .scene { width: 100%; height: 100%; display: block; direction: ltr; overflow: visible; }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .84); text-align: center; padding: 4vh 6vw; }
+  .overlay[hidden] { display: none; }
+  .overlay p { margin: 0 0 2vh; font-size: clamp(18px, 3.2vh, 30px); font-weight: 500; max-width: 24ch; line-height: 1.5; }
+  .big-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .6em 1.6em; cursor: pointer; min-height: 56px; }
+
+  /* Song list */
+  .list { position: absolute; inset: 0; overflow: auto; padding: 2vh clamp(16px, 4vw, 48px) 4vh; background: rgba(255, 255, 255, .55); }
+  .list[hidden] { display: none; }
+  .list h2 { font-size: clamp(22px, 3.4vh, 34px); margin: 1vh 0 2vh; font-weight: 800; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .song-card { text-align: start; background: #fff; border: 2px solid var(--line); border-radius: 18px; padding: 16px 18px; cursor: pointer; min-height: 110px; }
+  .song-card:hover { border-color: var(--accent); }
+  .song-card b { display: block; font-size: clamp(20px, 2.8vh, 28px); font-weight: 800; margin-bottom: 8px; }
+  .song-card span { display: inline-block; font-size: 15px; color: var(--muted); background: #eef3f9; border-radius: 999px; padding: 2px 10px; margin: 0 0 4px 4px; }
+  .list .more { color: var(--muted); margin-top: 2vh; font-size: 16px; }
+
+  /* Settings */
+  .sheet { position: absolute; inset: 0; background: rgba(255, 255, 255, .97); overflow: auto; padding: 2vh clamp(16px, 4vw, 48px) 4vh; }
+  .sheet[hidden] { display: none; }
+  .sheet h2 { font-size: clamp(20px, 3vh, 30px); margin: 2vh 0 1vh; font-weight: 700; }
+  .sheet .hint { margin: -0.5vh 0 1vh; color: var(--muted); font-size: 15px; }
+  .notes { display: flex; flex-wrap: wrap; gap: 10px; }
+  .note-chip { min-width: 84px; min-height: 60px; border-radius: 16px; border: 3px solid var(--line); background: #fff; font-size: clamp(18px, 2.6vh, 26px); font-weight: 700; cursor: pointer; }
+  .note-chip[aria-pressed="true"] { border-color: var(--accent); background: #e8f2fe; color: #0f4f96; }
+  .note-chip small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 1vh 0; }
+  .row > span:first-child { min-width: 9ch; color: var(--muted); }
+  .done-btn { background: var(--go); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(18px, 2.6vh, 26px); padding: .55em 1.8em; cursor: pointer; min-height: 52px; margin-top: 2vh; }
+
+  .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; background: rgba(13, 17, 23, .85); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; white-space: pre; font-variant-numeric: tabular-nums; }
+  .diag[hidden] { display: none; }
+  kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="console">
+    <a href="index.html">‹ Brass App</a>
+    <div class="seg" role="group" aria-label="כלי">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true">חצוצרה</button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false">קרן</button>
+    </div>
+    <button id="listBtn" class="icon-btn" title="רשימת השירים (L)">🎵 שירים</button>
+    <span class="spacer"></span>
+    <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
+    <button id="settings" class="icon-btn" title="הגדרות (S)">⚙</button>
+    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <svg class="scene" id="scene" viewBox="0 0 1300 600" preserveAspectRatio="xMidYMid meet" role="img" aria-label="שיר"></svg>
+
+    <section class="list" id="list" aria-label="שירים">
+      <h2>איזה שיר?</h2>
+      <div class="cards" id="cards"></div>
+      <p class="more" id="more"></p>
+    </section>
+
+    <div class="overlay" id="overlay" hidden>
+      <div>
+        <p id="overlayText">נלחץ ונתחיל להקשיב</p>
+        <button class="big-btn" id="startBtn">התחלה</button>
+      </div>
+    </div>
+
+    <section class="sheet" id="sheet" hidden aria-label="הגדרות">
+      <h2>אילו צלילים?</h2>
+      <p class="hint">אותה בחירה כמו בצליל נכון ובנינג'ה. מוצגים רק שירים שמשתמשים בצלילים האלה.</p>
+      <div class="notes" id="noteChips"></div>
+      <h2>הגדרות</h2>
+      <div class="row"><span>שם הצליל</span><div class="seg" role="group" id="namesSeg"></div><div class="seg" role="group" id="styleSeg"></div></div>
+      <div class="row"><span>צליל חוזר</span><div class="seg" role="group" id="repeatSeg"></div></div>
+      <button class="done-btn" id="sheetDone">סגירה</button>
+    </section>
+
+    <div class="diag" id="diag" hidden></div>
+  </main>
+
+  <footer class="transport" id="transport">
+    <div class="seg" role="group" aria-label="מצב">
+      <button id="modeFollow" class="seg-btn" aria-pressed="true">לומדים</button>
+      <button id="modeTime" class="seg-btn" aria-pressed="false">בקצב</button>
+    </div>
+    <div class="seg" role="group" aria-label="קצב" id="tempoSeg"></div>
+    <span class="bars">תיבות <select id="fromBar" aria-label="מתיבה"></select> – <select id="toBar" aria-label="עד תיבה"></select></span>
+    <span class="spacer"></span>
+    <span class="keys"><kbd>Space</kbd> ניגון · <kbd>H</kbd> להקשיב · <kbd>M</kbd> מצב · <kbd>Esc</kbd> עצירה</span>
+    <button id="listenBtn" class="icon-btn" title="להקשיב לשיר (H)">🎧 להקשיב</button>
+    <button id="playBtn" class="play-btn">▶ מנגנים</button>
+  </footer>
+</div>
+<script>
+"use strict";
+
+/* ---------- Songs ----------
+   One child plays a song. Follow mode waits on each note until it is played; "in time" moves at a tempo
+   after a one-bar count-in. Played notes turn green; a missed note simply stays black. No score, ever.
+   Songs are written as steps of the scale and placed on each instrument's own first notes (right-note's
+   note list): step 1 = trumpet/horn written C, trombone B♭. */
+
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+const GLYPH = { gClef: "", fClef: "", flat: "", sharp: "", head: "", dot: "", time4: "",
+  whole: "", halfUp: "", halfDown: "", quarterUp: "", quarterDown: "", eighthUp: "", eighthDown: "" };
+const MUSIC_FONT = "font-family: Bravura";
+const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
+const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
+const PC_NAME = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+
+// Same as right-note.html. `key` = flats in the key signature of the home key, as written diatonic steps.
+const INSTRUMENTS = {
+  trumpet:  { clef: "treble", toWritten: 2, lo: 180, hi: 1000, notes: [60, 62, 64, 65, 67, 69, 71, 72], open: [60, 67, 72], def: [67], key: [] },
+  trombone: { clef: "bass",   toWritten: 0, lo: 80, hi: 500,   notes: [46, 48, 50, 51, 53, 55, 57, 58], open: [46, 53, 58], def: [53], key: [20, 23] },
+  horn:     { clef: "treble", toWritten: 7, lo: 130, hi: 800,  notes: [60, 62, 64, 65, 67, 69, 71, 72, 76], open: [60, 67, 72, 76], def: [67], key: [] }
+};
+
+const SAMPLES = {
+  trumpet:  { Bb3: -10, C4: 16, D4: 13, Eb4: 3, F4: -3, G4: 11, A4: 7, Bb4: 8 },
+  trombone: { Bb2: -5, C3: -7, D3: -16, Eb3: -24, F3: 2, G3: 1, A3: 1, Bb3: 10 },
+  horn:     { F2: -34, C3: 5, F3: 13, G3: 4, A3: -14, Bb3: 10, C4: -7, D4: 9, E4: 8, Eb4: 11, F4: 14, G4: 18, A4: 7, C5: 2 }
+};
+
+// Melodies as "step:beats", bars split by "|". All public domain; all in 4/4.
+const SONGS = [
+  { id: "hotcross", title: "Hot Cross Buns", music: "3 2 1:2 | 3 2 1:2 | 1 1 1 1 | 2 2 2 2 | 3 2 1:2" },
+  { id: "auclair", title: "Au Clair de la Lune", music: "1 1 1 2 | 3:2 2:2 | 1 3 2 2 | 1:4 | 1 1 1 2 | 3:2 2:2 | 1 3 2 2 | 1:4" },
+  { id: "mary", title: "Mary Had a Little Lamb", music: "3 2 1 2 | 3 3 3:2 | 2 2 2:2 | 3 5 5:2 | 3 2 1 2 | 3 3 3 3 | 2 2 3 2 | 1:4" },
+  { id: "yonatan", title: "יונתן הקטן", music: "5 3 3:2 | 4 2 2:2 | 1 2 3 4 | 5 5 5:2 | 5 3 3:2 | 4 2 2:2 | 1 3 5 5 | 1:4 | 2 2 2 2 | 2 3 4:2 | 3 3 3 3 | 3 4 5:2 | 5 3 3:2 | 4 2 2:2 | 1 3 5 5 | 1:4" },
+  { id: "ode", title: "Ode to Joy · האודה לשמחה", music: "3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 3:1.5 2:0.5 2:2 | 3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 2:1.5 1:0.5 1:2" },
+  { id: "jingle", title: "Jingle Bells", music: "3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4:1.5 4:0.5 | 4 3 3 3:0.5 3:0.5 | 3 2 2 3 | 2:2 5:2 | 3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4 4 | 4 3 3 3:0.5 3:0.5 | 5 5 4 2 | 1:4" },
+  { id: "twinkle", title: "Twinkle Twinkle · כוכב קטן", music: "1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2 | 5 5 4 4 | 3 3 2:2 | 5 5 4 4 | 3 3 2:2 | 1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2" },
+  { id: "london", title: "London Bridge", music: "5:1.5 6:0.5 5 4 | 3 4 5:2 | 2 3 4:2 | 3 4 5:2 | 5:1.5 6:0.5 5 4 | 3 4 5:2 | 2:2 5:2 | 3:2 1:2" }
+];
+const BEATS = 4;
+
+function parseSong(song) {
+  const events = [];
+  song.music.split("|").forEach((bar, b) => {
+    let beat = 0;
+    bar.trim().split(/\s+/).forEach(tok => {
+      const [step, len] = tok.split(":");
+      events.push({ step: +step, dur: len ? +len : 1, bar: b, beatInBar: beat, start: b * BEATS + beat });
+      beat += len ? +len : 1;
+    });
+  });
+  return { bars: song.music.split("|").length, events };
+}
+SONGS.forEach(s => Object.assign(s, parseSong(s)));
+
+const TOL_CENTS = 50;
+const FOLLOW_HOLD_MS = 250;      // follow mode: hold this long on the right note to move on
+const DETECT_LAG_MS = 100;       // in time: how late the detector reports a sound
+const TEMPOS = [50, 60, 72, 90];
+const BARS_PER_LINE = 4;
+
+const state = {
+  inst: "trumpet", chosen: [], mode: "follow", tempo: 60, names: true, style: "sol", repeat: "attack",
+  song: null, from: 0, to: 0,
+  phase: "list",        // list → ready → follow | count | time | listen → end → ready
+  cursor: 0, done: new Set(), matched: {}, line: -1, t0: 0, lastAccepted: -1, inBandSince: null, lastInBand: 0,
+  listening: false, rms: 0, freq: 0, clarity: 0, heard: false, noiseFloor: 0.002,
+  soundOn: false, soundSince: 0, muteUntil: 0, lastAnalyse: 0,
+  env: 0, envPeak: 0, dipped: false, onsetAt: 0
+};
+
+/* ---------- Notes ---------- */
+
+function spell(midi) {
+  const pc = ((Math.round(midi) % 12) + 12) % 12;
+  let octave = Math.floor(Math.round(midi) / 12) - 1;
+  let step = 0, alter = 0;
+  for (let i = 6; i >= 0; i--) if (SEMITONE[i] <= pc) { step = i; alter = pc - SEMITONE[i]; break; }
+  if (alter > 0) { step = (step + 1) % 7; alter = -1; if (step === 0) octave += 1; }
+  return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
+}
+const diatonicOf = sp => sp.octave * 7 + sp.step;
+const nameOf = midi => { const sp = spell(midi); return (state.style === "abc" ? LETTERS : SOLFEGE)[sp.step] + (sp.alter === -1 ? "♭" : ""); };
+const concertHz = written => 440 * Math.pow(2, (written - INSTRUMENTS[state.inst].toWritten - 69) / 12);
+const writtenOf = step => INSTRUMENTS[state.inst].notes[step - 1];
+const stepsOf = song => [...new Set(song.events.map(e => e.step))].sort((a, b) => a - b);
+const playable = song => stepsOf(song).every(s => { const w = writtenOf(s); return w !== undefined && state.chosen.includes(w); });
+
+/* ---------- Settings ---------- */
+
+function load() {
+  const I = INSTRUMENTS[state.inst];
+  let shared = null, own = null;
+  try { shared = JSON.parse(localStorage.getItem("right-note-" + state.inst) || "null"); } catch (_) {}
+  try { own = JSON.parse(localStorage.getItem("songs") || "null"); } catch (_) {}
+  state.chosen = shared && Array.isArray(shared.chosen) ? shared.chosen.filter(n => I.notes.includes(n)) : [];
+  if (!state.chosen.length) state.chosen = I.def.slice();
+  if (own) {
+    state.mode = own.mode === "time" ? "time" : "follow";
+    state.tempo = TEMPOS.includes(own.tempo) ? own.tempo : 60;
+    state.names = own.names !== false;
+    state.style = own.style === "abc" ? "abc" : "sol";
+    state.repeat = own.repeat === "hold" ? "hold" : "attack";
+  }
+}
+
+function save() {
+  try {
+    localStorage.setItem("brass-inst", state.inst);
+    localStorage.setItem("songs", JSON.stringify({ mode: state.mode, tempo: state.tempo, names: state.names, style: state.style, repeat: state.repeat }));
+    let shared = null;
+    try { shared = JSON.parse(localStorage.getItem("right-note-" + state.inst) || "null"); } catch (_) {}
+    localStorage.setItem("right-note-" + state.inst, JSON.stringify(Object.assign(shared || {}, { chosen: state.chosen })));
+  } catch (_) {}
+}
+
+/* ---------- Audio ---------- */
+
+let ctx = null, analyser = null, micStream = null, raw = null, deci = null, testOsc = null, testGain = null;
+const buffers = {};
+let voices = [];
+
+function ensureCtx() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+function loadSamples(inst) {
+  ensureCtx();
+  return Promise.all(Object.keys(SAMPLES[inst]).map(name => {
+    const key = inst + "/" + name;
+    if (buffers[key]) return null;
+    return fetch("sounds/" + key + ".m4a")
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(a => new Promise((ok, bad) => ctx.decodeAudioData(a, ok, bad)))
+      .then(b => { buffers[key] = b; })
+      .catch(() => {});
+  }));
+}
+
+async function startMic() {
+  ensureCtx();
+  loadSamples(state.inst);
+  if (params.get("test")) return startTestTone();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (err) {
+    const n = err && err.name;
+    return fail(n === "NotAllowedError" ? "אין אישור למיקרופון"
+      : n === "NotFoundError" ? "לא נמצא מיקרופון"
+      : n === "NotReadableError" ? "המיקרופון תפוס בתוכנה אחרת"
+      : "לא הצלחנו לפתוח את המיקרופון");
+  }
+  const src = ctx.createMediaStreamSource(micStream);
+  makeAnalyser();
+  src.connect(analyser);
+  listening("מקשיב");
+  micStream.getAudioTracks().forEach(t => {
+    t.addEventListener("ended", () => fail("המיקרופון נותק"));
+    t.addEventListener("mute", () => { $("micText").textContent = "מושתק"; });
+    t.addEventListener("unmute", () => { $("micText").textContent = "מקשיב"; });
+  });
+}
+
+function makeAnalyser() {
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  raw = new Float32Array(analyser.fftSize);
+}
+
+function listening(text) {
+  state.listening = true;
+  $("overlay").hidden = true;
+  $("micDot").classList.add("on");
+  $("micText").textContent = text;
+}
+
+// ?test=1: no microphone. Console: testTone(writtenMidi, cents), testTone(null) = silence,
+// testGap(ms) = a short dip in the tone, like a tongued repeat.
+function startTestTone() {
+  makeAnalyser();
+  state.noiseFloor = 0.00001;
+  listening("בדיקה");
+  testGain = ctx.createGain();
+  testGain.gain.value = 0;
+  testGain.connect(analyser);
+  testOsc = ctx.createOscillator();
+  testOsc.type = "sine";
+  testOsc.connect(testGain);
+  testOsc.start();
+  window.testTone = (written, cents = 0) => {
+    if (!written) { testGain.gain.setValueAtTime(0, ctx.currentTime); return; }
+    testOsc.frequency.setValueAtTime(concertHz(written) * Math.pow(2, cents / 1200), ctx.currentTime);
+    testGain.gain.setValueAtTime(0.25, ctx.currentTime);
+  };
+  window.testGap = ms => {
+    const t = ctx.currentTime;
+    testGain.gain.setValueAtTime(0.25, t);
+    testGain.gain.linearRampToValueAtTime(0.01, t + 0.01);
+    testGain.gain.setValueAtTime(0.01, t + ms / 1000);
+    testGain.gain.linearRampToValueAtTime(0.25, t + ms / 1000 + 0.01);
+  };
+}
+
+function fail(message) {
+  state.listening = false;
+  stopPlaying();
+  $("overlay").hidden = false;
+  $("overlayText").textContent = message;
+  $("startBtn").textContent = "לנסות שוב";
+  $("micDot").classList.remove("on");
+  $("micText").textContent = "ללא מיקרופון";
+}
+
+function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
+addEventListener("pagehide", stopMic);
+document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) { stopMic(); fail("נלחץ ונמשיך להקשיב"); } });
+
+function sampleFor(written) {
+  const concert = written - INSTRUMENTS[state.inst].toWritten, table = SAMPLES[state.inst];
+  let best = null, dist = 99;
+  for (const name in table) {
+    const midi = (+name.slice(-1) + 1) * 12 + PC_NAME.indexOf(name.slice(0, -1));
+    if (Math.abs(midi - concert) < dist && buffers[state.inst + "/" + name]) { best = { name, midi }; dist = Math.abs(midi - concert); }
+  }
+  if (!best || dist > 3) return null;
+  const hz = 440 * Math.pow(2, (best.midi - 69 + table[best.name] / 100) / 12);
+  return { buffer: buffers[state.inst + "/" + best.name], rate: concertHz(written) / hz };
+}
+
+// One note on the real instrument, starting at audio time `at`, lasting `dur` seconds.
+// Recordings are 2 s; longer notes loop the steady middle of the recording.
+function playNote(written, at, dur) {
+  const c = ensureCtx(), s = sampleFor(written), g = c.createGain();
+  g.connect(c.destination);
+  const end = at + Math.max(0.15, dur - 0.04);
+  g.gain.setValueAtTime(0.6, at);
+  g.gain.setValueAtTime(0.6, end - 0.06);
+  g.gain.linearRampToValueAtTime(0.0001, end);
+  let src;
+  if (s) {
+    src = c.createBufferSource();
+    src.buffer = s.buffer;
+    src.playbackRate.value = s.rate;
+    if (dur > 1.5) { src.loop = true; src.loopStart = 0.5; src.loopEnd = 1.4; }
+    src.connect(g);
+  } else {
+    loadSamples(state.inst);
+    src = c.createOscillator();
+    const f = c.createBiquadFilter(), hz = concertHz(written);
+    src.type = "sawtooth"; src.frequency.value = hz;
+    f.type = "lowpass"; f.frequency.value = Math.min(3000, hz * 4);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.12, at + 0.04);
+    g.gain.setValueAtTime(0.12, end - 0.06);
+    src.connect(f); f.connect(g);
+  }
+  src.start(at); src.stop(end + 0.02);
+  voices.push(src);
+}
+
+function click(at, strong) {
+  const c = ensureCtx(), o = c.createOscillator(), g = c.createGain();
+  o.type = "sine"; o.frequency.value = strong ? 520 : 400;      // low and soft, not trebly
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(strong ? 0.35 : 0.25, at + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.06);
+  o.connect(g); g.connect(c.destination);
+  o.start(at); o.stop(at + 0.08);
+  voices.push(o);
+}
+
+function silenceVoices() { voices.forEach(v => { try { v.stop(); } catch (_) {} }); voices = []; }
+
+function playNotes(freqs, gap, length, level) {
+  const c = ensureCtx();
+  freqs.forEach((hz, i) => {
+    const t = c.currentTime + 0.05 + i * gap;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle"; o.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(level, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + length);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + length + 0.05);
+  });
+  state.muteUntil = Math.max(state.muteUntil, performance.now() + freqs.length * gap * 1000 + length * 1000 + 300);
+}
+
+/* ---------- Detection ---------- */
+
+// Every frame: a short-window loudness envelope, to hear a tongued restart of the same note.
+function envelope() {
+  if (!state.listening || !analyser) return;
+  analyser.getFloatTimeDomainData(raw);
+  let s = 0;
+  for (let i = raw.length - 1024; i < raw.length; i++) s += raw[i] * raw[i];
+  const env = Math.sqrt(s / 1024);
+  state.env = env;
+  state.envPeak = Math.max(env, state.envPeak * 0.985);
+  if (env < state.envPeak * 0.4) state.dipped = true;
+  else if (state.dipped && env > state.envPeak * 0.65) { state.dipped = false; state.onsetAt = performance.now(); }
+}
+
+function analyse() {
+  if (!state.listening || !analyser) return;
+  let sum = 0;
+  for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
+  state.rms = Math.sqrt(sum / raw.length);
+  if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
+  else if (!state.heard) state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
+  const gate = Math.max(state.noiseFloor * Math.pow(10, 12 / 20), 0.0015);
+  const sounding = state.rms > gate && performance.now() > state.muteUntil;
+  if (sounding && !state.soundOn) { state.soundOn = true; state.soundSince = performance.now(); state.onsetAt = performance.now(); }
+  else if (!sounding) state.soundOn = false;
+  state.heard = false;
+  if (!sounding || performance.now() - state.soundSince < 150) { state.clarity = 0; return; }
+
+  const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+  if (!deci || deci.length !== n) deci = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
+  const I = INSTRUMENTS[state.inst];
+  const got = detect(deci, sr2, I.lo, I.hi);
+  if (!got || got.clarity < 0.6) { state.clarity = 0; return; }
+  state.freq = got.freq;
+  state.clarity = got.clarity;
+  state.heard = true;
+}
+
+function detect(buf, sampleRate, fMin, fMax) {
+  const n = buf.length;
+  const minLag = Math.max(2, Math.floor(sampleRate / fMax));
+  const maxLag = Math.min(Math.floor(sampleRate / fMin), n - 2);
+  if (maxLag <= minLag) return null;
+  const nsdf = new Float32Array(maxLag + 2);
+  let peak = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let ac = 0, m = 0;
+    for (let i = 0, end = n - lag; i < end; i++) { const a = buf[i], b = buf[i + lag]; ac += a * b; m += a * a + b * b; }
+    const v = m > 0 ? (2 * ac) / m : 0;
+    nsdf[lag] = v;
+    if (v > peak) peak = v;
+  }
+  if (peak < 0.4) return null;
+  const threshold = peak * 0.9;
+  for (let lag = minLag + 1; lag < maxLag; lag++) {
+    if (nsdf[lag] > threshold && nsdf[lag] >= nsdf[lag - 1] && nsdf[lag] >= nsdf[lag + 1]) {
+      const y1 = nsdf[lag - 1], y2 = nsdf[lag], y3 = nsdf[lag + 1];
+      const denom = 2 * (2 * y2 - y1 - y3);
+      return { freq: sampleRate / (lag + (Math.abs(denom) > 1e-9 ? (y3 - y1) / denom : 0)), clarity: y2 };
+    }
+  }
+  return null;
+}
+
+const centsTo = written => 1200 * Math.log2(state.freq / concertHz(written));
+const onNote = written => state.heard && performance.now() > state.muteUntil && Math.abs(centsTo(written)) < TOL_CENTS;
+
+/* ---------- Notation ---------- */
+
+const el = (tag, attrs, parent) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+const S = 34, STAFF_X0 = 30, STAFF_X1 = 1280, STAFF_TOP = 200, BARS_X0 = 250;
+const BAR_W = (STAFF_X1 - BARS_X0) / BARS_PER_LINE;
+const bottomLine = () => INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;     // E4 / G2
+const staffY = d => STAFF_TOP + 4 * S - (d - bottomLine()) * S / 2;
+let g = {}, noteEls = [];
+
+function buildScene() {
+  const svg = $("scene");
+  svg.textContent = "";
+  g = { title: el("text", { x: 650, y: 70, "text-anchor": "middle", "font-size": 46, "font-weight": 800, fill: "#15181d", style: "font-family: var(--display)" }, svg) };
+  g.line = el("g", {}, svg);
+  g.arrow = el("path", { fill: "#1a7fe2", opacity: 0 }, svg);
+  g.count = el("text", { x: 650, y: 540, "text-anchor": "middle", "font-size": 90, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)" }, svg);
+  g.banner = el("text", { x: 650, y: 150, "text-anchor": "middle", "font-size": 84, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)", direction: "rtl", opacity: 0 }, svg);
+  g.title.textContent = state.song ? state.song.title : "";
+  state.line = -1;
+  if (state.song) drawLine(lineOf(state.cursor), false);
+}
+
+const lineOf = i => Math.floor(state.song.events[Math.min(i, state.song.events.length - 1)].bar / BARS_PER_LINE);
+
+// Draw one line of four bars. Notes are spaced by duration but never closer than a note head allows.
+function drawLine(line, slide) {
+  if (line === state.line) return;
+  state.line = line;
+  const song = state.song, I = INSTRUMENTS[state.inst], grp = g.line;
+  grp.textContent = "";
+  noteEls = [];
+  const treble = I.clef === "treble";
+  for (let i = 0; i < 5; i++) el("line", { x1: STAFF_X0, x2: STAFF_X1, y1: STAFF_TOP + i * S, y2: STAFF_TOP + i * S, stroke: "#15181d", "stroke-width": 3 }, grp);
+  el("text", { x: STAFF_X0 + 12, y: treble ? STAFF_TOP + 3 * S : STAFF_TOP + S, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, grp).textContent = treble ? GLYPH.gClef : GLYPH.fClef;
+  I.key.forEach((d, i) => el("text", { x: 130 + i * 26, y: staffY(d), "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, grp).textContent = GLYPH.flat);
+  if (line === 0) [STAFF_TOP + S, STAFF_TOP + 3 * S].forEach(y => el("text", { x: 194, y, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, grp).textContent = GLYPH.time4);
+
+  const firstBar = line * BARS_PER_LINE, lastBar = Math.min(song.bars, firstBar + BARS_PER_LINE) - 1;
+  for (let b = firstBar; b <= lastBar; b++) {
+    const bx = BARS_X0 + (b - firstBar) * BAR_W, end = b === song.bars - 1;
+    el("line", { x1: bx + BAR_W - (end ? 10 : 0), x2: bx + BAR_W - (end ? 10 : 0), y1: STAFF_TOP, y2: STAFF_TOP + 4 * S, stroke: "#15181d", "stroke-width": 3 }, grp);
+    if (end) el("rect", { x: bx + BAR_W - 6, y: STAFF_TOP, width: 8, height: 4 * S, fill: "#15181d" }, grp);
+    const n = el("text", { x: bx + 6, y: STAFF_TOP - 22, "font-size": 18, fill: "#8a96a6", style: "font-family: var(--display)" }, grp);
+    n.textContent = b + 1;
+    const evs = song.events.filter(e => e.bar === b);
+    const weights = evs.map(e => 0.8 + 0.3 * e.dur), total = weights.reduce((a, c) => a + c, 0);
+    let acc = 0;
+    evs.forEach((e, k) => {
+      const x = bx + 18 + (acc / total) * (BAR_W - 40);
+      acc += weights[k];
+      noteEls[song.events.indexOf(e)] = drawNote(grp, e, x);
+    });
+  }
+  // Names fit the tightest spacing on the line.
+  const xs = noteEls.filter(Boolean).map(n => n.x).sort((a, b) => a - b);
+  const gap = Math.min(80, ...xs.slice(1).map((x, i) => x - xs[i]));
+  const size = Math.max(18, Math.min(34, gap * 0.85));
+  noteEls.forEach(n => { if (n && n.name) n.name.setAttribute("font-size", size); });
+  if (slide) {
+    const t0 = performance.now();
+    (function go(now) {
+      const p = Math.min(1, (now - t0) / 350), e = 1 - Math.pow(1 - p, 3);
+      grp.setAttribute("transform", `translate(${(1 - e) * 300} 0)`);
+      grp.setAttribute("opacity", e);
+      if (p < 1) requestAnimationFrame(go);
+    })(t0);
+  } else { grp.removeAttribute("transform"); grp.setAttribute("opacity", 1); }
+  paintNotes();
+}
+
+function drawNote(grp, e, x) {
+  const written = writtenOf(e.step), sp = spell(written), d = diatonicOf(sp), y = staffY(d), pos = d - bottomLine();
+  const wrap = el("g", {}, grp);
+  const hl = el("rect", { x: x - 14, y: STAFF_TOP - 52, width: 1.18 * S + 28, height: 4 * S + 164, rx: 16, fill: "#1a7fe2", opacity: 0 }, wrap);
+  const line = q => el("line", { x1: x - 10, x2: x + 1.18 * S + 10, y1: staffY(bottomLine() + q), y2: staffY(bottomLine() + q), stroke: "#15181d", "stroke-width": 3 }, wrap);
+  for (let q = -2; q >= pos; q -= 2) line(q);
+  for (let q = 10; q <= pos; q += 2) line(q);
+  const up = pos < 4;
+  const base = e.dur >= 4 ? "whole" : e.dur >= 2 ? "half" : e.dur >= 1 ? "quarter" : "eighth";
+  const glyph = base === "whole" ? GLYPH.whole : GLYPH[base + (up ? "Up" : "Down")];
+  const head = el("text", { x, y, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, wrap);
+  head.textContent = glyph;
+  const parts = [head];
+  if (e.dur === 1.5 || e.dur === 3) {
+    const dot = el("text", { x: x + 1.18 * S + 8, y: pos % 2 === 0 ? y - S / 2 : y, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, wrap);
+    dot.textContent = GLYPH.dot;
+    parts.push(dot);
+  }
+  let name = null;
+  if (state.names) {
+    name = el("text", { x: x + 0.59 * S, y: STAFF_TOP + 4 * S + 100, "text-anchor": "middle", "font-size": 30, "font-weight": 700, fill: "#3b434e", style: "font-family: var(--display)" }, wrap);
+    name.textContent = nameOf(written);
+    parts.push(name);
+  }
+  return { wrap, hl, parts, name, x, y, cx: x + 0.59 * S };
+}
+
+// Colours: green = played, blue band = now, faded = outside the practised bars.
+function paintNotes() {
+  if (!state.song) return;
+  state.song.events.forEach((e, i) => {
+    const n = noteEls[i];
+    if (!n) return;
+    const inSection = e.bar >= state.from && e.bar <= state.to;
+    const now = i === state.cursor && ["follow", "time", "listen", "ready", "count"].includes(state.phase);
+    n.wrap.setAttribute("opacity", inSection ? 1 : 0.3);
+    n.hl.setAttribute("opacity", now ? 0.14 : 0);
+    const colour = state.done.has(i) ? "#1b8f58" : now && state.phase !== "ready" ? "#1a7fe2" : "#15181d";
+    n.parts.forEach(p => p.setAttribute("fill", p === n.name && colour === "#15181d" ? "#3b434e" : colour));
+  });
+}
+
+/* ---------- Playing ---------- */
+
+const sectionEvents = () => state.song.events.map((e, i) => i).filter(i => state.song.events[i].bar >= state.from && state.song.events[i].bar <= state.to);
+const beatMs = () => 60000 / state.tempo;
+
+function chooseSong(song) {
+  state.song = song;
+  state.from = 0; state.to = song.bars - 1;
+  fillBars();
+  $("list").hidden = true;
+  resetPlay();
+}
+
+function resetPlay() {
+  silenceVoices();
+  state.phase = state.song ? "ready" : "list";
+  state.done = new Set();
+  state.matched = {};
+  state.cursor = state.song ? sectionEvents()[0] : 0;
+  state.lastAccepted = -1;
+  state.inBandSince = null;
+  buildScene();
+  updateButtons();
+}
+
+function start() {
+  if (!state.song || !state.listening || !$("sheet").hidden || !$("list").hidden) return;
+  if (state.phase !== "ready" && state.phase !== "end") return stopPlaying();
+  resetPlay();
+  ensureCtx();
+  if (state.mode === "follow") { state.phase = "follow"; }
+  else {
+    // One bar of count-in clicks, then the music clock starts. No sound while the child plays.
+    state.phase = "count";
+    const c = ensureCtx(), at = c.currentTime + 0.15, beat = 60 / state.tempo;
+    for (let i = 0; i < BEATS; i++) click(at + i * beat, i === 0);
+    state.t0 = performance.now() + 150 + BEATS * beatMs() - sectionStartBeat() * beatMs();
+    state.muteUntil = performance.now() + 150 + BEATS * beatMs() - 100;
+  }
+  updateButtons();
+  paintNotes();
+}
+
+const sectionStartBeat = () => state.song.events[sectionEvents()[0]].start;
+
+// Listen first: the song on the real instrument at the chosen tempo, the marker moving along.
+function listen() {
+  if (!state.song || !$("sheet").hidden || !$("list").hidden) return;
+  if (state.phase === "listen") return stopPlaying();
+  resetPlay();
+  const c = ensureCtx();
+  loadSamples(state.inst).then(() => {
+    if (state.phase !== "ready") return;
+    const beat = 60 / state.tempo, at = c.currentTime + 0.2, first = sectionStartBeat();
+    let last = 0;
+    sectionEvents().forEach(i => {
+      const e = state.song.events[i];
+      playNote(writtenOf(e.step), at + (e.start - first) * beat, e.dur * beat);
+      last = Math.max(last, (e.start - first + e.dur) * beat);
+    });
+    state.phase = "listen";
+    state.t0 = performance.now() + 200 - first * beatMs();
+    state.muteUntil = performance.now() + 200 + last * 1000 + 400;
+    updateButtons();
+  });
+}
+
+function stopPlaying() {
+  if (!state.song) return;
+  state.muteUntil = Math.min(state.muteUntil, performance.now() + 300);
+  resetPlay();
+}
+
+function finish() {
+  state.phase = "end";
+  const evs = sectionEvents(), got = evs.filter(i => state.done.has(i)).length;
+  const words = state.mode === "follow" ? "כל הכבוד!" : got === evs.length ? "מושלם!" : got >= evs.length / 2 ? "יפה מאוד!" : "כל הכבוד!";
+  g.banner.textContent = words;
+  g.banner.setAttribute("opacity", 1);
+  playNotes([523.25, 659.25, 783.99, 1046.5], 0.1, 0.5, 0.2);
+  for (let i = 0; i < 4; i++) setTimeout(() => fireworks(250 + Math.random() * 800, 120 + Math.random() * 120), i * 350);
+  updateButtons();
+  paintNotes();
+  const song = state.song;
+  setTimeout(() => { if (state.phase === "end" && state.song === song) { g.banner.setAttribute("opacity", 0); resetPlay(); } }, 3500);
+}
+
+function frame(now) {
+  envelope();
+  if (now - state.lastAnalyse > 50) { state.lastAnalyse = now; analyse(); }
+  if (state.phase === "follow") follow(now);
+  else if (state.phase === "count" || state.phase === "time" || state.phase === "listen") inTime(now);
+  if (!$("diag").hidden) {
+    const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
+    const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
+    const target = state.song ? writtenOf(state.song.events[state.cursor].step) : null;
+    $("diag").textContent = `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.heard ? state.freq.toFixed(0) + " Hz" : "—"}\nדיוק   ${state.heard && target ? Math.round(centsTo(target)) : "—"}`;
+  }
+  requestAnimationFrame(frame);
+}
+
+// Follow: wait on the note. A repeat of the same pitch needs a new attack (or, in "hold" mode,
+// just the note held again for the hold time after the previous one was accepted).
+function follow(now) {
+  const evs = sectionEvents(), i = state.cursor, e = state.song.events[i], w = writtenOf(e.step);
+  const prev = evs[evs.indexOf(i) - 1];
+  const repeat = prev !== undefined && writtenOf(state.song.events[prev].step) === w;
+  const fresh = !repeat || state.repeat === "hold" || state.onsetAt > state.lastAccepted;
+  const ok = onNote(w) && fresh;
+  if (ok) { state.lastInBand = now; if (state.inBandSince === null) state.inBandSince = now; }
+  else if (state.inBandSince !== null && now - state.lastInBand > 120) state.inBandSince = null;
+  showArrow(w, now);
+  if (state.inBandSince !== null && now - state.inBandSince >= FOLLOW_HOLD_MS) {
+    state.done.add(i);
+    state.lastAccepted = now;
+    state.inBandSince = null;
+    const next = evs[evs.indexOf(i) + 1];
+    if (next === undefined) { g.arrow.setAttribute("opacity", 0); return finish(); }
+    state.cursor = next;
+    if (lineOf(next) !== state.line) drawLine(lineOf(next), true);
+    paintNotes();
+  }
+}
+
+// A soft arrow only when a clear wrong note is held for a while (follow mode only).
+function showArrow(w, now) {
+  const n = noteEls[state.cursor];
+  const wrong = n && state.heard && now > state.muteUntil && Math.abs(centsTo(w)) > 150;
+  if (wrong) { if (!state.wrongSince) state.wrongSince = now; } else state.wrongSince = 0;
+  const show = wrong && now - state.wrongSince > 500;
+  g.arrow.setAttribute("opacity", show ? 0.9 : 0);
+  if (show) {
+    const up = centsTo(w) < 0, ax = n.cx, ay = up ? STAFF_TOP - 80 : STAFF_TOP + 4 * S + 40;
+    g.arrow.setAttribute("d", up
+      ? `M ${ax} ${ay - 34} L ${ax + 26} ${ay + 6} L ${ax + 9} ${ay + 6} L ${ax + 9} ${ay + 30} L ${ax - 9} ${ay + 30} L ${ax - 9} ${ay + 6} L ${ax - 26} ${ay + 6} Z`
+      : `M ${ax} ${ay + 34} L ${ax + 26} ${ay - 6} L ${ax + 9} ${ay - 6} L ${ax + 9} ${ay - 30} L ${ax - 9} ${ay - 30} L ${ax - 9} ${ay - 6} L ${ax - 26} ${ay - 6} Z`);
+  }
+}
+
+// In time (and listening): the marker follows the clock. A note turns green once the right pitch
+// has sounded for long enough while it was due.
+function inTime(now) {
+  const beat = (now - state.t0) / beatMs(), evs = sectionEvents();
+  const first = state.song.events[evs[0]], last = state.song.events[evs[evs.length - 1]];
+  if (state.phase === "count") {
+    const left = Math.ceil(first.start - beat);
+    g.count.textContent = left > 0 && left <= BEATS ? String(left) : "";
+    if (beat >= first.start) { state.phase = "time"; g.count.textContent = ""; }
+    else return;
+  }
+  if (beat >= last.start + last.dur + DETECT_LAG_MS / beatMs()) { g.count.textContent = ""; return state.phase === "listen" ? resetPlay() : finish(); }
+  const cur = evs.find(i => { const e = state.song.events[i]; return beat >= e.start && beat < e.start + e.dur; });
+  if (cur !== undefined && cur !== state.cursor) {
+    state.cursor = cur;
+    if (lineOf(cur) !== state.line) drawLine(lineOf(cur), true);
+    paintNotes();
+  }
+  if (state.phase !== "time") return;
+  // Judge by when the sound was made: the detector hears ~0.1 s late (its window is ~0.19 s).
+  // A note counts from a little before its start until it ends; a repeat of the same pitch
+  // also needs its own attack, so the tail of the previous note cannot earn it.
+  const heardBeat = (now - DETECT_LAG_MS - state.t0) / beatMs();
+  evs.forEach((i, k) => {
+    const e = state.song.events[i];
+    if (state.done.has(i) || heardBeat < e.start - 0.15 || heardBeat >= e.start + e.dur) return;
+    const prev = state.song.events[evs[k - 1]];
+    if (prev && prev.step === e.step && state.onsetAt < state.t0 + (e.start - 0.25) * beatMs()) return;
+    if (onNote(writtenOf(e.step))) {
+      state.matched[i] = (state.matched[i] || 0) + Math.min(100, now - (state.lastFrame || now));
+      if (state.matched[i] >= Math.min(300, 0.5 * e.dur * beatMs())) { state.done.add(i); paintNotes(); }
+    }
+  });
+  state.lastFrame = now;
+}
+
+function fireworks(x, y) {
+  const colours = ["#f2b705", "#ff6f59", "#1a7fe2", "#2fa36b", "#7a5cf0"];
+  const colour = colours[Math.floor(Math.random() * colours.length)];
+  for (let i = 0; i < 22; i++) {
+    const a = (Math.PI * 2 * i) / 22, d = 110 + Math.random() * 40;
+    const c = el("circle", { cx: x, cy: y, r: 7, fill: colour }, $("scene"));
+    const t0 = performance.now();
+    (function fly(now) {
+      const p = (now - t0) / 1300;
+      if (p >= 1) { c.remove(); return; }
+      const e = 1 - Math.pow(1 - p, 3);
+      c.setAttribute("cx", x + Math.cos(a) * d * e);
+      c.setAttribute("cy", y + Math.sin(a) * d * e + 60 * p * p);
+      c.setAttribute("opacity", 1 - p);
+      requestAnimationFrame(fly);
+    })(t0);
+  }
+}
+
+/* ---------- Panels ---------- */
+
+function buildList() {
+  const box = $("cards");
+  box.textContent = "";
+  let hidden = 0;
+  SONGS.forEach(song => {
+    if (!playable(song)) { hidden++; return; }
+    const b = document.createElement("button");
+    b.className = "song-card";
+    const t = document.createElement("b");
+    t.textContent = song.title;
+    b.appendChild(t);
+    stepsOf(song).forEach(s => { const c = document.createElement("span"); c.textContent = nameOf(writtenOf(s)); b.appendChild(c); });
+    b.addEventListener("click", () => chooseSong(song));
+    box.appendChild(b);
+  });
+  $("more").textContent = !box.children.length ? "אין עדיין שיר עם הצלילים שנבחרו. מסמנים עוד צלילים בהגדרות ⚙"
+    : hidden ? `עוד ${hidden} שירים יופיעו כשמסמנים עוד צלילים בהגדרות ⚙` : "";
+}
+
+function showList() {
+  stopPlaying();
+  state.phase = "list";
+  buildList();
+  $("list").hidden = false;
+  updateButtons();
+}
+
+function fillBars() {
+  const f = $("fromBar"), t = $("toBar");
+  f.textContent = ""; t.textContent = "";
+  for (let b = 0; b < state.song.bars; b++) {
+    f.add(new Option(String(b + 1), String(b)));
+    t.add(new Option(String(b + 1), String(b)));
+  }
+  f.value = String(state.from); t.value = String(state.to);
+}
+
+function segButtons(box, items, isOn, pick) {
+  box.textContent = "";
+  items.forEach(([value, label]) => {
+    const b = document.createElement("button");
+    b.className = "seg-btn";
+    b.textContent = label;
+    b.setAttribute("aria-pressed", String(isOn(value)));
+    b.addEventListener("click", () => { pick(value); save(); buildPanels(); });
+    box.appendChild(b);
+  });
+}
+
+function buildPanels() {
+  const I = INSTRUMENTS[state.inst];
+  const box = $("noteChips");
+  box.textContent = "";
+  I.notes.forEach(n => {
+    const b = document.createElement("button");
+    b.className = "note-chip";
+    b.setAttribute("aria-pressed", String(state.chosen.includes(n)));
+    b.innerHTML = nameOf(n) + (I.open.includes(n) ? "<small>בלי אצבעות</small>" : "");
+    b.addEventListener("click", () => {
+      const i = state.chosen.indexOf(n);
+      if (i >= 0) { if (state.chosen.length > 1) state.chosen.splice(i, 1); }
+      else state.chosen.push(n);
+      state.chosen.sort((a, c) => a - c);
+      save(); buildPanels();
+    });
+    box.appendChild(b);
+  });
+  segButtons($("namesSeg"), [[true, "מראים"], [false, "מסתירים"]], v => state.names === v, v => { state.names = v; });
+  segButtons($("styleSeg"), [["sol", "דו רה מי"], ["abc", "C D E"]], v => state.style === v, v => { state.style = v; });
+  segButtons($("repeatSeg"), [["attack", "צריך לשון חדשה"], ["hold", "מספיק להחזיק"]], v => state.repeat === v, v => { state.repeat = v; });
+  segButtons($("tempoSeg"), TEMPOS.map(t => [t, "♩=" + t]), v => state.tempo === v, v => { state.tempo = v; });
+  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
+  updateButtons();
+}
+
+function updateButtons() {
+  $("modeFollow").setAttribute("aria-pressed", String(state.mode === "follow"));
+  $("modeTime").setAttribute("aria-pressed", String(state.mode === "time"));
+  const busy = ["follow", "count", "time"].includes(state.phase);
+  $("playBtn").textContent = busy ? "■ עצירה" : "▶ מנגנים";
+  $("playBtn").classList.toggle("stop", busy);
+  $("listenBtn").textContent = state.phase === "listen" ? "■ עצירה" : "🎧 להקשיב";
+  const songOpen = !!state.song && $("list").hidden;
+  ["playBtn", "listenBtn"].forEach(id => $(id).disabled = !songOpen);
+  $("transport").classList.toggle("hide", !songOpen);
+}
+
+function setMode(m) { state.mode = m; save(); stopPlaying(); updateButtons(); }
+
+function playOrStop() { if (!state.listening) startMic().then(() => { if (state.listening) start(); }); else start(); }
+
+function toggleSheet(show) {
+  const open = show === undefined ? $("sheet").hidden : show;
+  if (open) stopPlaying();
+  $("sheet").hidden = !open;
+  if (open) buildPanels();
+  else {
+    // Notes changed: the open song may no longer fit; the list always reflects the choice.
+    if (state.song && !playable(state.song)) { state.song = null; showList(); }
+    else if (state.song) resetPlay(); else buildList();
+  }
+}
+
+function setInstrument(k) {
+  state.inst = k;
+  load(); save();
+  if (ctx) loadSamples(k);
+  buildPanels();
+  if (state.song && playable(state.song)) resetPlay();
+  else { state.song = null; showList(); }
+}
+
+function toggleFullscreen() {
+  const d = document, root = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root); if (p && p.catch) p.catch(() => {}); }
+  } catch (_) {}
+}
+
+/* ---------- Wiring ---------- */
+
+for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
+$("startBtn").addEventListener("click", startMic);
+$("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });
+$("listBtn").addEventListener("click", showList);
+$("settings").addEventListener("click", () => toggleSheet());
+$("sheetDone").addEventListener("click", () => toggleSheet(false));
+$("fullscreen").addEventListener("click", toggleFullscreen);
+$("modeFollow").addEventListener("click", () => setMode("follow"));
+$("modeTime").addEventListener("click", () => setMode("time"));
+$("playBtn").addEventListener("click", playOrStop);
+$("listenBtn").addEventListener("click", listen);
+$("fromBar").addEventListener("change", () => { state.from = +$("fromBar").value; if (state.to < state.from) { state.to = state.from; $("toBar").value = String(state.to); } resetPlay(); });
+$("toBar").addEventListener("change", () => { state.to = +$("toBar").value; if (state.from > state.to) { state.from = state.to; $("fromBar").value = String(state.from); } resetPlay(); });
+document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT") return;
+  const c = e.code;
+  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); playOrStop(); }
+  else if (c === "KeyH" || c === "PageUp" || c === "ArrowLeft") { e.preventDefault(); listen(); }
+  else if (c === "KeyM") setMode(state.mode === "time" ? "follow" : "time");
+  else if (c === "KeyL") showList();
+  else if (c === "KeyS") toggleSheet();
+  else if (c === "Escape") { if (!$("sheet").hidden) toggleSheet(false); else stopPlaying(); }
+  else if (c === "KeyR") state.noiseFloor = 0.002;
+  else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
+  else if (c === "KeyF") toggleFullscreen();
+});
+
+const params = new URLSearchParams(location.search);
+let savedInst = null;
+try { savedInst = localStorage.getItem("brass-inst"); } catch (_) {}
+if (INSTRUMENTS[params.get("inst")]) state.inst = params.get("inst");
+else if (INSTRUMENTS[savedInst]) state.inst = savedInst;
+load();
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+buildScene();
+buildPanels();
+buildList();
+if (location.protocol === "file:") fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
