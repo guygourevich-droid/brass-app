@@ -1,6 +1,6 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "brass-app-v12";
+const CACHE = "brass-app-v13";
 const FILES = [
   "./",
   "index.html",
@@ -75,7 +75,9 @@ self.addEventListener("activate", event => {
 function fromNetwork(request) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(reject, 3000);
-    fetch(request).then(
+    // "no-cache" asks the server whether the file changed instead of trusting the browser's
+    // 10-minute copy (GitHub Pages sends max-age=600), so a new version shows on the next load.
+    fetch(new Request(request.url, { cache: "no-cache", credentials: "same-origin" })).then(
       response => { clearTimeout(timer); resolve(response); },
       error => { clearTimeout(timer); reject(error); }
     );
