@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>סולם הקרן · Brass App</title>
+<meta name="theme-color" content="#bfe4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brass App">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #56616f;
+    --line: rgba(21, 24, 29, .14);
+    --panel: rgba(255, 255, 255, .92);
+    --go: #1b8f58;
+    --accent: #1a7fe2;
+    --display: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e8f4ff 55%, #fff4e3 100%) fixed; overflow: hidden; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); border-radius: 12px; }
+
+  .app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px clamp(12px, 3vw, 28px); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .console a { color: var(--muted); text-decoration: none; }
+  .spacer { margin-inline-start: auto; }
+  .seg { display: inline-flex; flex-wrap: wrap; background: var(--panel); border-radius: 22px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; min-height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 500; }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .18); }
+  .icon-btn { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; }
+  .mic-dot { width: 12px; height: 12px; border-radius: 50%; background: #c3ccd8; display: inline-block; vertical-align: -1px; }
+  .mic-dot.on { background: var(--go); }
+
+  .stage { position: relative; min-height: 0; padding: 1vh clamp(8px, 2vw, 24px) 0; overflow: hidden; }
+  .scene { width: 100%; height: 100%; display: block; direction: ltr; touch-action: manipulation; overflow: visible; }
+  .rung-hit { cursor: pointer; }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .84); text-align: center; padding: 4vh 6vw; }
+  .overlay[hidden] { display: none; }
+  .overlay p { margin: 0 0 2vh; font-size: clamp(18px, 3.2vh, 30px); font-weight: 500; max-width: 24ch; line-height: 1.5; }
+  .big-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .6em 1.6em; cursor: pointer; min-height: 56px; }
+
+  /* Settings */
+  .sheet { position: absolute; inset: 0; background: rgba(255, 255, 255, .97); overflow: auto; padding: 2vh clamp(16px, 4vw, 48px) 4vh; }
+  .sheet[hidden] { display: none; }
+  .sheet h2 { font-size: clamp(20px, 3vh, 30px); margin: 2vh 0 1vh; font-weight: 700; }
+  .notes { display: flex; flex-wrap: wrap; gap: 10px; }
+  .note-chip { min-width: 84px; min-height: 60px; border-radius: 16px; border: 3px solid var(--line); background: #fff; font-size: clamp(18px, 2.6vh, 26px); font-weight: 700; cursor: pointer; }
+  .note-chip[aria-pressed="true"] { border-color: var(--accent); background: #e8f2fe; color: #0f4f96; }
+  .note-chip[disabled] { opacity: .35; cursor: default; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 1vh 0; }
+  .row > span:first-child { min-width: 9ch; color: var(--muted); }
+  .done-btn { background: var(--go); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(18px, 2.6vh, 26px); padding: .55em 1.8em; cursor: pointer; min-height: 52px; margin-top: 2vh; }
+
+  .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; background: rgba(13, 17, 23, .85); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; white-space: pre; font-variant-numeric: tabular-nums; }
+  .diag[hidden] { display: none; }
+
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .bananas { font-size: 22px; letter-spacing: 2px; }
+  kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="console">
+    <a href="index.html">‹ Brass App</a>
+    <div class="seg" role="group" aria-label="מצב">
+      <button id="modeExplore" class="seg-btn" aria-pressed="true">חופשי</button>
+      <button id="modeAim" class="seg-btn" aria-pressed="false">🍌 בננה</button>
+    </div>
+    <span class="spacer"></span>
+    <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
+    <button id="tone" class="icon-btn" title="לשמוע את הצליל (T)">🔊</button>
+    <button id="settings" class="icon-btn" title="הגדרות (S)">⚙</button>
+    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
+  </header>
+
+  <main class="stage" id="stage">
+    <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="סולם הקרן"></svg>
+
+    <div class="overlay" id="overlay">
+      <div>
+        <p id="overlayText">נלחץ ונתחיל להקשיב</p>
+        <button class="big-btn" id="startBtn">התחלה</button>
+      </div>
+    </div>
+
+    <section class="sheet" id="sheet" hidden aria-label="הגדרות">
+      <h2>הסולם</h2>
+      <div class="row"><span>שלב תחתון</span><div class="seg" role="group" id="loSeg"></div></div>
+      <div class="row"><span>שלב עליון</span><div class="seg" role="group" id="hiSeg"></div></div>
+      <h2>על אילו שלבים תופיע בננה?</h2>
+      <div class="notes" id="targetChips"></div>
+      <h2>הגדרות</h2>
+      <div class="row"><span>שם הצליל</span>
+        <div class="seg" role="group"><button class="seg-btn" id="namesOn">מראים</button><button class="seg-btn" id="namesOff">מסתירים</button></div>
+        <div class="seg" role="group"><button class="seg-btn" id="styleSol">דו רה מי</button><button class="seg-btn" id="styleAbc">C D E</button></div>
+      </div>
+      <div class="row"><span>חץ עזר</span>
+        <div class="seg" role="group"><button class="seg-btn" id="arrowOn">מראים</button><button class="seg-btn" id="arrowOff">מסתירים</button></div>
+      </div>
+      <div class="row"><span>החזקה</span><div class="seg" role="group" id="holdSeg"></div></div>
+      <div class="row"><span>דיוק</span>
+        <div class="seg" role="group"><button class="seg-btn" id="tolWide">רחב</button><button class="seg-btn" id="tolNormal">רגיל</button><button class="seg-btn" id="tolTight">מדויק</button></div>
+      </div>
+      <div class="row"><span>סדר</span>
+        <div class="seg" role="group"><button class="seg-btn" id="ordRandom">אקראי</button><button class="seg-btn" id="ordSeq">לפי הסדר</button></div>
+      </div>
+      <div class="row"><span>משמיעים</span>
+        <div class="seg" role="group"><button class="seg-btn" id="refOn">לפני כל בננה</button><button class="seg-btn" id="refOff">רק בלחיצה</button></div>
+      </div>
+      <div class="row"><span>עוצמה</span><div class="seg" role="group" id="volSeg"></div></div>
+      <button class="done-btn" id="sheetDone">סגירה</button>
+    </section>
+
+    <div class="diag" id="diag" hidden></div>
+  </main>
+
+  <footer class="transport">
+    <span class="bananas" id="bananas"></span>
+    <span class="spacer"></span>
+    <span><kbd>Space</kbd> תור חדש · <kbd>↑</kbd><kbd>↓</kbd> בננה · <kbd>M</kbd> מצב · <kbd>T</kbd> להשמיע · <kbd>S</kbd> הגדרות · <kbd>R</kbd> כיול · <kbd>D</kbd> בדיקה</span>
+  </footer>
+</div>
+<script>
+"use strict";
+
+/* ---------- Horn ladder ----------
+   The F horn with no valves: each rung is one partial of the open horn.
+   A monkey climbs to the rung the child is playing, so a slip to the next partial is seen as a jump.
+   Explore: the monkey just follows. Banana: one rung holds a banana, the app plays it on a real horn,
+   hold that rung and the monkey gets the banana. Nothing turns red; silence is waiting. */
+
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+const F1 = 440 * Math.pow(2, (29 - 69) / 12);   // concert F1, the open F horn's fundamental
+const TO_WRITTEN = 7;                            // horn in F reads a fifth above concert
+
+// Open-horn partials. `w` = written midi as the child reads it; `sample` = concert recording
+// (University of Iowa MIS, horn ff) and `off` = how many cents that recording measured off equal temperament.
+// The 11th partial sits between F and F♯ and is never played, so it is left out.
+const PARTIALS = [
+  { n: 2,  w: 48, sample: "F2",  off: -34 },
+  { n: 3,  w: 55, sample: "C3",  off: 5 },
+  { n: 4,  w: 60, sample: "F3",  off: 13 },
+  { n: 5,  w: 64, sample: "A3",  off: -14 },
+  { n: 6,  w: 67, sample: "C4",  off: -7 },
+  { n: 7,  w: 70, sample: "Eb4", off: 11 },
+  { n: 8,  w: 72, sample: "F4",  off: 14 },
+  { n: 9,  w: 74, sample: "G4",  off: 18 },
+  { n: 10, w: 76, sample: "A4",  off: 7 },
+  { n: 12, w: 79, sample: "C5",  off: 2 }
+];
+const LO_CHOICES = [2, 3, 4];
+const HI_CHOICES = [6, 7, 8, 9, 10, 12];
+
+const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
+const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+const STEP_OF_PC = { 0: [0, 0], 2: [1, 0], 4: [2, 0], 5: [3, 0], 7: [4, 0], 9: [5, 0], 10: [6, -1], 11: [6, 0] };
+
+const TOL = { wide: 75, normal: 50, tight: 30 };
+const HOLDS = [1, 2, 3, 4, 5];
+const VOLS = { soft: 0.35, mid: 0.6, loud: 0.95 };
+const VOL_LABEL = { soft: "שקט", mid: "בינוני", loud: "חזק" };
+const SNAP_MS = 300;       // a new rung must be steady this long before the monkey jumps
+
+const state = {
+  mode: "explore", lo: 3, hi: 8, targets: [4, 5, 6], target: 5,
+  order: "random", names: true, style: "sol", arrow: true, hold: 2, tol: "normal", ref: true, vol: "mid",
+  bananas: 0,
+  listening: false, holdProgress: 0, inBand: false, inBandSince: 0, drainFrom: 0, drainSince: 0,
+  rms: 0, freq: 0, clarity: 0, noiseFloor: 0.002,
+  soundOn: false, soundSince: 0, muteUntil: 0, lastAnalyse: 0,
+  heardN: null, heardCents: 0, candN: null, candSince: 0,
+  rung: null,            // the rung the monkey holds (partial number), null = on the grass
+  celebrateUntil: 0, lastPlayed: 0, lastHeard: 0
+};
+
+/* ---------- Notes ---------- */
+
+const partial = n => PARTIALS.find(p => p.n === n);
+const hzOf = n => n * F1;
+const writtenOf = hz => 69 + 12 * Math.log2(hz / 440) + TO_WRITTEN;   // fractional written midi
+function nameOf(n) {
+  const w = partial(n).w, [step, alter] = STEP_OF_PC[w % 12];
+  return (state.style === "abc" ? LETTERS : SOLFEGE)[step] + (alter === -1 ? "♭" : "");
+}
+// Settings only: the same name twice (low and high G) needs the octave, e.g. "סוֹל G4".
+function fullName(n) {
+  const w = partial(n).w, [step, alter] = STEP_OF_PC[w % 12];
+  return nameOf(n) + " · " + LETTERS[step] + (alter === -1 ? "♭" : "") + (Math.floor(w / 12) - 1);
+}
+const shown = () => PARTIALS.filter(p => p.n >= state.lo && p.n <= state.hi).map(p => p.n);
+const nearestPartial = hz => {
+  let best = null, cents = 0;
+  for (const p of PARTIALS) {
+    const c = 1200 * Math.log2(hz / hzOf(p.n));
+    if (best === null || Math.abs(c) < Math.abs(cents)) { best = p.n; cents = c; }
+  }
+  return { n: best, cents };
+};
+
+/* ---------- Settings, remembered on this computer ---------- */
+
+function save() {
+  try {
+    localStorage.setItem("horn-ladder", JSON.stringify({
+      mode: state.mode, lo: state.lo, hi: state.hi, targets: state.targets, order: state.order, names: state.names,
+      style: state.style, arrow: state.arrow, hold: state.hold, tol: state.tol, ref: state.ref, vol: state.vol
+    }));
+  } catch (_) {}
+}
+
+function load() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem("horn-ladder") || "null"); } catch (_) {}
+  if (!s) return;
+  if (s.mode === "aim" || s.mode === "explore") state.mode = s.mode;
+  if (LO_CHOICES.includes(s.lo)) state.lo = s.lo;
+  if (HI_CHOICES.includes(s.hi)) state.hi = s.hi;
+  if (Array.isArray(s.targets)) state.targets = s.targets.filter(n => partial(n));
+  if (s.order === "sequence" || s.order === "random") state.order = s.order;
+  state.names = s.names !== false;
+  state.style = s.style === "abc" ? "abc" : "sol";
+  state.arrow = s.arrow !== false;
+  if (HOLDS.includes(s.hold)) state.hold = s.hold;
+  if (TOL[s.tol]) state.tol = s.tol;
+  state.ref = s.ref !== false;
+  if (VOLS[s.vol]) state.vol = s.vol;
+}
+
+// Bananas may only sit on rungs that are on the ladder; never leave the list empty.
+function fixTargets() {
+  const on = shown();
+  state.targets = state.targets.filter(n => on.includes(n));
+  if (!state.targets.length) state.targets = on.filter(n => n >= 4 && n <= 6);
+  if (!state.targets.length) state.targets = [on[0]];
+  if (!state.targets.includes(state.target)) state.target = state.targets[0];
+}
+
+/* ---------- Audio ---------- */
+
+let ctx = null, analyser = null, micStream = null, raw = null, deci = null, testSrc = null;
+const buffers = {};
+
+function ensureCtx() {
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
+}
+
+// The recorded horn notes. Fetched once; the service worker keeps them for offline use.
+function loadSamples() {
+  ensureCtx();
+  return Promise.all(PARTIALS.map(p => buffers[p.sample] ? null :
+    fetch("sounds/horn/" + p.sample + ".m4a")
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(a => new Promise((ok, bad) => ctx.decodeAudioData(a, ok, bad)))
+      .then(b => { buffers[p.sample] = b; })
+      .catch(() => {})));
+}
+
+async function startMic() {
+  ensureCtx();
+  loadSamples();
+  if (params.get("test")) return startTestTone();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (err) {
+    const n = err && err.name;
+    return fail(n === "NotAllowedError" ? "אין אישור למיקרופון"
+      : n === "NotFoundError" ? "לא נמצא מיקרופון"
+      : n === "NotReadableError" ? "המיקרופון תפוס בתוכנה אחרת"
+      : "לא הצלחנו לפתוח את המיקרופון");
+  }
+  const src = ctx.createMediaStreamSource(micStream);
+  makeAnalyser();
+  src.connect(analyser);
+  listening("מקשיב");
+  micStream.getAudioTracks().forEach(t => {
+    t.addEventListener("ended", () => fail("המיקרופון נותק"));
+    t.addEventListener("mute", () => { $("micText").textContent = "מושתק"; });
+    t.addEventListener("unmute", () => { $("micText").textContent = "מקשיב"; });
+  });
+  if (state.mode === "aim" && state.ref) setTimeout(playReference, 500);
+}
+
+function makeAnalyser() {
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  raw = new Float32Array(analyser.fftSize);
+}
+
+function listening(text) {
+  state.listening = true;
+  $("overlay").hidden = true;
+  $("micDot").classList.add("on");
+  $("micText").textContent = text;
+}
+
+// ?test=1 feeds a sine, ?test=horn a looped horn recording, into the detector instead of the microphone.
+// From the console: testTone(5) plays partial 5, testTone(5, 40) 40 cents sharp, testTone(null) is silence.
+function startTestTone() {
+  makeAnalyser();
+  state.noiseFloor = 0.00001;
+  listening("בדיקה");
+  const first = +(params.get("partial") || 0) || null;
+  window.testTone = async (n, cents = 0) => {
+    if (testSrc) { try { testSrc.stop(); } catch (_) {} testSrc = null; }
+    if (!n) return;
+    const hz = hzOf(n) * Math.pow(2, cents / 1200), g = ctx.createGain();
+    g.gain.value = 0.25;
+    if (params.get("test") === "horn") {
+      await loadSamples();
+      const p = partial(n), b = buffers[p.sample];
+      testSrc = ctx.createBufferSource();
+      testSrc.buffer = b;
+      testSrc.loop = true; testSrc.loopStart = 0.4; testSrc.loopEnd = 1.5;
+      testSrc.playbackRate.value = hz / sampleHz(p);
+    } else {
+      testSrc = ctx.createOscillator();
+      testSrc.type = "sine"; testSrc.frequency.value = hz;
+    }
+    testSrc.connect(g); g.connect(analyser); testSrc.start();
+  };
+  if (first) window.testTone(first, +(params.get("cents") || 0));
+}
+
+function fail(message) {
+  state.listening = false;
+  $("overlay").hidden = false;
+  $("overlayText").textContent = message;
+  $("startBtn").textContent = "לנסות שוב";
+  $("micDot").classList.remove("on");
+  $("micText").textContent = "ללא מיקרופון";
+}
+
+function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
+addEventListener("pagehide", stopMic);
+document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) { stopMic(); fail("נלחץ ונמשיך להקשיב"); } });
+
+const sampleHz = p => 440 * Math.pow(2, (p.w - TO_WRITTEN - 69 + p.off / 100) / 12);
+
+// Play a rung on a real horn, tuned to where the open horn really sits (its partial, not the piano).
+function playReference(n) {
+  if (typeof n !== "number") n = state.mode === "aim" ? state.target : (state.rung || state.target);
+  const c = ensureCtx(), p = partial(n), b = buffers[p.sample], t = c.currentTime + 0.03;
+  const g = c.createGain();
+  g.connect(c.destination);
+  let dur;
+  if (b) {
+    const s = c.createBufferSource();
+    s.buffer = b;
+    s.playbackRate.value = hzOf(n) / sampleHz(p);
+    g.gain.value = VOLS[state.vol];
+    s.connect(g);
+    s.start(t);
+    dur = b.duration / s.playbackRate.value;
+  } else {
+    // Recording not loaded yet (first ever visit, offline): a soft brass-like stand-in.
+    loadSamples();
+    const o = c.createOscillator(), f = c.createBiquadFilter(), hz = hzOf(n);
+    o.type = "sawtooth"; o.frequency.value = hz;
+    f.type = "lowpass"; f.frequency.value = Math.min(3000, hz * 4);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.18 * VOLS[state.vol], t + 0.06);
+    g.gain.setValueAtTime(0.18 * VOLS[state.vol], t + 1.4);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+    o.connect(f); f.connect(g); o.start(t); o.stop(t + 1.9);
+    dur = 1.9;
+  }
+  state.muteUntil = performance.now() + dur * 1000 + 400;   // never hear our own loudspeaker as the child
+  state.lastPlayed = performance.now();
+  pulseRung(n);
+}
+
+function playSuccess() {
+  const c = ensureCtx(), base = 523.25;
+  [1, 1.25, 1.5, 2].forEach((mult, i) => {
+    const t = c.currentTime + 0.05 + i * 0.09;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle";
+    o.frequency.value = base * mult;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + 0.5);
+  });
+  state.muteUntil = performance.now() + 900;
+}
+
+/* ---------- Detection ---------- */
+
+function analyse() {
+  if (!state.listening || !analyser) return;
+  analyser.getFloatTimeDomainData(raw);
+  let sum = 0;
+  for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
+  state.rms = Math.sqrt(sum / raw.length);
+  // The floor follows room noise up slowly, but not while a clear note is sounding:
+  // otherwise a long tone becomes "background" after ~15 s and the monkey stops listening.
+  if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
+  else if (state.heardN === null) state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
+  const gate = Math.max(state.noiseFloor * Math.pow(10, 12 / 20), 0.0015);
+  const sounding = state.rms > gate && performance.now() > state.muteUntil;
+  if (sounding && !state.soundOn) { state.soundOn = true; state.soundSince = performance.now(); }
+  else if (!sounding) state.soundOn = false;
+  if (!sounding || performance.now() - state.soundSince < 200) { state.clarity = 0; state.heardN = null; return; }
+
+  const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+  if (!deci || deci.length !== n) deci = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
+
+  // Search the whole ladder and a little beyond, so a slip to any partial is caught.
+  const got = detect(deci, sr2, hzOf(state.lo) * 0.75, Math.min(hzOf(state.hi) * 1.3, 1000));
+  if (!got || got.clarity < 0.6) { state.clarity = 0; state.heardN = null; return; }
+  state.freq = got.freq;
+  state.clarity = got.clarity;
+  const near = nearestPartial(got.freq);
+  state.heardN = near.n;
+  state.heardCents = near.cents;
+}
+
+function detect(buf, sampleRate, fMin, fMax) {
+  const n = buf.length;
+  const minLag = Math.max(2, Math.floor(sampleRate / fMax));
+  const maxLag = Math.min(Math.floor(sampleRate / fMin), n - 2);
+  if (maxLag <= minLag) return null;
+  const nsdf = new Float32Array(maxLag + 2);
+  let peak = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let ac = 0, m = 0;
+    for (let i = 0, end = n - lag; i < end; i++) { const a = buf[i], b = buf[i + lag]; ac += a * b; m += a * a + b * b; }
+    const v = m > 0 ? (2 * ac) / m : 0;
+    nsdf[lag] = v;
+    if (v > peak) peak = v;
+  }
+  if (peak < 0.4) return null;
+  const threshold = peak * 0.9;
+  for (let lag = minLag + 1; lag < maxLag; lag++) {
+    if (nsdf[lag] > threshold && nsdf[lag] >= nsdf[lag - 1] && nsdf[lag] >= nsdf[lag + 1]) {
+      const y1 = nsdf[lag - 1], y2 = nsdf[lag], y3 = nsdf[lag + 1];
+      const denom = 2 * (2 * y2 - y1 - y3);
+      return { freq: sampleRate / (lag + (Math.abs(denom) > 1e-9 ? (y3 - y1) / denom : 0)), clarity: y2 };
+    }
+  }
+  return null;
+}
+
+/* ---------- Scene ---------- */
+
+const el = (tag, attrs, parent) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+const LADDER_X = 380, RAIL_L = 300, RAIL_R = 460, TOP = 80, BOTTOM = 455, GROUND = 585;
+const BANANA_X = 222, LABEL_X = 490, BIG_X = 770, ARROW_X = 120;
+let scene = {};
+let ladderLo = 0, ladderHi = 1;
+
+// Rungs sit half by real pitch, half evenly: the high partials still look closer together
+// (that is the point), but ten rungs never squeeze their names into each other.
+function yOfRung(n) {
+  const list = shown(), i = list.indexOf(n);
+  const pitch = (writtenOf(hzOf(n)) - ladderLo) / (ladderHi - ladderLo);
+  return BOTTOM - (0.5 * pitch + 0.5 * i / (list.length - 1)) * (BOTTOM - TOP);
+}
+
+function buildScene() {
+  const svg = $("scene");
+  svg.textContent = "";
+  scene = { rungs: {} };
+  const list = shown();
+  ladderLo = writtenOf(hzOf(list[0]));
+  ladderHi = writtenOf(hzOf(list[list.length - 1]));
+
+  // Jungle edge and grass.
+  const leaf = (x, y, r, rot, fill) => el("path", { d: "M 0 0 C 40 -30 110 -24 150 0 C 110 24 40 30 0 0 Z", fill, transform: `translate(${x} ${y}) rotate(${rot}) scale(${r})` }, svg);
+  leaf(-10, 30, 1.1, 18, "#2fa36b"); leaf(-20, 80, 0.9, 38, "#24865a"); leaf(1010, 40, 1.1, 162, "#2fa36b"); leaf(1020, 95, 0.85, 140, "#24865a");
+  el("path", { d: `M -600 ${GROUND - 4} C -200 ${GROUND - 20} 200 ${GROUND - 26} 560 ${GROUND - 6} C 720 ${GROUND + 6} 880 ${GROUND - 20} 1600 ${GROUND - 10} L 1600 640 L -600 640 Z`, fill: "#7cc576" }, svg);
+
+  // Rails.
+  [RAIL_L, RAIL_R].forEach(x => el("line", { x1: x, x2: x, y1: TOP - 50, y2: GROUND - 4, stroke: "#9a6a35", "stroke-width": 16, "stroke-linecap": "round" }, svg));
+
+  scene.glow = el("rect", { x: RAIL_L - 18, width: RAIL_R - RAIL_L + 36, height: 34, rx: 17, fill: "#ffd84d", opacity: 0 }, svg);
+
+  const ys = list.map(yOfRung);
+  const gap = Math.min(...ys.slice(1).map((y, i) => ys[i] - y));
+  const labelSize = Math.max(20, Math.min(34, gap * 0.9));
+  list.forEach(n => {
+    const y = yOfRung(n), g = el("g", {}, svg);
+    el("line", { x1: RAIL_L, x2: RAIL_R, y1: y, y2: y, stroke: "#c58b4a", "stroke-width": 12, "stroke-linecap": "round" }, g);
+    const label = el("text", { x: LABEL_X, y: y + labelSize * 0.35, "font-size": labelSize, "font-weight": 700, fill: "#3b434e", style: "font-family: var(--display)" }, g);
+    label.textContent = state.names ? nameOf(n) : "";
+    const hit = el("rect", { x: BANANA_X - 60, y: y - 18, width: LABEL_X + 120 - (BANANA_X - 60), height: 36, fill: "transparent", class: "rung-hit" }, g);
+    hit.addEventListener("click", () => rungClicked(n));
+    scene.rungs[n] = { y, g, label, size: labelSize };
+  });
+
+  // Banana target with its hold ring.
+  scene.ring = el("circle", { r: 46, fill: "none", stroke: "#1b8f58", "stroke-width": 10, "stroke-linecap": "round",
+    "stroke-dasharray": 2 * Math.PI * 46, "stroke-dashoffset": 2 * Math.PI * 46, opacity: 0 }, svg);
+  scene.banana = el("g", {}, svg);
+  el("path", { d: "M -34 -6 C -26 22 18 30 38 -2 C 30 6 -6 14 -26 -14 Z", fill: "#ffd23f", stroke: "#c99a00", "stroke-width": 3, "stroke-linejoin": "round" }, scene.banana);
+  el("path", { d: "M -26 -14 L -32 -22 L -36 -18 L -34 -6", fill: "#7a5a1e" }, scene.banana);
+
+  scene.arrow = el("path", { fill: "#1a7fe2", opacity: 0 }, svg);
+  buildMonkey(svg);
+
+  scene.big = el("text", { x: BIG_X, y: 330, "text-anchor": "middle", "font-size": 150, "font-weight": 900, fill: "#1a7fe2", style: "font-family: var(--display)" }, svg);
+  scene.targetName = el("text", { x: BANANA_X, y: 0, "text-anchor": "middle", "font-size": 30, "font-weight": 800, fill: "#7a5a1e", style: "font-family: var(--display)" }, svg);
+
+  monkey.y = state.rung ? yOfRung(state.rung) : GROUND;
+  placeTarget();
+}
+
+/* ---------- Monkey ----------
+   Origin is the middle of the rung it holds. Hands grip the rung; on the grass the arms hang down. */
+
+const monkey = { y: GROUND, from: GROUND, to: GROUND, moveStart: 0, moveMs: 1 };
+const FUR = "#8a5a32", FACE = "#f0cfa6", DARK = "#5e3a1c";
+
+function buildMonkey(svg) {
+  const m = el("g", {}, svg);
+  scene.monkey = m;
+  scene.tail = el("path", { d: "M 18 92 C 70 110 86 60 62 46 C 48 38 40 56 52 60", fill: "none", stroke: FUR, "stroke-width": 10, "stroke-linecap": "round" }, m);
+  scene.legL = el("ellipse", { cx: -18, cy: 112, rx: 12, ry: 18, fill: FUR }, m);
+  scene.legR = el("ellipse", { cx: 18, cy: 112, rx: 12, ry: 18, fill: FUR }, m);
+  el("ellipse", { cx: 0, cy: 76, rx: 30, ry: 36, fill: FUR }, m);
+  el("ellipse", { cx: 0, cy: 82, rx: 18, ry: 24, fill: FACE }, m);
+  scene.armL = el("path", { fill: "none", stroke: FUR, "stroke-width": 13, "stroke-linecap": "round" }, m);
+  scene.armR = el("path", { fill: "none", stroke: FUR, "stroke-width": 13, "stroke-linecap": "round" }, m);
+  scene.handL = el("circle", { r: 10, fill: DARK }, m);
+  scene.handR = el("circle", { r: 10, fill: DARK }, m);
+  const head = el("g", {}, m);
+  scene.head = head;
+  [-1, 1].forEach(s => { el("circle", { cx: 36 * s, cy: 18, r: 13, fill: FUR }, head); el("circle", { cx: 36 * s, cy: 18, r: 7, fill: FACE }, head); });
+  el("circle", { cx: 0, cy: 16, r: 34, fill: FUR }, head);
+  el("path", { d: "M -26 18 C -26 0 -10 -2 0 6 C 10 -2 26 0 26 18 C 26 38 14 44 0 44 C -14 44 -26 38 -26 18 Z", fill: FACE }, head);
+  el("circle", { cx: -10, cy: 14, r: 5, fill: "#15181d" }, head);
+  el("circle", { cx: 10, cy: 14, r: 5, fill: "#15181d" }, head);
+  el("circle", { cx: -8.5, cy: 12.5, r: 1.6, fill: "#fff" }, head);
+  el("circle", { cx: 11.5, cy: 12.5, r: 1.6, fill: "#fff" }, head);
+  scene.mouth = el("path", { d: "M -9 30 Q 0 37 9 30", fill: "none", stroke: DARK, "stroke-width": 3, "stroke-linecap": "round" }, head);
+}
+
+function climbTo(y) {
+  if (Math.abs(y - monkey.to) < 0.5) return;
+  monkey.from = monkey.y;
+  monkey.to = y;
+  monkey.moveStart = performance.now();
+  monkey.moveMs = Math.min(650, 180 + Math.abs(y - monkey.from) * 1.4);
+}
+
+function drawMonkey(now) {
+  const p = Math.min(1, (now - monkey.moveStart) / monkey.moveMs);
+  const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+  monkey.y = monkey.from + (monkey.to - monkey.from) * e;
+  const moving = p < 1;
+  const onGrass = state.rung === null && !moving;
+  const party = now < state.celebrateUntil;
+  const bounce = party ? -Math.abs(Math.sin(now / 90)) * 16 : 0;
+
+  // On the grass the monkey stands with its feet on the ground; on a rung it hangs from its hands.
+  const y = onGrass ? GROUND - 110 : monkey.y;
+  scene.monkey.setAttribute("transform", `translate(${LADDER_X} ${(y + bounce).toFixed(1)}) scale(0.85)`);
+
+  const swing = moving ? Math.sin(now / 70) * 14 : 0;
+  const hands = onGrass ? [[-44, 92 + (party ? -70 : 0)], [44, 92 + (party ? -70 : 0)]]
+    : party ? [[-56, -40], [56, -40]]
+    : [[-46, swing], [46, -swing]];
+  [[scene.armL, scene.handL, -1, hands[0]], [scene.armR, scene.handR, 1, hands[1]]].forEach(([arm, hand, s, [hx, hy]]) => {
+    const sx = 24 * s, sy = 56;
+    arm.setAttribute("d", `M ${sx} ${sy} Q ${(sx + hx) / 2 + 14 * s} ${(sy + hy) / 2} ${hx} ${hy}`);
+    hand.setAttribute("cx", hx); hand.setAttribute("cy", hy);
+  });
+  scene.legL.setAttribute("cy", 112 + (moving ? swing * 0.6 : 0));
+  scene.legR.setAttribute("cy", 112 - (moving ? swing * 0.6 : 0));
+  scene.mouth.setAttribute("d", party ? "M -12 28 Q 0 44 12 28 Z" : "M -9 30 Q 0 37 9 30");
+  scene.mouth.setAttribute("fill", party ? DARK : "none");
+}
+
+function placeTarget() {
+  const aim = state.mode === "aim";
+  const y = scene.rungs[state.target] ? scene.rungs[state.target].y : -999;
+  scene.banana.setAttribute("transform", `translate(${BANANA_X} ${y - 4}) scale(1.3)`);
+  scene.banana.setAttribute("opacity", aim ? 1 : 0);
+  scene.ring.setAttribute("cx", BANANA_X);
+  scene.ring.setAttribute("cy", y);
+  scene.ring.setAttribute("transform", `rotate(-90 ${BANANA_X} ${y})`);
+  scene.targetName.setAttribute("y", y - 40);
+  scene.targetName.textContent = aim && state.names ? nameOf(state.target) : "";
+  $("bananas").textContent = "🍌".repeat(Math.min(state.bananas, 15)) + (state.bananas > 15 ? " " + state.bananas : "");
+}
+
+let pulse = { n: null, until: 0 };
+function pulseRung(n) { pulse = { n, until: performance.now() + 1600 }; }
+
+/* ---------- Loop ---------- */
+
+function frame(now) {
+  if (now - state.lastAnalyse > 50) { state.lastAnalyse = now; analyse(); follow(now); }
+  draw(now);
+  if (!$("diag").hidden) {
+    const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
+    const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
+    $("diag").textContent = `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.heardN ? state.freq.toFixed(0) + " Hz" : "—"}\nשלב    ${state.heardN ? state.heardN + " · " + nameOf(state.heardN) : "—"}\nסטייה  ${state.heardN ? (state.heardCents > 0 ? "+" : "") + state.heardCents.toFixed(0) : "—"}`;
+  }
+  requestAnimationFrame(frame);
+}
+
+// Move the monkey only when a rung has been steady for SNAP_MS, so wobble is not a jump.
+function follow(now) {
+  const n = state.heardN;
+  if (n === null) { state.candN = null; return; }        // silence: the monkey waits where it is
+  if (n !== state.candN) { state.candN = n; state.candSince = now; return; }
+  if (n !== state.rung && now - state.candSince >= SNAP_MS) {
+    state.rung = n;
+    climbTo(yOfRungClamped(n));
+  }
+}
+
+// A partial off the visible ladder: the monkey reaches past the end rather than vanishing.
+function yOfRungClamped(n) {
+  if (scene.rungs[n]) return scene.rungs[n].y;
+  return n > state.hi ? TOP - 40 : BOTTOM + 40;
+}
+
+function draw(now) {
+  const aim = state.mode === "aim";
+  const heard = state.heardN !== null && state.listening;
+  const onRung = state.rung !== null && scene.rungs[state.rung];
+  const settled = onRung && Math.abs(monkey.y - monkey.to) < 1;
+
+  // The rung being held glows, and its name is the big word on screen.
+  if (onRung && heard && state.heardN === state.rung) {
+    scene.glow.setAttribute("y", scene.rungs[state.rung].y - 17);
+    scene.glow.setAttribute("opacity", 0.75);
+  } else scene.glow.setAttribute("opacity", 0);
+  scene.big.textContent = state.names && state.rung !== null && (heard || now - state.lastHeard < 1500) ? nameOf(state.rung) : "";
+  if (heard) state.lastHeard = now;
+  scene.big.setAttribute("fill", aim && state.rung === state.target ? "#1b8f58" : "#1a7fe2");
+
+  // A rung that was just played on the horn breathes once.
+  for (const n in scene.rungs) {
+    const r = scene.rungs[n], on = +n === pulse.n && now < pulse.until;
+    r.label.setAttribute("fill", on ? "#1a7fe2" : "#3b434e");
+    r.label.setAttribute("font-size", on ? r.size * 1.25 : r.size);
+  }
+
+  // Helper arrow: from the monkey toward the banana, only while a sound is being made on another rung.
+  const away = aim && heard && onRung && settled && state.rung !== state.target && scene.rungs[state.target];
+  scene.arrow.setAttribute("opacity", state.arrow && away ? 0.9 : 0);
+  if (state.arrow && away) {
+    const up = scene.rungs[state.target].y < monkey.y, ax = ARROW_X, ay = monkey.y;
+    scene.arrow.setAttribute("d", up
+      ? `M ${ax} ${ay - 70} L ${ax + 42} ${ay - 10} L ${ax + 14} ${ay - 10} L ${ax + 14} ${ay + 40} L ${ax - 14} ${ay + 40} L ${ax - 14} ${ay - 10} L ${ax - 42} ${ay - 10} Z`
+      : `M ${ax} ${ay + 70} L ${ax + 42} ${ay + 10} L ${ax + 14} ${ay + 10} L ${ax + 14} ${ay - 40} L ${ax - 14} ${ay - 40} L ${ax - 14} ${ay + 10} L ${ax - 42} ${ay + 10} Z`);
+  }
+
+  // Hold: the right partial, close enough in tune, measured by the clock.
+  const limit = state.inBand ? TOL[state.tol] + 15 : TOL[state.tol];
+  const wasIn = state.inBand;
+  state.inBand = aim && heard && state.heardN === state.target && Math.abs(state.heardCents) < limit && now > state.celebrateUntil;
+  if (state.inBand) {
+    if (!wasIn) state.inBandSince = now - state.holdProgress * state.hold * 1000;
+    state.holdProgress = Math.min(1, (now - state.inBandSince) / (state.hold * 1000));
+  } else {
+    if (wasIn) { state.drainFrom = state.holdProgress; state.drainSince = now; }
+    state.holdProgress = Math.max(0, state.drainFrom - (now - state.drainSince) / (state.hold * 2000));
+  }
+  const circ = 2 * Math.PI * 46;
+  scene.ring.setAttribute("opacity", aim && state.holdProgress > 0.02 ? 1 : 0);
+  scene.ring.setAttribute("stroke-dashoffset", circ * (1 - state.holdProgress));
+  if (aim && now > state.celebrateUntil) {
+    const wob = state.inBand ? Math.sin(now / 60) * 6 : 0;
+    scene.banana.setAttribute("transform", `translate(${BANANA_X} ${scene.rungs[state.target].y - 4}) scale(${1.3 + state.holdProgress * 0.5}) rotate(${wob})`);
+  }
+
+  if (state.holdProgress >= 1) succeed(now);
+  drawMonkey(now);
+}
+
+function succeed(now) {
+  const y = scene.rungs[state.target].y;
+  state.holdProgress = 0; state.drainFrom = 0;
+  state.inBand = false;
+  state.bananas++;
+  state.celebrateUntil = now + 1600;
+  playSuccess();
+  burst(BANANA_X, y);
+  scene.banana.setAttribute("opacity", 0);
+  placeTarget();
+  scene.banana.setAttribute("opacity", 0);
+  setTimeout(() => nextTarget(false), 1700);
+}
+
+// Next banana. The monkey stays where it is, so moving between partials is the exercise.
+function nextTarget(manual) {
+  const list = state.targets;
+  if (list.length === 1) state.target = list[0];
+  else if (state.order === "random") {
+    let n = state.target;
+    while (n === state.target) n = list[Math.floor(Math.random() * list.length)];
+    state.target = n;
+  } else {
+    const order = list.slice().sort((a, b) => a - b);
+    state.target = order[(order.indexOf(state.target) + 1) % order.length];
+  }
+  state.holdProgress = 0; state.drainFrom = 0;
+  placeTarget();
+  if (state.mode === "aim" && state.ref && !manual && state.listening) setTimeout(playReference, 250);
+}
+
+// Space: a new child's turn. The monkey climbs down to the grass; in banana mode a new banana appears.
+function newTurn() {
+  state.rung = null; state.candN = null;
+  climbTo(GROUND);
+  if (state.mode === "aim") nextTarget(false);
+}
+
+function rungClicked(n) {
+  if (state.mode === "aim") {
+    state.target = n;
+    if (!state.targets.includes(n)) { state.targets.push(n); save(); }
+    state.holdProgress = 0; state.drainFrom = 0;
+    placeTarget();
+  }
+  playReference(n);
+}
+
+function moveTarget(dir) {
+  if (state.mode !== "aim") return;
+  const list = shown(), i = list.indexOf(state.target) + dir;
+  if (i < 0 || i >= list.length) return;
+  rungClicked(list[i]);
+}
+
+function burst(x, y) {
+  const svg = $("scene");
+  const colours = ["#f2b705", "#ff6f59", "#1a7fe2", "#2fa36b", "#7a5cf0"];
+  for (let i = 0; i < 18; i++) {
+    const a = (Math.PI * 2 * i) / 18, d = 90 + Math.random() * 90;
+    const c = el("text", { x, y, "font-size": 26 + Math.random() * 14, "text-anchor": "middle", fill: colours[i % colours.length] }, svg);
+    c.textContent = i % 3 ? "★" : "🍌";
+    const t0 = performance.now();
+    (function fly(now) {
+      const p = (now - t0) / 1100;
+      if (p >= 1) { c.remove(); return; }
+      c.setAttribute("x", x + Math.cos(a) * d * p);
+      c.setAttribute("y", y + Math.sin(a) * d * p + 70 * p * p);
+      c.setAttribute("opacity", 1 - p);
+      requestAnimationFrame(fly);
+    })(t0);
+  }
+}
+
+/* ---------- Settings panel ---------- */
+
+function segButtons(box, items, isOn, pick) {
+  box.textContent = "";
+  items.forEach(([value, label]) => {
+    const b = document.createElement("button");
+    b.className = "seg-btn";
+    b.textContent = label;
+    b.setAttribute("aria-pressed", String(isOn(value)));
+    b.addEventListener("click", () => { pick(value); save(); rebuild(); });
+    box.appendChild(b);
+  });
+}
+
+function buildSheet() {
+  segButtons($("loSeg"), LO_CHOICES.map(n => [n, fullName(n)]), n => state.lo === n, n => { state.lo = n; });
+  segButtons($("hiSeg"), HI_CHOICES.map(n => [n, fullName(n)]), n => state.hi === n, n => { state.hi = n; });
+  segButtons($("holdSeg"), HOLDS.map(h => [h, String(h)]), h => state.hold === h, h => { state.hold = h; });
+  segButtons($("volSeg"), Object.keys(VOLS).map(v => [v, VOL_LABEL[v]]), v => state.vol === v, v => { state.vol = v; playReference(state.target); });
+
+  const box = $("targetChips");
+  box.textContent = "";
+  shown().forEach(n => {
+    const b = document.createElement("button");
+    b.className = "note-chip";
+    b.textContent = fullName(n);
+    b.setAttribute("aria-pressed", String(state.targets.includes(n)));
+    b.addEventListener("click", () => {
+      const i = state.targets.indexOf(n);
+      if (i >= 0) { if (state.targets.length > 1) state.targets.splice(i, 1); }
+      else state.targets.push(n);
+      fixTargets(); save(); rebuild();
+    });
+    box.appendChild(b);
+  });
+
+  const set = (id, on) => $(id).setAttribute("aria-pressed", String(on));
+  set("namesOn", state.names); set("namesOff", !state.names);
+  set("styleSol", state.style === "sol"); set("styleAbc", state.style === "abc");
+  set("arrowOn", state.arrow); set("arrowOff", !state.arrow);
+  set("tolWide", state.tol === "wide"); set("tolNormal", state.tol === "normal"); set("tolTight", state.tol === "tight");
+  set("ordRandom", state.order === "random"); set("ordSeq", state.order === "sequence");
+  set("refOn", state.ref); set("refOff", !state.ref);
+  set("modeExplore", state.mode === "explore"); set("modeAim", state.mode === "aim");
+}
+
+function rebuild() {
+  fixTargets();
+  buildScene();
+  buildSheet();
+}
+
+function setMode(m) {
+  state.mode = m;
+  state.holdProgress = 0; state.drainFrom = 0;
+  save();
+  buildSheet();
+  placeTarget();
+  if (m === "aim" && state.ref && state.listening) setTimeout(playReference, 250);
+}
+
+function toggleSheet(show) {
+  const open = show === undefined ? $("sheet").hidden : show;
+  $("sheet").hidden = !open;
+  if (open) buildSheet();
+}
+
+function toggleFullscreen() {
+  const d = document, root = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else { const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root); if (p && p.catch) p.catch(() => {}); }
+  } catch (_) {}
+}
+
+/* ---------- Wiring ---------- */
+
+const flag = (id, fn) => $(id).addEventListener("click", () => { fn(); save(); rebuild(); });
+$("startBtn").addEventListener("click", startMic);
+$("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });
+$("tone").addEventListener("click", () => playReference());
+$("settings").addEventListener("click", () => toggleSheet());
+$("sheetDone").addEventListener("click", () => toggleSheet(false));
+$("fullscreen").addEventListener("click", toggleFullscreen);
+$("modeExplore").addEventListener("click", () => setMode("explore"));
+$("modeAim").addEventListener("click", () => setMode("aim"));
+flag("namesOn", () => { state.names = true; });
+flag("namesOff", () => { state.names = false; });
+flag("styleSol", () => { state.style = "sol"; });
+flag("styleAbc", () => { state.style = "abc"; });
+flag("arrowOn", () => { state.arrow = true; });
+flag("arrowOff", () => { state.arrow = false; });
+flag("tolWide", () => { state.tol = "wide"; });
+flag("tolNormal", () => { state.tol = "normal"; });
+flag("tolTight", () => { state.tol = "tight"; });
+flag("ordRandom", () => { state.order = "random"; });
+flag("ordSeq", () => { state.order = "sequence"; });
+flag("refOn", () => { state.ref = true; });
+flag("refOff", () => { state.ref = false; });
+document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
+
+document.addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target;
+  if (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT") return;
+  const c = e.code;
+  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); newTurn(); }
+  else if (c === "ArrowUp") { e.preventDefault(); moveTarget(1); }
+  else if (c === "ArrowDown") { e.preventDefault(); moveTarget(-1); }
+  else if (c === "KeyM") setMode(state.mode === "aim" ? "explore" : "aim");
+  else if (c === "KeyT" || c === "PageUp" || c === "ArrowLeft") { e.preventDefault(); playReference(); }
+  else if (c === "KeyS") toggleSheet();
+  else if (c === "KeyR") state.noiseFloor = 0.002;
+  else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
+  else if (c === "KeyF") toggleFullscreen();
+  else if (c === "Escape") toggleSheet(false);
+});
+
+const params = new URLSearchParams(location.search);
+load();
+fixTargets();
+state.target = state.targets[0];
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if (location.protocol === "file:") fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+
+buildScene();
+buildSheet();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

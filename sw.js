@@ -1,12 +1,23 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "brass-app-v8";
+const CACHE = "brass-app-v9";
 const FILES = [
   "./",
   "index.html",
   "ramzor.html",
   "sound-game.html",
   "right-note.html",
+  "horn-ladder.html",
+  "sounds/horn/F2.m4a",
+  "sounds/horn/C3.m4a",
+  "sounds/horn/F3.m4a",
+  "sounds/horn/A3.m4a",
+  "sounds/horn/C4.m4a",
+  "sounds/horn/Eb4.m4a",
+  "sounds/horn/F4.m4a",
+  "sounds/horn/G4.m4a",
+  "sounds/horn/A4.m4a",
+  "sounds/horn/C5.m4a",
   "balloon-breath.html",
   "buzz-along.html",
   "clap-along.html",
