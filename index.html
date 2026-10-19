@@ -61,6 +61,9 @@
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--console); color: var(--ink-2); }
 
+  .home { direction: rtl; text-align: right; background: var(--console); border-radius: 18px; padding: 18px 22px; font-family: "Rubik", var(--body); }
+  .home h2 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
+  .home ol { margin: 0; padding-inline-start: 1.4em; display: grid; gap: 4px; font-size: 17px; color: var(--ink-2); }
   .install { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 15px; max-width: 65ch; }
   .install b { color: var(--ink-2); }
   @media (display-mode: standalone) { .install { display: none; } }
@@ -80,6 +83,16 @@
       <p>Simple tools for brass and rhythm lessons</p>
     </div>
   </header>
+
+  <section class="home" lang="he" aria-label="בבית">
+    <h2>מתאמנים בבית?</h2>
+    <ol>
+      <li>בוחרים משחק, ולמעלה בוחרים את הכלי שלכם: חצוצרה, טרומבון או קרן.</li>
+      <li>לוחצים על ⚙ ומסמנים את הצלילים שכבר למדתם.</li>
+      <li>במשחקים עם מיקרופון, כשהדפדפן שואל, מאשרים את המיקרופון.</li>
+      <li>בטלפון מסובבים את המסך לרוחב, כך הכול גדול יותר.</li>
+    </ol>
+  </section>
 
   <main>
     <h2 class="section-k">Tools</h2>
@@ -278,7 +291,7 @@
     </div>
   </main>
 
-  <p class="install"><b>Use it offline on iPad:</b> open this page in Safari while online, tap Share, then <b>Add to Home Screen</b>. After that it opens from the home screen without internet.</p>
+  <p class="install" dir="rtl" lang="he" style="text-align:right; font-family: Rubik, var(--body)"><b>להתקין כמו אפליקציה:</b> באייפד ובאייפון פותחים את הדף בספארי, לוחצים שיתוף ואז <b>הוספה למסך הבית</b>. באנדרואיד: בכרום, תפריט ⋮ ואז <b>הוספה למסך הבית</b>. אחרי הפעם הראשונה זה עובד גם בלי אינטרנט.</p>
 </div>
 <script>
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
