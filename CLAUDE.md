@@ -17,6 +17,8 @@ Music teacher's toolkit for brass and rhythm lessons: kids 9–12, projected in 
 - New pages are Hebrew (`lang="he" dir="rtl"`), near-wordless, and use Rubik. Keep music notation `direction: ltr` or the clef mirrors. Keyboard shortcuts read `e.code`, never `e.key` (a Hebrew layout turns F into כ).
 - Trumpet, trombone and horn classes have different teachers: on-screen tips stay universal (posture, breath, steady air, rest), no instrument-specific technique.
 
+- iPad microphone (all five mic pages, same block after `"use strict"`): the analyser is pulled to `destination` through a zero gain (old WebKit fed unpulled analysers zeros), the engine is recreated if the mic's sample rate differs, any tap resumes a suspended/interrupted engine, `getFloatTimeDomainData` is shimmed for Safari < 14.1, and exact-zero input for 3 s shows "אין קול מהמיקרופון". Tapping the mic status opens the check panel (no keyboard on iPad); its first line is the audio engine state and rate. The iOS Simulator gets no Mac microphone input here — it can test WebKit code paths, not real sound.
+
 ## Map
 - `index.html` — home screen, tool tiles, service worker registration.
 - `balloon-breath.html` — breathing: ready → in/out rounds (no breath hold) → rest. Balloon eases full on the in-breath, empties linearly (steady air).

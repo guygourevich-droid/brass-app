@@ -139,6 +139,27 @@
 <script>
 "use strict";
 
+/* ---------- iPad audio ----------
+   Older iPads (Safari before 14.1) have no float sample reader: build it from the byte one.
+   A suspended or interrupted iPad audio engine (lock screen, a call) wakes on any tap.
+   Tapping the microphone status opens the microphone check (no keyboard needed). */
+if (window.AnalyserNode && !AnalyserNode.prototype.getFloatTimeDomainData) {
+  AnalyserNode.prototype.getFloatTimeDomainData = function (out) {
+    const bytes = new Uint8Array(out.length);
+    this.getByteTimeDomainData(bytes);
+    for (let i = 0; i < out.length; i++) out[i] = (bytes[i] - 128) / 128;
+  };
+}
+["touchend", "click"].forEach(type => document.addEventListener(type, () => {
+  if (ctx && ctx.state !== "running" && ctx.state !== "closed") ctx.resume();
+}, true));
+document.getElementById("micText").parentElement.addEventListener("click", () => {
+  const d = document.getElementById("diag");
+  d.hidden = !d.hidden;
+});
+const audioLine = () => `אודיו   ${ctx ? ctx.state + " · " + ctx.sampleRate + " Hz" : "—"}\n`;
+
+
 /* ---------- Horn ladder ----------
    The F horn with no valves: each rung is one partial of the open horn.
    A monkey climbs to the rung the child is playing, so a slip to the next partial is seen as a jump.
@@ -259,7 +280,10 @@ let ctx = null, analyser = null, micStream = null, raw = null, deci = null, test
 const buffers = {};
 
 function ensureCtx() {
-  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.onstatechange = () => { if (state.listening && micStream) $("micText").textContent = ctx.state === "running" ? "מקשיב" : "לגעת במסך"; };
+  }
   if (ctx.state === "suspended") ctx.resume();
   return ctx;
 }
@@ -289,9 +313,19 @@ async function startMic() {
       : n === "NotReadableError" ? "המיקרופון תפוס בתוכנה אחרת"
       : "לא הצלחנו לפתוח את המיקרופון");
   }
+  // iPad switches the hardware to the microphone's rate; an audio engine made before that can stay deaf.
+  const track = micStream.getAudioTracks()[0];
+  const micRate = track && track.getSettings ? track.getSettings().sampleRate : 0;
+  if (micRate && ctx.sampleRate !== micRate) { ctx.close(); ctx = null; ensureCtx(); }
+  ctx.resume();
   const src = ctx.createMediaStreamSource(micStream);
   makeAnalyser();
   src.connect(analyser);
+  // iPad (WebKit) feeds an analyser only if it leads to the speakers: a silent gain does that, with no sound.
+  const pull = ctx.createGain();
+  pull.gain.value = 0;
+  analyser.connect(pull);
+  pull.connect(ctx.destination);
   listening("מקשיב");
   micStream.getAudioTracks().forEach(t => {
     t.addEventListener("ended", () => fail("המיקרופון נותק"));
@@ -415,6 +449,11 @@ function analyse() {
   let sum = 0;
   for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
   state.rms = Math.sqrt(sum / raw.length);
+  // A real microphone in a room is never exactly silent: say so instead of waiting forever.
+  if (state.rms === 0 && micStream) {
+    if (!state.zeroSince) state.zeroSince = performance.now();
+    else if (performance.now() - state.zeroSince > 3000) $("micText").textContent = "אין קול מהמיקרופון";
+  } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = "מקשיב"; }
   // The floor follows room noise up slowly, but not while a clear note is sounding:
   // otherwise a long tone becomes "background" after ~15 s and the monkey stops listening.
   if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
@@ -625,7 +664,7 @@ function frame(now) {
   if (!$("diag").hidden) {
     const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
     const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
-    $("diag").textContent = `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.heardN ? state.freq.toFixed(0) + " Hz" : "—"}\nשלב    ${state.heardN ? state.heardN + " · " + nameOf(state.heardN) : "—"}\nסטייה  ${state.heardN ? (state.heardCents > 0 ? "+" : "") + state.heardCents.toFixed(0) : "—"}`;
+    $("diag").textContent = audioLine() + `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.heardN ? state.freq.toFixed(0) + " Hz" : "—"}\nשלב    ${state.heardN ? state.heardN + " · " + nameOf(state.heardN) : "—"}\nסטייה  ${state.heardN ? (state.heardCents > 0 ? "+" : "") + state.heardCents.toFixed(0) : "—"}`;
   }
   requestAnimationFrame(frame);
 }
