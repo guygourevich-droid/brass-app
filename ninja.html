@@ -152,7 +152,22 @@ document.getElementById("micText").parentElement.addEventListener("click", () =>
   const d = document.getElementById("diag");
   d.hidden = !d.hidden;
 });
-const audioLine = () => `אודיו   ${ctx ? ctx.state + " · " + ctx.sampleRate + " Hz" : "—"}\n`;
+// ?voice=1 lets the iPad use its own voice processing and automatic volume: louder, slightly less pure pitch.
+const MIC_OPTIONS = new URLSearchParams(location.search).get("voice") ? true
+  : { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+// The check panel's first lines: is the engine moving, what the iPad says about the mic, the raw level in dB.
+let lastEngineTime = -1, engineMovedAt = 0;
+const audioLine = () => {
+  if (!ctx) return "אודיו   —\n";
+  if (ctx.currentTime !== lastEngineTime) { lastEngineTime = ctx.currentTime; engineMovedAt = performance.now(); }
+  const moving = performance.now() - engineMovedAt < 500;     // the clock advances in bursts, not every frame
+  const tr = micStream && micStream.getAudioTracks()[0];
+  const st = tr && tr.getSettings ? tr.getSettings() : {};
+  const db = state.rms > 0 ? (20 * Math.log10(state.rms)).toFixed(0) + " dB" : "0";
+  return `אודיו   ${ctx.state} · ${ctx.sampleRate} · ${moving ? "זז" : "עומד"}\n` +
+    `מיקרופון ${tr ? tr.readyState + (tr.muted ? " muted" : "") + (tr.enabled ? "" : " off") : "—"} · ${st.sampleRate || "?"} · ${MIC_OPTIONS === true ? "voice" : "raw"} ec:${st.echoCancellation} agc:${st.autoGainControl}\n` +
+    `רמה    ${db}\n`;
+};
 
 
 /* ---------- Note Ninja ----------
@@ -279,7 +294,7 @@ async function startMic() {
   if (params.get("test")) return startTestTone();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_OPTIONS });
   } catch (err) {
     const n = err && err.name;
     return fail(n === "NotAllowedError" ? "אין אישור למיקרופון"
