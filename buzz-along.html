@@ -83,10 +83,10 @@
       <button id="hold8" class="seg-btn" aria-pressed="false">8″</button>
     </div>
     <div class="seg" role="group" aria-label="סירנה" id="sirenSeg" hidden>
-      <button id="sirFree" class="seg-btn" aria-pressed="true" title="חופשי">✏️</button>
-      <button id="sir2" class="seg-btn" aria-pressed="false" title="מסלול: טון">〰 2</button>
+      <button id="sir2" class="seg-btn" aria-pressed="true" title="מסלול: טון">〰 2</button>
       <button id="sir4" class="seg-btn" aria-pressed="false" title="מסלול: טרצה">〰 3</button>
       <button id="sir7" class="seg-btn" aria-pressed="false" title="מסלול: קווינטה">〰 5</button>
+      <button id="sirFree" class="seg-btn" aria-pressed="false" title="חופשי">✏️</button>
     </div>
     <span class="spacer"></span>
     <span class="mic" id="micBox"><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
@@ -185,7 +185,7 @@ const LAND_S = 0.5;                       // step 2: on the flower this long = h
 const FLY_SPEED = 150;                    // step 1 and 4: px per second the meadow / trail moves
 
 const state = {
-  inst: "trumpet", step: 1, hold: 4, siren: 0, ti: 0, counter: 0,
+  inst: "trumpet", step: 1, hold: 4, siren: 2, ti: 0, counter: 0,
   phase: "play", phaseT: 0, approach: 0, onFlower: 0, fill: 0, inBand: false, honey: 0,
   listening: false, rms: 0, freq: 0, clarity: 0, semi: null, smoothSemi: 0,
   noiseFloor: 0.002, soundOn: false, lastHeard: 0, onsetSince: 0, muteUntil: 0, lastAnalyse: 0
@@ -383,9 +383,10 @@ function analyse() {
   let got = null;
   if (!muted && state.rms > holdGate) {
     // Decimate to about 8 kHz: cheaper, and the averaging removes the breath noise that ruins detection.
-    const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+    // Only the newest half of the buffer (~85 ms): sirens slide, and an older window makes the bee lag.
+    const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), from = raw.length / 2, n = Math.floor(from / D), sr2 = sr / D;
     if (!deci || deci.length !== n) deci = new Float32Array(n);
-    for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
+    for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[from + i * D + j]; deci[i] = s / D; }
     got = detect(deci, sr2, I.base * Math.pow(2, (I.lo - 4) / 12), I.base * Math.pow(2, (I.hi + 4) / 12));
     if (got && got.clarity < 0.5) got = null;
   }
@@ -447,6 +448,7 @@ const ease = p => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 const GROUND = 560, SKY_TOP = 100, SKY_BOTTOM = 520, BEE_X = 170, FLOWER_X = 1430, JAR_X = 760, JAR_Y = 110;
 // Step 4 route: the bee (fixed on screen) flies home to the hive over three obstacles, one siren each.
 const ROUTE_BEE_X = 420, ARC_W = 600, ARC_GAP = 380, ARC_X0 = 900, ARCS = 3, READY_S = 3;
+const HIT_W = 50, BUMP_S = 1.8;           // only an obstacle's middle bumps (forgiving); the dizzy pause before trying again
 const HIVE_X = ARC_X0 + ARCS * (ARC_W + ARC_GAP) + 120;
 const semiY = s => { const I = INSTRUMENTS[state.inst]; return SKY_BOTTOM - (s - I.lo) / (I.hi - I.lo) * (SKY_BOTTOM - SKY_TOP); };
 const PETALS = ["#ff8fb1", "#ffc81a", "#b07ae8", "#ff7a59", "#5aa7e8"];
@@ -551,10 +553,18 @@ function routeSemi(wx) {
   return 0;
 }
 
+const overArc = wx => { for (let i = 0; i < ARCS; i++) { const x0 = ARC_X0 + i * (ARC_W + ARC_GAP); if (wx > x0 - 30 && wx < x0 + ARC_W + 30) return true; } return false; };
+
 function buildRoute() {
   const w = scene.world = el("g", {}, scene.back);
-  const top = semiY(state.siren) + 46;            // each obstacle reaches just under the top of its siren
-  for (let i = 0; i < ARCS; i++) obstacle(w, ["tree", "house", "sunflower"][i], ARC_X0 + i * (ARC_W + ARC_GAP) + ARC_W / 2, top);
+  // Each obstacle reaches just high enough that a bee riding the siren clears it, with room for a wobble.
+  const top = semiY(state.siren * 0.9) + 60 + state.siren * 4;    // bigger sirens climb faster: a little more room
+  scene.obstacles = [];
+  for (let i = 0; i < ARCS; i++) {
+    const cx = ARC_X0 + i * (ARC_W + ARC_GAP) + ARC_W / 2;
+    obstacle(w, ["tree", "house", "sunflower"][i], cx, top);
+    scene.obstacles.push({ cx, top });
+  }
   // The hive: home, at the starting pitch.
   const hy = semiY(0);
   el("rect", { x: HIVE_X - 8, y: hy + 40, width: 16, height: GROUND - hy - 34, fill: "#8a5a2b" }, w);
@@ -566,6 +576,7 @@ function buildRoute() {
   // The route itself: dots that bloom when the bee meets them.
   scene.routeTrail = el("path", { fill: "none", stroke: "#f2b705", "stroke-width": 6, "stroke-linecap": "round", opacity: .5 }, w);
   for (let wx = ROUTE_BEE_X + 40; wx < HIVE_X - 90; wx += 34) {
+    if (!overArc(wx)) continue;
     const g = el("g", { transform: `translate(${wx} ${semiY(routeSemi(wx)).toFixed(0)})` }, w);
     el("circle", { r: 9, fill: "#fff", stroke: "#f2b705", "stroke-width": 4 }, g);
     scene.dots.push({ g, wx, semi: routeSemi(wx), met: false });
@@ -577,6 +588,8 @@ function buildRoute() {
   el("ellipse", { cx: 1100, cy: 36, rx: 16, ry: 13, fill: "#f2b705", stroke: "#c98a00", "stroke-width": 3 }, map);
   scene.mapBee = el("circle", { cy: 40, r: 11, fill: "#ffc81a", stroke: "#3b2a10", "stroke-width": 3 }, map);
   scene.mapX = mx;
+  scene.dizzy = el("g", { opacity: 0 }, scene.back);
+  for (let i = 0; i < 3; i++) el("path", { d: "M 0 -12 L 3.5 -4 L 12 -4 L 5 1.5 L 7.5 10 L 0 5 L -7.5 10 L -5 1.5 L -12 -4 L -3.5 -4 Z", fill: "#ffc81a", stroke: "#c98a00", "stroke-width": 2 }, scene.dizzy);
   scene.countdown = el("text", { x: ROUTE_BEE_X, y: semiY(0) - 110, "text-anchor": "middle", "font-size": 110, "font-weight": 900, fill: "#1a7fe2", stroke: "#fff", "stroke-width": 10, "paint-order": "stroke", style: "font-family: var(--display)" }, scene.back);
   scene.scroll = 0;
   scene.trail = [];
@@ -623,7 +636,7 @@ function next() {
 function update(dt) {
   const s = state;
   s.phaseT += dt;
-  if (s.semi !== null) s.smoothSemi += (s.semi - s.smoothSemi) * Math.min(1, dt * 10);
+  if (s.semi !== null) s.smoothSemi += (s.semi - s.smoothSemi) * Math.min(1, dt * 16);
   if (s.step !== 2 && s.step !== 3) return;
   if (s.phase === "grow" && s.phaseT > 1.2) setPhase("play");
   if (s.phase !== "play") return;
@@ -662,11 +675,11 @@ function draw(dt) {
   let bx = BEE_X, by = scene.beeY;
   if (s.step === 1) by = 330 + Math.sin(t * 1.6) * 14;
   else if (buzzing && s.semi !== null) by = semiY(s.smoothSemi);
-  else if (s.step === 4 && s.siren) by = semiY(0);                  // the route: glide back to the start height
+  else if (s.step === 4 && s.siren && !buzzing) by = semiY(0);     // the route: glide back to the start height (a lost frame is not silence)
   if (s.step === 2 || s.step === 3) bx = lerp(BEE_X, FLOWER_X - 120, ease(s.approach));
   if (s.step === 4) bx = s.siren ? ROUTE_BEE_X : 900;
   scene.beeY += (by - scene.beeY) * Math.min(1, dt * (s.step === 1 ? 4 : buzzing ? 12 : 1.5));
-  const tilt = s.step === 1 && buzzing ? 6 : 0;
+  const tilt = s.phase === "bump" ? Math.sin(t * 14) * 12 : s.step === 1 && buzzing ? 6 : 0;
   scene.bee.setAttribute("transform", `translate(${bx.toFixed(1)} ${(scene.beeY + (buzzing ? 0 : Math.sin(t * 2) * 6)).toFixed(1)}) rotate(${tilt})`);
   const flap = buzzing ? Math.sin(t * 34) * 0.35 : Math.sin(t * 8) * 0.15;      // a shimmer, not a flash
   scene.wingFront.setAttribute("transform", `rotate(${(-12 + flap * 30).toFixed(1)} 8 -4)`);
@@ -722,6 +735,16 @@ function drawRoute(dt, t) {
   if (s.phase === "ready" && left <= 0) setPhase("play");
   if (s.phase === "play") scene.scroll = Math.min(HIVE_X - 70 - ROUTE_BEE_X, scene.scroll + FLY_SPEED * dt);
   const bwx = scene.scroll + ROUTE_BEE_X;
+  // Too low over an obstacle: the bee bumps into it, gets dizzy, and the route starts again.
+  if (s.phase === "play" && scene.obstacles.some(o => Math.abs(bwx - o.cx) < HIT_W && scene.beeY + 25 > o.top)) { setPhase("bump"); boing(); }
+  scene.dizzy.setAttribute("opacity", s.phase === "bump" ? 1 : 0);
+  if (s.phase === "bump") {
+    [...scene.dizzy.children].forEach((st, i) => {
+      const a = t * 5 + i * 2.1;
+      st.setAttribute("transform", `translate(${(ROUTE_BEE_X + 20 + Math.cos(a) * 46).toFixed(1)} ${(scene.beeY - 70 + Math.sin(a) * 14).toFixed(1)})`);
+    });
+    if (s.phaseT >= BUMP_S) { enterStep(); return; }
+  }
   scene.world.setAttribute("transform", `translate(${(-scene.scroll).toFixed(1)} 0)`);
   if (sounding) scene.trail.push({ x: bwx, y: scene.beeY, gap: !scene.lastOn });
   scene.lastOn = sounding;
@@ -741,6 +764,20 @@ function drawRoute(dt, t) {
     burst(HIVE_X - scene.scroll, semiY(0));
   }
   if (s.phase === "won") scene.hive.setAttribute("transform", `translate(${HIVE_X} ${semiY(0)}) rotate(${(Math.sin(t * 8) * 3).toFixed(1)})`);
+}
+
+// A soft "boing" for a bump: a little bounce down in pitch, not an alarm.
+function boing() {
+  const c = ensureCtx(), t = c.currentTime + 0.02, o = c.createOscillator(), g = c.createGain();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(520, t);
+  o.frequency.exponentialRampToValueAtTime(180, t + 0.35);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.14, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+  o.connect(g); g.connect(c.destination);
+  o.start(t); o.stop(t + 0.5);
+  state.muteUntil = Math.max(state.muteUntil, performance.now() + 700);
 }
 
 function chime() {
