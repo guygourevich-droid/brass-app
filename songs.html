@@ -67,6 +67,14 @@
   .song-card b { display: block; font-size: clamp(20px, 2.8vh, 28px); font-weight: 800; margin-bottom: 8px; }
   .song-card span { display: inline-block; font-size: 15px; color: var(--muted); background: #eef3f9; border-radius: 999px; padding: 2px 10px; margin: 0 0 4px 4px; }
   .list .more { color: var(--muted); margin-top: 2vh; font-size: 16px; }
+  /* A song that needs more notes: faded, with the missing notes marked; tapping it opens the settings. */
+  .song-card.locked { background: #f6f8fb; border-style: dashed; color: var(--muted); }
+  .song-card.locked b::after { content: " 🔒"; font-size: .8em; }
+  .song-card.locked span.missing { background: #fff3d6; color: #8a5a00; border: 2px dashed #e0a500; font-weight: 700; }
+  .empty { text-align: center; margin: 3vh 0 2vh; }
+  .empty p { font-size: clamp(20px, 3vh, 30px); font-weight: 700; margin: 0 0 2vh; }
+  .empty button { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(20px, 3vh, 30px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
+  .empty[hidden] { display: none; }
 
   /* Settings */
   .sheet { position: absolute; inset: 0; background: rgba(255, 255, 255, .97); overflow: auto; padding: 2vh clamp(16px, 4vw, 48px) 4vh; }
@@ -117,6 +125,7 @@
 
     <section class="list" id="list" aria-label="שירים">
       <h2>איזה שיר?</h2>
+      <div class="empty" id="empty" hidden><p>כדי לנגן שיר צריך עוד צלילים</p><button id="emptyBtn">⚙ לבחור צלילים</button></div>
       <div class="cards" id="cards"></div>
       <p class="more" id="more"></p>
     </section>
@@ -914,23 +923,31 @@ function fireworks(x, y) {
 
 /* ---------- Panels ---------- */
 
+// The songs that fit the chosen notes, then the ones that need more notes (fewest missing first):
+// those are faded and locked, show which notes they still need, and open the settings when tapped.
 function buildList() {
   const box = $("cards");
   box.textContent = "";
-  let hidden = 0;
-  SONGS.forEach(song => {
-    if (!playable(song)) { hidden++; return; }
+  const missing = song => stepsOf(song).filter(st => { const w = writtenOf(st); return w === undefined || !state.chosen.includes(w); });
+  const open = SONGS.filter(playable), locked = SONGS.filter(song => !playable(song)).sort((a, b) => missing(a).length - missing(b).length);
+  [...open, ...locked].forEach(song => {
+    const lock = !playable(song), need = lock ? missing(song) : [];
     const b = document.createElement("button");
-    b.className = "song-card";
+    b.className = "song-card" + (lock ? " locked" : "");
     const t = document.createElement("b");
     t.textContent = song.title;
     b.appendChild(t);
-    stepsOf(song).forEach(s => { const c = document.createElement("span"); c.textContent = nameOf(writtenOf(s)); b.appendChild(c); });
-    b.addEventListener("click", () => chooseSong(song));
+    stepsOf(song).forEach(st => {
+      const c = document.createElement("span"), w = writtenOf(st);
+      c.textContent = (need.includes(st) ? "+ " : "") + (w === undefined ? "?" : nameOf(w));
+      if (need.includes(st)) c.className = "missing";
+      b.appendChild(c);
+    });
+    b.addEventListener("click", () => lock ? toggleSheet(true) : chooseSong(song));
     box.appendChild(b);
   });
-  $("more").textContent = !box.children.length ? "אין עדיין שיר עם הצלילים שנבחרו. מסמנים עוד צלילים בהגדרות ⚙"
-    : hidden ? `עוד ${hidden} שירים יופיעו כשמסמנים עוד צלילים בהגדרות ⚙` : "";
+  $("empty").hidden = open.length > 0;
+  $("more").textContent = locked.length && open.length ? "שירים עם 🔒 צריכים עוד צלילים: מסמנים אותם בהגדרות ⚙" : "";
 }
 
 function showList() {
@@ -1046,6 +1063,7 @@ $("fullscreen").addEventListener("click", toggleFullscreen);
 $("modeFollow").addEventListener("click", () => setMode("follow"));
 $("modeTime").addEventListener("click", () => setMode("time"));
 $("playBtn").addEventListener("click", playOrStop);
+$("emptyBtn").addEventListener("click", () => toggleSheet(true));
 $("listenBtn").addEventListener("click", listen);
 $("fromBar").addEventListener("change", () => { state.from = +$("fromBar").value; if (state.to < state.from) { state.to = state.from; $("toBar").value = String(state.to); } resetPlay(); });
 $("toBar").addEventListener("change", () => { state.to = +$("toBar").value; if (state.from > state.to) { state.from = state.to; $("fromBar").value = String(state.from); } resetPlay(); });
