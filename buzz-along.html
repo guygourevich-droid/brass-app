@@ -50,6 +50,9 @@
   .overlay[hidden] { display: none; }
   .overlay p { margin: 0 0 2vh; font-size: clamp(18px, 3.2vh, 30px); font-weight: 500; max-width: 24ch; line-height: 1.5; }
   .big-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .6em 1.6em; cursor: pointer; min-height: 56px; }
+  /* After a success: one obvious way on. */
+  .next-btn { position: absolute; bottom: 5vh; left: 50%; transform: translateX(-50%); box-shadow: 0 4px 16px rgba(21, 24, 29, .25); }
+  .next-btn[hidden] { display: none; }
 
   .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; direction: rtl; text-align: right; background: rgba(13, 17, 23, .82); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; font-variant-numeric: tabular-nums; white-space: pre; }
   .diag[hidden] { display: none; }
@@ -99,6 +102,7 @@
         <button class="big-btn" id="startBtn">התחלה</button>
       </div>
     </div>
+    <button class="big-btn next-btn" id="nextBtn" hidden></button>
     <div class="diag" id="diag" hidden></div>
   </main>
 
@@ -106,7 +110,7 @@
     <span class="count" id="counter">0</span>
     <span class="tip" id="tip"></span>
     <span class="spacer"></span>
-    <span><kbd>T</kbd> לשמוע · <kbd>Space</kbd> פרח הבא · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>R</kbd> כיול</span>
+    <span><kbd>T</kbd> לשמוע · <kbd>Space</kbd> הבא · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>R</kbd> כיול</span>
   </footer>
 </div>
 <script>
@@ -179,7 +183,6 @@ const IN_CENTS = 80, OUT_CENTS = 110;     // a beginner's buzz wobbles: a wide w
 const GATE_DB = 12, HOLD_DB = 6, ONSET_MS = 150, GAP_MS = 300, ANALYSE_MS = 50;
 const LAND_S = 0.5;                       // step 2: on the flower this long = honey
 const FLY_SPEED = 150;                    // step 1 and 4: px per second the meadow / trail moves
-const SIREN_S = 6;                        // step 4 path: one siren up and back takes this long
 
 const state = {
   inst: "trumpet", step: 1, hold: 4, siren: 0, ti: 0, counter: 0,
@@ -355,7 +358,7 @@ function playBuzz(contour, dur) {
 
 function playModel() {
   if (state.step === 4) {
-    const top = state.siren || 4, q = SIREN_S / 2;
+    const top = state.siren || 4, q = ARC_W / FLY_SPEED / 2;        // one siren, as long as one obstacle
     playBuzz([[0, 0], [0.4, 0], [0.4 + q, top], [0.4 + 2 * q, 0], [0.8 + 2 * q, 0]], 0.8 + 2 * q);
   } else playBuzz([[0, state.step === 1 ? 0 : TARGETS[state.ti]]], 2.2);
 }
@@ -441,7 +444,10 @@ const clamp01 = v => Math.max(0, Math.min(1, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = p => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 
-const GROUND = 560, SKY_TOP = 100, SKY_BOTTOM = 520, BEE_X = 560, FLOWER_X = 1060;
+const GROUND = 560, SKY_TOP = 100, SKY_BOTTOM = 520, BEE_X = 170, FLOWER_X = 1430, JAR_X = 760, JAR_Y = 110;
+// Step 4 route: the bee (fixed on screen) flies home to the hive over three obstacles, one siren each.
+const ROUTE_BEE_X = 420, ARC_W = 600, ARC_GAP = 260, ARC_X0 = 900, ARCS = 3;
+const HIVE_X = ARC_X0 + ARCS * (ARC_W + ARC_GAP) + 120;
 const semiY = s => { const I = INSTRUMENTS[state.inst]; return SKY_BOTTOM - (s - I.lo) / (I.hi - I.lo) * (SKY_BOTTOM - SKY_TOP); };
 const PETALS = ["#ff8fb1", "#ffc81a", "#b07ae8", "#ff7a59", "#5aa7e8"];
 let scene = {};
@@ -454,7 +460,8 @@ function buildScene() {
   scene.back = el("g", {}, svg);
   if (state.step === 1) buildMeadow();
   if (state.step === 2 || state.step === 3) buildFlowerTarget();
-  if (state.step === 4) { scene.trailPath = el("path", { fill: "none", stroke: "#f2b705", "stroke-width": 8, "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-dasharray": "2 16" }, scene.back); }
+  if (state.step === 4 && !state.siren) scene.trailPath = el("path", { fill: "none", stroke: "#f2b705", "stroke-width": 8, "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-dasharray": "2 16" }, scene.back);
+  if (state.step === 4 && state.siren) buildRoute();
   scene.bee = bee(svg);
   scene.beeY = semiY(0);
   scene.drops = el("g", {}, svg);
@@ -516,13 +523,13 @@ function buildFlowerTarget() {
   scene.guide = el("line", { x1: 120, x2: FLOWER_X - 40, y1: y, y2: y, stroke: "#f2b705", "stroke-width": 4, "stroke-dasharray": "4 18", "stroke-linecap": "round", opacity: .8 }, scene.back);
   scene.target = flower(scene.back, FLOWER_X, GROUND + 6, GROUND - 40, PETALS[state.ti % PETALS.length], 1.6);
   scene.target.goalY = y; scene.target.grow = 0;
-  scene.comb = el("g", { transform: `translate(${FLOWER_X + 200} 140)`, opacity: state.step === 3 ? 1 : 0 }, scene.back);
+  scene.comb = el("g", { transform: `translate(${FLOWER_X - 230} 130)`, opacity: state.step === 3 ? 1 : 0 }, scene.back);
   scene.cells = [];
   const hex = "M 0 -22 L 19 -11 L 19 11 L 0 22 L -19 11 L -19 -11 Z";
   [[0, 0], [38, 0], [-38, 0], [19, 33], [-19, 33], [19, -33], [-19, -33]].forEach(([x, yy]) => {
     scene.cells.push(el("path", { d: hex, transform: `translate(${x} ${yy})`, fill: "#fff6d8", stroke: "#e0a500", "stroke-width": 4 }, scene.comb));
   });
-  scene.jar = el("g", { transform: "translate(110 120)" }, scene.back);
+  scene.jar = el("g", { transform: `translate(${JAR_X} ${JAR_Y})` }, scene.back);
   el("rect", { x: -34, y: -40, width: 68, height: 80, rx: 14, fill: "#fff", opacity: .7, stroke: "#c98a00", "stroke-width": 4 }, scene.jar);
   el("rect", { x: -40, y: -52, width: 80, height: 16, rx: 6, fill: "#c98a00" }, scene.jar);
   scene.jarFill = el("rect", { x: -30, width: 60, rx: 10, fill: "#ffb703" }, scene.jar);
@@ -535,21 +542,80 @@ function setJar() {
   scene.jarFill.setAttribute("height", h);
 }
 
+// The route's height (semitones) at a point of the world: flat, then one siren over each obstacle.
+function routeSemi(wx) {
+  for (let i = 0; i < ARCS; i++) {
+    const x0 = ARC_X0 + i * (ARC_W + ARC_GAP);
+    if (wx > x0 && wx < x0 + ARC_W) return state.siren * (0.5 - 0.5 * Math.cos((wx - x0) / ARC_W * Math.PI * 2));
+  }
+  return 0;
+}
+
+function buildRoute() {
+  const w = scene.world = el("g", {}, scene.back);
+  const top = semiY(state.siren) + 46;            // each obstacle reaches just under the top of its siren
+  for (let i = 0; i < ARCS; i++) obstacle(w, ["tree", "house", "sunflower"][i], ARC_X0 + i * (ARC_W + ARC_GAP) + ARC_W / 2, top);
+  // The hive: home, at the starting pitch.
+  const hy = semiY(0);
+  el("rect", { x: HIVE_X - 8, y: hy + 40, width: 16, height: GROUND - hy - 34, fill: "#8a5a2b" }, w);
+  const hive = el("g", { transform: `translate(${HIVE_X} ${hy})` }, w);
+  [[-46, 30, 52], [-22, 26, 46], [2, 22, 38], [24, 18, 28]].reverse().forEach(([y, ry, rx]) => el("ellipse", { cy: y + 30, rx, ry: ry * .6, fill: "#f2b705", stroke: "#c98a00", "stroke-width": 4 }, hive));
+  el("ellipse", { cx: 0, cy: 34, rx: 56, ry: 20, fill: "#f2b705", stroke: "#c98a00", "stroke-width": 4 }, hive);
+  el("ellipse", { cx: -6, cy: 30, rx: 13, ry: 11, fill: "#5a3a10" }, hive);
+  scene.hive = hive;
+  // The route itself: dots that bloom when the bee meets them.
+  scene.routeTrail = el("path", { fill: "none", stroke: "#f2b705", "stroke-width": 6, "stroke-linecap": "round", opacity: .5 }, w);
+  for (let wx = ROUTE_BEE_X + 40; wx < HIVE_X - 90; wx += 34) {
+    const g = el("g", { transform: `translate(${wx} ${semiY(routeSemi(wx)).toFixed(0)})` }, w);
+    el("circle", { r: 9, fill: "#fff", stroke: "#f2b705", "stroke-width": 4 }, g);
+    scene.dots.push({ g, wx, semi: routeSemi(wx), met: false });
+  }
+  // A little map at the top: the obstacles, the hive, and the bee on its way.
+  const map = el("g", {}, scene.back), mx = x => 500 + (x - ROUTE_BEE_X) / (HIVE_X - ROUTE_BEE_X) * 600;
+  el("line", { x1: 500, x2: 1100, y1: 40, y2: 40, stroke: "#9fb6cc", "stroke-width": 6, "stroke-linecap": "round" }, map);
+  for (let i = 0; i < ARCS; i++) el("path", { d: `M ${mx(ARC_X0 + i * (ARC_W + ARC_GAP) + ARC_W / 2) - 12} 40 L ${mx(ARC_X0 + i * (ARC_W + ARC_GAP) + ARC_W / 2)} 22 L ${mx(ARC_X0 + i * (ARC_W + ARC_GAP) + ARC_W / 2) + 12} 40 Z`, fill: "#3fae5c" }, map);
+  el("ellipse", { cx: 1100, cy: 36, rx: 16, ry: 13, fill: "#f2b705", stroke: "#c98a00", "stroke-width": 3 }, map);
+  scene.mapBee = el("circle", { cy: 40, r: 11, fill: "#ffc81a", stroke: "#3b2a10", "stroke-width": 3 }, map);
+  scene.mapX = mx;
+  scene.scroll = 0;
+  scene.trail = [];
+}
+
+function obstacle(parent, kind, cx, top) {
+  const g = el("g", {}, parent), h = GROUND - top;
+  if (kind === "tree") {
+    el("rect", { x: cx - 16, y: top + 70, width: 32, height: h - 64, rx: 8, fill: "#8a5a2b" }, g);
+    [[0, 52, 62], [-50, 86, 46], [50, 86, 46]].forEach(([dx, dy, r]) => el("circle", { cx: cx + dx, cy: top + dy, r, fill: dx ? "#4fb35c" : "#3f9e4d" }, g));
+  } else if (kind === "house") {
+    const roof = Math.min(90, h * 0.35);
+    el("rect", { x: cx - 80, y: top + roof - 4, width: 160, height: h - roof + 10, fill: "#fff1dc" }, g);
+    el("path", { d: `M ${cx - 100} ${top + roof} L ${cx} ${top} L ${cx + 100} ${top + roof} Z`, fill: "#e2643a" }, g);
+    el("rect", { x: cx - 18, y: GROUND - 60, width: 36, height: 66, fill: "#a0663b" }, g);
+    [[-52, 0], [32, 0]].forEach(([dx]) => el("rect", { x: cx + dx, y: top + roof + 24, width: 22, height: 22, rx: 3, fill: "#8fd3ff" }, g));
+  } else {
+    el("path", { d: `M ${cx} ${GROUND + 6} C ${cx - 12} ${lerp(GROUND, top, .5)} ${cx + 12} ${lerp(GROUND, top, .7)} ${cx} ${top + 44}`, fill: "none", stroke: "#2f9e66", "stroke-width": 10 }, g);
+    for (let i = 0; i < 14; i++) el("ellipse", { cx, cy: top + 44 - 34, rx: 10, ry: 24, transform: `rotate(${i * 360 / 14} ${cx} ${top + 44})`, fill: "#ffc81a" }, g);
+    el("circle", { cx, cy: top + 44, r: 22, fill: "#8a5a2b" }, g);
+  }
+}
+
 /* ---------- Steps ---------- */
 
 function setPhase(p) { state.phase = p; state.phaseT = 0; }
 
+let modelTimer = 0;
 function enterStep() {
   state.approach = 0; state.onFlower = 0; state.fill = 0; state.inBand = false;
   setPhase(state.step === 2 || state.step === 3 ? "grow" : "play");
   buildScene();
-  if (state.listening && state.step !== 1 && state.step !== 4) setTimeout(playModel, 700);   // listen first, then copy
+  clearTimeout(modelTimer);
+  if (state.listening && state.step !== 1 && state.step !== 4) modelTimer = setTimeout(playModel, 700);   // listen first, then copy
 }
 
-function nextFlower() {
-  if (state.step !== 2 && state.step !== 3) return;
-  state.ti = (state.ti + 1) % TARGETS.length;
-  enterStep();
+// Space or the big button: the next flower, or a new route home.
+function next() {
+  if (state.step === 2 || state.step === 3) { state.ti = (state.ti + 1) % TARGETS.length; enterStep(); }
+  else if (state.step === 4 && state.siren) enterStep();
 }
 
 function update(dt) {
@@ -582,7 +648,7 @@ function win() {
   const d = el("circle", { r: 14, fill: "#ffb703", stroke: "#c98a00", "stroke-width": 3 }, scene.drops), t0 = performance.now();
   (function fly(now) {
     const p = Math.min(1, (now - t0) / 1100), e = ease(p);
-    d.setAttribute("cx", lerp(FLOWER_X, 110, e)); d.setAttribute("cy", lerp(fy, 120, e) - Math.sin(p * Math.PI) * 120);
+    d.setAttribute("cx", lerp(FLOWER_X, JAR_X, e)); d.setAttribute("cy", lerp(fy, JAR_Y, e) - Math.sin(p * Math.PI) * 120);
     if (p < 1) requestAnimationFrame(fly); else { d.remove(); setJar(); }
   })(t0);
 }
@@ -595,7 +661,7 @@ function draw(dt) {
   if (s.step === 1) by = 330 + Math.sin(t * 1.6) * 14;
   else if (buzzing && s.semi !== null) by = semiY(s.smoothSemi);
   if (s.step === 2 || s.step === 3) bx = lerp(BEE_X, FLOWER_X - 120, ease(s.approach));
-  if (s.step === 4) bx = 900;
+  if (s.step === 4) bx = s.siren ? ROUTE_BEE_X : 900;
   scene.beeY += (by - scene.beeY) * Math.min(1, dt * (s.step === 1 ? 4 : 12));
   const tilt = s.step === 1 && buzzing ? 6 : 0;
   scene.bee.setAttribute("transform", `translate(${bx.toFixed(1)} ${(scene.beeY + (buzzing ? 0 : Math.sin(t * 2) * 6)).toFixed(1)}) rotate(${tilt})`);
@@ -627,39 +693,46 @@ function draw(dt) {
   }
 
   if (s.step === 4) drawSiren(dt, t);
+  const btn = $("nextBtn"), show = s.phase === "won";
+  if (btn.hidden === show) { btn.hidden = !show; btn.textContent = s.step === 4 ? "עוד מסלול ←" : "פרח הבא ←"; }
 }
 
 function drawSiren(dt, t) {
   const s = state;
-  // Free and path both scroll the past to the left; free draws the bee's trail.
+  if (s.siren) return drawRoute(dt, t);
+  // Free: the past scrolls to the left as the bee draws its trail.
   const step = FLY_SPEED * dt;
   scene.trail.forEach(p => { p.x -= step; });
   if (s.soundOn && s.semi !== null) scene.trail.push({ x: 900, y: scene.beeY, gap: !scene.lastOn });
   scene.lastOn = s.soundOn && s.semi !== null;
   while (scene.trail.length && scene.trail[0].x < -40) scene.trail.shift();
   scene.trailPath.setAttribute("d", scene.trail.map(p => `${p.gap ? "M" : "L"} ${p.x.toFixed(0)} ${p.y.toFixed(0)}`).join(" "));
-  scene.trailPath.setAttribute("opacity", s.siren ? 0.35 : 1);
-  if (!s.siren) return;
-  // Path: dots trace the siren up and back; each dot the bee meets turns into a little flower.
-  scene.sirenT = (scene.sirenT || 0) + dt;
-  if (scene.sirenT - (scene.lastDot || 0) > 0.25) {
-    scene.lastDot = scene.sirenT;
-    const ph = (scene.sirenT % SIREN_S) / SIREN_S, semi = s.siren * (0.5 - 0.5 * Math.cos(ph * Math.PI * 2));
-    const g = el("g", {}, scene.back);
-    el("circle", { r: 9, fill: "#fff", stroke: "#f2b705", "stroke-width": 4 }, g);
-    scene.dots.push({ g, x: 1640, semi, y: semiY(semi), met: false });
-  }
+}
+
+// The route: the world moves only while the bee buzzes, so a breath simply pauses it in the air.
+function drawRoute(dt, t) {
+  const s = state, sounding = s.soundOn && s.semi !== null;
+  if (s.phase === "play" && sounding) scene.scroll = Math.min(HIVE_X - 70 - ROUTE_BEE_X, scene.scroll + FLY_SPEED * dt);
+  const bwx = scene.scroll + ROUTE_BEE_X;
+  scene.world.setAttribute("transform", `translate(${(-scene.scroll).toFixed(1)} 0)`);
+  if (sounding) scene.trail.push({ x: bwx, y: scene.beeY, gap: !scene.lastOn });
+  scene.lastOn = sounding;
+  scene.routeTrail.setAttribute("d", scene.trail.map(p => `${p.gap ? "M" : "L"} ${p.x.toFixed(0)} ${p.y.toFixed(0)}`).join(" "));
   for (const d of scene.dots) {
-    d.x -= step;
-    if (!d.met && Math.abs(d.x - 900) < 30 && s.semi !== null && Math.abs(s.smoothSemi - d.semi) * 100 < IN_CENTS + 20) {
+    if (!d.met && sounding && Math.abs(d.wx - bwx) < 20 && Math.abs(s.smoothSemi - d.semi) * 100 < IN_CENTS + 20) {
       d.met = true;
       d.g.textContent = "";
-      for (let i = 0; i < 6; i++) el("ellipse", { cx: 0, cy: -10, rx: 6, ry: 11, transform: `rotate(${i * 60})`, fill: PETALS[(i + Math.round(d.semi)) % PETALS.length] }, d.g);
-      el("circle", { r: 6, fill: "#f2a900" }, d.g);
+      for (let i = 0; i < 6; i++) el("ellipse", { cx: 0, cy: -11, rx: 7, ry: 12, transform: `rotate(${i * 60})`, fill: PETALS[(i + Math.round(d.wx / 34)) % PETALS.length] }, d.g);
+      el("circle", { r: 7, fill: "#f2a900" }, d.g);
     }
-    d.g.setAttribute("transform", `translate(${d.x.toFixed(0)} ${d.y.toFixed(0)})`);
   }
-  while (scene.dots.length && scene.dots[0].x < -40) scene.dots.shift().g.remove();
+  scene.mapBee.setAttribute("cx", scene.mapX(bwx).toFixed(1));
+  if (s.phase === "play" && bwx >= HIVE_X - 70.5) {        // home!
+    setPhase("won");
+    chime();
+    burst(HIVE_X - scene.scroll, semiY(0));
+  }
+  if (s.phase === "won") scene.hive.setAttribute("transform", `translate(${HIVE_X} ${semiY(0)}) rotate(${(Math.sin(t * 8) * 3).toFixed(1)})`);
 }
 
 function chime() {
@@ -776,7 +849,7 @@ $("startBtn").addEventListener("click", e => { e.stopPropagation(); startMic(); 
 $("overlay").addEventListener("click", startMic);
 $("tone").addEventListener("click", playModel);
 $("fullscreen").addEventListener("click", toggleFullscreen);
-$("stage").addEventListener("click", e => { if ($("overlay").hidden && state.phase === "won") nextFlower(); });
+$("nextBtn").addEventListener("click", next);
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
 
 document.addEventListener("keydown", e => {
@@ -784,7 +857,7 @@ document.addEventListener("keydown", e => {
   const t = e.target;
   if (t.tagName === "BUTTON" || t.tagName === "INPUT") return;
   const c = e.code;
-  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); nextFlower(); }
+  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); next(); }
   else if (/^Digit[1-4]$/.test(c)) setStep(+c.slice(5));
   else if (c === "KeyT") playModel();
   else if (c === "KeyR") state.noiseFloor = 0.002;
