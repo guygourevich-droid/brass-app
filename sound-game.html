@@ -29,6 +29,10 @@
   #sky2 { background: linear-gradient(180deg, #7fb8ee 0%, #b9dbf8 55%, #e6f1fc 100%); }
   #sky3 { background: linear-gradient(180deg, #5b5aa8 0%, #9b87c9 55%, #f3c6a6 100%); }
   #sky4 { background: linear-gradient(180deg, #0c1638 0%, #1d2b5e 55%, #3b3f7a 100%); }
+  /* Deep space, for the longest notes: a purple nebula, an aurora, then a magenta galaxy. */
+  #sky5 { background: linear-gradient(180deg, #1c0b3a 0%, #3d1766 55%, #6a2b80 100%); }
+  #sky6 { background: linear-gradient(180deg, #04202b 0%, #0b4a52 55%, #1d7a5e 100%); }
+  #sky7 { background: linear-gradient(180deg, #23051f 0%, #57104a 55%, #8f2a5e 100%); }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e8f4ff 55%, #fff4e3 100%) fixed; overflow: hidden; }
@@ -71,7 +75,7 @@
 </style>
 </head>
 <body>
-<div class="sky" id="sky2"></div><div class="sky" id="sky3"></div><div class="sky" id="sky4"></div>
+<div class="sky" id="sky2"></div><div class="sky" id="sky3"></div><div class="sky" id="sky4"></div><div class="sky" id="sky5"></div><div class="sky" id="sky6"></div><div class="sky" id="sky7"></div>
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
@@ -162,7 +166,9 @@ const SVGNS = "http://www.w3.org/2000/svg";
 // Places with a face, passed every 4 seconds; a level ends at one of them.
 const CHECKS = [{ t: 4, kind: "sun" }, { t: 8, kind: "satellite" }, { t: 12, kind: "moon" }, { t: 16, kind: "saturn" },
   { t: 20, kind: "mars" }, { t: 24, kind: "star" }];
-for (let t = 28; t <= 180; t += 4) CHECKS.push({ t, kind: "star" });
+// Further out every place is new, and past a minute they keep coming in new colours.
+const DEEP = ["jupiter", "neptune", "galaxy", "rainbow", "blackhole", "ringed", "twins", "nebula", "crown"];
+for (let t = 28, i = 0; t <= 240; t += 4, i++) CHECKS.push({ t, kind: DEEP[i % DEEP.length], variant: Math.floor(i / DEEP.length) });
 const LEVELS = [4, 8, 12, 16, Infinity];   // seconds to the level's end; the last level never ends
 // Things on the way, by the second they are passed at, and which side of the rocket.
 const SIGHTS = [
@@ -170,7 +176,8 @@ const SIGHTS = [
   [4.4, "cloud", 330], [4.7, "cloud", 650], [6, "plane-far", 230], [6.8, "cloud-high", 800], [9.6, "astronaut", 240],
   [10.8, "meteor", 760], [14, "asteroid", 250], [18, "comet", 250], [22, "ufo", 250]
 ];
-for (let t = 26; t <= 180; t += 4) SIGHTS.push([t, ["asteroid", "comet", "ufo", "meteor"][(t / 4) % 4], 250]);
+const FAR_SIGHTS = ["station", "whale", "friend", "shower", "astronaut", "ufo", "comet", "asteroid"];
+for (let t = 26, i = 0; t <= 240; t += 4, i++) SIGHTS.push([t, FAR_SIGHTS[i % FAR_SIGHTS.length], 250]);
 
 const RX = 500, PAD_Y = 505, NOSE = 136;    // the rocket's x, its base at home, base to nose (scaled)
 const SPEED = 90, CRUISE_Y = 380;           // px per second of note; where the rocket stays once flying
@@ -427,7 +434,7 @@ function buildScene() {
     if (last) {   // the end of this level: a golden line across, under a flag
       el("line", { x1: 120, x2: 900, y1: y + 40, y2: y + 40, stroke: "#f2b705", "stroke-width": 6, "stroke-dasharray": "18 14", "stroke-linecap": "round" }, w);
     }
-    scene.checks.push(Object.assign(thing(w, c.kind, x, y, last ? 1 : .8), { t: c.t, kind: c.kind, x, y }));
+    scene.checks.push(Object.assign(thing(w, c.kind, x, y, last ? 1 : .8, c.variant || 0), { t: c.t, kind: c.kind, x, y }));
   }
 
   // One star per second of the level, lit as the rocket goes (not in the endless level).
@@ -480,7 +487,9 @@ function tree(p, x, y, s) {
 }
 
 // Everything on the way. Places (sun, moon, planets, stars) have a face that smiles once passed.
-function thing(parent, kind, x, y, scale = 1) {
+// Colours for the deep-space places; a place met again a minute later wears the next set.
+const HUES = [["#e9a86b", "#c9773f"], ["#5aa7e8", "#2f6fb8"], ["#b07ae8", "#7a4cc2"], ["#6fd39a", "#2f9e66"], ["#f28aa8", "#d0567c"]];
+function thing(parent, kind, x, y, scale = 1, variant = 0) {
   const g = el("g", { transform: `translate(${x} ${y}) scale(${scale})` }, parent);
   const r = { g, mouth: null, spin: null, wing: null, scale };
   const face = () => {
@@ -554,6 +563,75 @@ function thing(parent, kind, x, y, scale = 1) {
     el("circle", { cx: 5, cy: -21, r: 3, fill: "#15181d" }, g);
     el("ellipse", { rx: 80, ry: 22, fill: "#9aa6b6" }, g);
     [-50, -16, 18, 52].forEach(cx => el("circle", { cx, cy: 2, r: 6, fill: "#f2b705" }, g));
+  } else if (kind === "jupiter" || kind === "neptune" || kind === "rainbow" || kind === "ringed" || kind === "crown") {
+    const [c1, c2] = HUES[(variant + ["jupiter", "neptune", "ringed", "crown", "rainbow"].indexOf(kind)) % HUES.length];
+    if (kind === "ringed") el("path", { d: "M -104 10 A 104 30 14 0 1 104 -10", fill: "none", stroke: c2, "stroke-width": 12 }, g);
+    el("circle", { r: kind === "ringed" ? 50 : 60, fill: kind === "crown" ? "#ffd25a" : c1 }, g);
+    if (kind === "rainbow") {
+      const clip = el("clipPath", { id: "rb" + x + "_" + Math.round(y) }, g);
+      el("circle", { r: 60 }, clip);
+      const bands = el("g", { "clip-path": `url(#rb${x}_${Math.round(y)})` }, g);
+      ["#ff6f59", "#ffb020", "#ffe066", "#6fd39a", "#5aa7e8", "#9b7ae8"].forEach((col, i) => el("rect", { x: -60, y: -60 + i * 20, width: 120, height: 20, fill: col }, bands));
+    } else if (kind !== "crown") {
+      el("path", { d: "M -56 -18 Q 0 -6 56 -18 L 58 -8 Q 0 4 -58 -8 Z", fill: c2, opacity: .7 }, g);
+      el("path", { d: "M -50 28 Q 0 40 50 28 L 46 38 Q 0 50 -46 38 Z", fill: c2, opacity: .7 }, g);
+      if (kind === "jupiter") el("ellipse", { cx: 24, cy: 12, rx: 13, ry: 8, fill: "#c24e2a" }, g);
+    }
+    if (kind === "ringed") el("path", { d: "M -104 10 A 104 30 14 0 0 104 -10", fill: "none", stroke: c2, "stroke-width": 12 }, g);
+    if (kind === "crown") {      // a whole minute: the planet wears a crown
+      el("path", { d: "M -44 -50 L -44 -96 L -22 -70 L 0 -104 L 22 -70 L 44 -96 L 44 -50 Z", fill: "#f2b705", stroke: "#c98a00", "stroke-width": 4, "stroke-linejoin": "round" }, g);
+      [-30, 0, 30].forEach((cx, i) => el("circle", { cx, cy: -62, r: 7, fill: ["#ff6f59", "#1a7fe2", "#2fa36b"][i] }, g));
+    }
+    face();
+  } else if (kind === "galaxy") {
+    r.spin = el("g", {}, g);
+    el("circle", { r: 74, fill: "#c9b8ff", opacity: .18 }, r.spin);
+    for (let arm = 0; arm < 3; arm++) for (let i = 0; i < 16; i++) {
+      const a = arm * 2.09 + i * 0.32, d = 10 + i * 4.2;
+      el("circle", { cx: (Math.cos(a) * d).toFixed(1), cy: (Math.sin(a) * d).toFixed(1), r: (5 - i * 0.22).toFixed(1), fill: i % 3 ? "#e6dcff" : "#ffd25a" }, r.spin);
+    }
+    el("circle", { r: 16, fill: "#fff6d0" }, g);
+  } else if (kind === "blackhole") {
+    r.spin = el("g", {}, g);
+    el("ellipse", { rx: 96, ry: 30, fill: "none", stroke: "#ff9f1c", "stroke-width": 12, opacity: .85 }, r.spin);
+    el("ellipse", { rx: 76, ry: 20, fill: "none", stroke: "#ffe066", "stroke-width": 6, opacity: .8 }, r.spin);
+    el("circle", { r: 44, fill: "#05060a", stroke: "#ffb020", "stroke-width": 4 }, g);
+    el("circle", { cx: -14, cy: -6, r: 6, fill: "#fff" }, g);
+    el("circle", { cx: 14, cy: -6, r: 6, fill: "#fff" }, g);
+    r.mouth = el("path", { d: "M -12 18 L 12 18", fill: "none", stroke: "#fff", "stroke-width": 5, "stroke-linecap": "round" }, g);
+  } else if (kind === "twins") {
+    r.spin = el("g", {}, g);
+    el("path", { d: starPath(40, 0.5), transform: "translate(-52 0)", fill: "#ffd25a", stroke: "#f2b705", "stroke-width": 3 }, r.spin);
+    el("path", { d: starPath(32, 0.5), transform: "translate(52 0)", fill: "#8fd3ff", stroke: "#1a7fe2", "stroke-width": 3 }, r.spin);
+  } else if (kind === "nebula") {
+    [[-40, 0, 46, "#f28aa8"], [20, -20, 50, "#b07ae8"], [36, 24, 40, "#5aa7e8"], [-10, 30, 36, "#f2b705"]].forEach(([cx, cy, rr, col]) => el("circle", { cx, cy, r: rr, fill: col, opacity: .45 }, g));
+    for (let i = 0; i < 7; i++) el("circle", { cx: -50 + i * 17, cy: ((i * 37) % 70) - 35, r: 3, fill: "#fff" }, g);
+    face();
+  } else if (kind === "station") {
+    el("rect", { x: -130, y: -20, width: 80, height: 40, fill: "#1a7fe2", stroke: "#cfe3f7", "stroke-width": 3 }, g);
+    el("rect", { x: 50, y: -20, width: 80, height: 40, fill: "#1a7fe2", stroke: "#cfe3f7", "stroke-width": 3 }, g);
+    el("rect", { x: -50, y: -6, width: 100, height: 12, fill: "#8a97a8" }, g);
+    el("rect", { x: -30, y: -26, width: 60, height: 52, rx: 10, fill: "#f4f6fa", stroke: "#8a97a8", "stroke-width": 3 }, g);
+    [-12, 12].forEach(cx => el("circle", { cx, cy: 0, r: 7, fill: "#ffd25a" }, g));
+  } else if (kind === "whale") {     // a friendly space whale
+    el("path", { d: "M -110 0 C -110 -50 -40 -64 20 -50 C 70 -40 96 -14 110 -34 C 116 -10 110 12 96 20 C 70 46 10 52 -40 46 C -90 40 -110 26 -110 0 Z", fill: "#5aa7e8" }, g);
+    el("path", { d: "M -100 14 C -60 40 20 44 80 22 C 40 50 -60 48 -100 14 Z", fill: "#cfe9ff" }, g);
+    el("circle", { cx: -70, cy: -14, r: 7, fill: "#15181d" }, g);
+    el("path", { d: "M -84 6 Q -70 16 -56 6", fill: "none", stroke: "#15181d", "stroke-width": 4, "stroke-linecap": "round" }, g);
+    [[-40, -80], [-28, -98], [-52, -96]].forEach(([cx, cy]) => el("path", { d: starPath(9, 0.5), transform: `translate(${cx} ${cy})`, fill: "#ffe066" }, g));
+  } else if (kind === "friend") {   // another little rocket on its way up
+    const f = el("g", { transform: "rotate(18) scale(.45)" }, g);
+    el("path", { d: "M -21 -8 Q -28 34 0 86 Q 28 34 21 -8 Z", fill: "#ff9f1c" }, f);
+    el("path", { d: "M -40 -62 L -74 -12 L -74 6 L -40 -22 Z", fill: "#7a5cf0" }, f);
+    el("path", { d: "M 40 -62 L 74 -12 L 74 6 L 40 -22 Z", fill: "#7a5cf0" }, f);
+    el("path", { d: "M 0 -170 C 42 -132 48 -72 40 -22 L -40 -22 C -48 -72 -42 -132 0 -170 Z", fill: "#6fd39a" }, f);
+    el("circle", { cy: -76, r: 18, fill: "#8fd3ff", stroke: "#2f6fb8", "stroke-width": 6 }, f);
+  } else if (kind === "shower") {
+    for (let i = 0; i < 5; i++) {
+      const m = el("g", { transform: `translate(${-120 + i * 60} ${((i * 53) % 90) - 45})` }, g);
+      el("path", { d: "M 0 -5 L 70 -26 L 74 -18 L 0 5 Z", fill: "#fff1a8", opacity: .5 }, m);
+      el("circle", { r: 7, fill: "#ffd25a" }, m);
+    }
   }
   return r;
 }
@@ -575,6 +653,7 @@ function update(dt) {
         s.flightBest = Math.max(s.flightBest, c.t);
         s.turnBest = Math.max(s.turnBest, c.t);
         if (c.t === goal) { setPhase("won"); chime(4); [0, 350, 700].forEach((ms, i) => setTimeout(() => burst(c.x + [0, -140, 140][i], CRUISE_Y - NOSE + [0, 60, 60][i]), ms)); }
+        else if (c.t % 20 === 0) { chime(4); [0, 300, 600].forEach((ms, i) => setTimeout(() => burst(c.x + [0, -120, 120][i] - (i ? 200 : 0), CRUISE_Y - NOSE + [0, 40, 40][i]), ms)); }
         else { chime(2); burst(c.x, c.y + camera()); }
       }
     }
@@ -598,6 +677,7 @@ function draw(dt) {
   // The sky darkens slowly with height: day, deeper blue, dusk, night.
   const night = (s.a - 2) / 4;
   [2, 3, 4].forEach(n => { $("sky" + n).style.opacity = clamp01(night - (n - 2)).toFixed(2); });
+  [[5, 26], [6, 44], [7, 62]].forEach(([n, from]) => { $("sky" + n).style.opacity = clamp01((s.a - from) / 6).toFixed(2); });
 
   const cam = camera();
   scene.world.setAttribute("transform", `translate(0 ${cam.toFixed(1)})`);
@@ -638,7 +718,7 @@ function draw(dt) {
     if (o.mouth) o.mouth.setAttribute("d", o.passed ? "M -20 12 Q 0 34 20 12" : "M -12 18 L 12 18");
     if (o.wing) o.wing.setAttribute("transform", `rotate(${(Math.sin(t * 9 + o.x) * 25).toFixed(1)})`);
     if (o.spin) o.spin.setAttribute("transform", `rotate(${((o.kind === "satellite" || o.kind === "astronaut" ? Math.sin(t * .8) * 14 : t * (o.passed ? 40 : 8)) % 360).toFixed(1)})`);
-    if (o.kind === "plane" || o.kind === "ufo") o.g.setAttribute("transform", `translate(${(o.x + Math.sin(t * .5) * 40).toFixed(1)} ${(o.y + Math.sin(t * 1.3) * 6).toFixed(1)})`);
+    if (o.kind === "plane" || o.kind === "ufo" || o.kind === "whale" || o.kind === "friend" || o.kind === "station") o.g.setAttribute("transform", `translate(${(o.x + Math.sin(t * .5) * 40).toFixed(1)} ${(o.y + Math.sin(t * 1.3) * 6).toFixed(1)})`);
   }
 
   // Seconds stars: lit up to where the rocket is.
@@ -659,9 +739,9 @@ function draw(dt) {
   if (goal === Infinity && scene.trophyCount !== s.turnBest) {
     scene.trophyCount = s.turnBest;
     scene.trophies.textContent = "";
-    const got = CHECKS.filter(c => c.t <= s.turnBest).slice(0, 14);
+    const got = CHECKS.filter(c => c.t <= s.turnBest).slice(-10);     // the latest ten fit beside the seconds
     got.forEach((c, i) => {
-      const tr = thing(scene.trophies, c.kind, 44 + i * 64, 44, 0.42);
+      const tr = thing(scene.trophies, c.kind, 44 + i * 64, 44, 0.42, c.variant || 0);
       if (tr.mouth) tr.mouth.setAttribute("d", "M -20 12 Q 0 34 20 12");
     });
   }
