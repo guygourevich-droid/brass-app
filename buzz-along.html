@@ -446,7 +446,7 @@ const ease = p => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 
 const GROUND = 560, SKY_TOP = 100, SKY_BOTTOM = 520, BEE_X = 170, FLOWER_X = 1430, JAR_X = 760, JAR_Y = 110;
 // Step 4 route: the bee (fixed on screen) flies home to the hive over three obstacles, one siren each.
-const ROUTE_BEE_X = 420, ARC_W = 600, ARC_GAP = 260, ARC_X0 = 900, ARCS = 3;
+const ROUTE_BEE_X = 420, ARC_W = 600, ARC_GAP = 380, ARC_X0 = 900, ARCS = 3, READY_S = 3;
 const HIVE_X = ARC_X0 + ARCS * (ARC_W + ARC_GAP) + 120;
 const semiY = s => { const I = INSTRUMENTS[state.inst]; return SKY_BOTTOM - (s - I.lo) / (I.hi - I.lo) * (SKY_BOTTOM - SKY_TOP); };
 const PETALS = ["#ff8fb1", "#ffc81a", "#b07ae8", "#ff7a59", "#5aa7e8"];
@@ -577,6 +577,7 @@ function buildRoute() {
   el("ellipse", { cx: 1100, cy: 36, rx: 16, ry: 13, fill: "#f2b705", stroke: "#c98a00", "stroke-width": 3 }, map);
   scene.mapBee = el("circle", { cy: 40, r: 11, fill: "#ffc81a", stroke: "#3b2a10", "stroke-width": 3 }, map);
   scene.mapX = mx;
+  scene.countdown = el("text", { x: ROUTE_BEE_X, y: semiY(0) - 110, "text-anchor": "middle", "font-size": 110, "font-weight": 900, fill: "#1a7fe2", stroke: "#fff", "stroke-width": 10, "paint-order": "stroke", style: "font-family: var(--display)" }, scene.back);
   scene.scroll = 0;
   scene.trail = [];
 }
@@ -606,10 +607,11 @@ function setPhase(p) { state.phase = p; state.phaseT = 0; }
 let modelTimer = 0;
 function enterStep() {
   state.approach = 0; state.onFlower = 0; state.fill = 0; state.inBand = false;
-  setPhase(state.step === 2 || state.step === 3 ? "grow" : "play");
+  setPhase(state.step === 2 || state.step === 3 ? "grow" : state.step === 4 && state.siren ? "ready" : "play");
   buildScene();
   clearTimeout(modelTimer);
   if (state.listening && state.step !== 1 && state.step !== 4) modelTimer = setTimeout(playModel, 700);   // listen first, then copy
+  if (state.listening && state.step === 4 && state.siren) modelTimer = setTimeout(() => playBuzz([[0, 0]], 2), 200);   // where to start
 }
 
 // Space or the big button: the next flower, or a new route home.
@@ -660,9 +662,10 @@ function draw(dt) {
   let bx = BEE_X, by = scene.beeY;
   if (s.step === 1) by = 330 + Math.sin(t * 1.6) * 14;
   else if (buzzing && s.semi !== null) by = semiY(s.smoothSemi);
+  else if (s.step === 4 && s.siren) by = semiY(0);                  // the route: glide back to the start height
   if (s.step === 2 || s.step === 3) bx = lerp(BEE_X, FLOWER_X - 120, ease(s.approach));
   if (s.step === 4) bx = s.siren ? ROUTE_BEE_X : 900;
-  scene.beeY += (by - scene.beeY) * Math.min(1, dt * (s.step === 1 ? 4 : 12));
+  scene.beeY += (by - scene.beeY) * Math.min(1, dt * (s.step === 1 ? 4 : buzzing ? 12 : 1.5));
   const tilt = s.step === 1 && buzzing ? 6 : 0;
   scene.bee.setAttribute("transform", `translate(${bx.toFixed(1)} ${(scene.beeY + (buzzing ? 0 : Math.sin(t * 2) * 6)).toFixed(1)}) rotate(${tilt})`);
   const flap = buzzing ? Math.sin(t * 34) * 0.35 : Math.sin(t * 8) * 0.15;      // a shimmer, not a flash
@@ -709,10 +712,15 @@ function drawSiren(dt, t) {
   scene.trailPath.setAttribute("d", scene.trail.map(p => `${p.gap ? "M" : "L"} ${p.x.toFixed(0)} ${p.y.toFixed(0)}`).join(" "));
 }
 
-// The route: the world moves only while the bee buzzes, so a breath simply pauses it in the air.
+// The route: after the starting buzz and a 3-2-1 the bee flies on at a steady speed; the child's buzz lifts it
+// over the obstacles. Silent, it glides gently back to the starting height and keeps going.
 function drawRoute(dt, t) {
   const s = state, sounding = s.soundOn && s.semi !== null;
-  if (s.phase === "play" && sounding) scene.scroll = Math.min(HIVE_X - 70 - ROUTE_BEE_X, scene.scroll + FLY_SPEED * dt);
+  const left = READY_S - s.phaseT;
+  scene.countdown.textContent = s.phase === "ready" && s.listening && left < READY_S - 0.01 ? Math.ceil(left) : "";
+  if (s.phase === "ready" && !s.listening) s.phaseT = 0;
+  if (s.phase === "ready" && left <= 0) setPhase("play");
+  if (s.phase === "play") scene.scroll = Math.min(HIVE_X - 70 - ROUTE_BEE_X, scene.scroll + FLY_SPEED * dt);
   const bwx = scene.scroll + ROUTE_BEE_X;
   scene.world.setAttribute("transform", `translate(${(-scene.scroll).toFixed(1)} 0)`);
   if (sounding) scene.trail.push({ x: bwx, y: scene.beeY, gap: !scene.lastOn });
