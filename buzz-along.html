@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Buzz-Along · Brass App</title>
+<title>זמזום · Brass App</title>
 <meta name="theme-color" content="#bfe4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,619 +15,804 @@
 <style>
   :root {
     --ink: #15181d;
-    --ink-2: #3b434e;
     --muted: #56616f;
-    --line: rgba(21, 24, 29, .12);
-    --panel: rgba(255, 255, 255, .9);
-    --blue: #1a7fe2;
-    --gold: #b7800f;
-    --coral: #e4513f;
-    --mint: #17905a;
-    --phase: #3b434e;
-    --display: "Lexend", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-    --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --line: rgba(21, 24, 29, .14);
+    --panel: rgba(255, 255, 255, .92);
+    --go: #1b8f58;
+    --accent: #1a7fe2;
+    --display: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
     color-scheme: light;
+    font-synthesis: none;
   }
   * { box-sizing: border-box; }
-  html { background: #cfeaff; color: var(--ink); }
-  body { margin: 0; font-family: var(--body); font-size: 15px; color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e2f2ff 55%, #fff4e3 100%) fixed; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e8f4ff 55%, #fff4e3 100%) fixed; overflow: hidden; }
   button { font: inherit; color: inherit; }
-  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  :focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); border-radius: 12px; }
 
-  .sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
-  .cloud { position: absolute; left: -30vw; width: clamp(160px, 22vw, 320px); opacity: .85; animation: drift linear infinite; }
-  .cloud:nth-child(1) { top: 14%; animation-duration: 110s; animation-delay: -40s; }
-  .cloud:nth-child(2) { top: 70%; width: clamp(110px, 15vw, 220px); opacity: .7; animation-duration: 140s; animation-delay: -95s; }
-  @keyframes drift { to { transform: translateX(160vw); } }
+  .app { position: relative; height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px clamp(12px, 3vw, 28px); background: var(--panel); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .console a { color: var(--muted); text-decoration: none; }
+  .spacer { margin-inline-start: auto; }
+  .seg { display: inline-flex; background: #eef2f7; border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg[hidden] { display: none; }
+  .seg-btn { border: 0; background: transparent; min-height: 44px; padding: 0 14px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .18); }
+  .icon-btn { background: #fff; border: 1px solid var(--line); border-radius: 10px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; font-size: 18px; }
+  .mic { cursor: pointer; }
+  .mic-dot { width: 12px; height: 12px; border-radius: 50%; background: #c3ccd8; display: inline-block; vertical-align: -1px; }
+  .mic-dot.on { background: var(--go); }
 
-  .app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; padding-inline: clamp(16px, 3vw, 48px); }
+  .stage { position: relative; min-height: 0; overflow: hidden; }
+  .scene { width: 100%; height: 100%; display: block; direction: ltr; }
 
-  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
-  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); margin-right: auto; text-decoration: none; }
-  .brand:hover { color: var(--blue); }
-  .brand-tool { font-weight: 500; color: var(--muted); }
-  .seg { display: inline-flex; background: var(--panel); border-radius: 999px; padding: 3px; gap: 2px; }
-  .seg-btn { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; cursor: pointer; font-family: var(--display); font-weight: 500; color: var(--muted); }
-  .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .15); }
-  .k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
-  .levels { display: inline-flex; align-items: center; gap: 4px; }
-  .lvl { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-family: var(--display); font-weight: 500; cursor: pointer; color: var(--ink-2); }
-  .lvl:hover { border-color: var(--blue); }
-  .lvl[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
-  .ctl { display: inline-flex; align-items: center; gap: 8px; }
-  .ctl input[type="range"] { width: 100px; accent-color: var(--blue); }
-  .ctl output { font-family: var(--display); font-variant-numeric: tabular-nums; min-width: 2em; color: var(--ink-2); }
-  .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-  .toggle input { accent-color: var(--blue); width: 16px; height: 16px; }
-  .icon-btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; height: 32px; padding: 0 10px; cursor: pointer; color: var(--ink-2); }
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .82); text-align: center; padding: 4vh 6vw; cursor: pointer; }
+  .overlay[hidden] { display: none; }
+  .overlay p { margin: 0 0 2vh; font-size: clamp(18px, 3.2vh, 30px); font-weight: 500; max-width: 24ch; line-height: 1.5; }
+  .big-btn { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .6em 1.6em; cursor: pointer; min-height: 56px; }
 
-  .stage { display: grid; grid-template-rows: auto auto 1fr; gap: clamp(8px, 1.8vh, 20px); padding-block: clamp(12px, 2.6vh, 32px); min-width: 0; }
-  .stage[data-phase="ready"], .stage[data-phase="listen"] { --phase: var(--gold); }
-  .stage[data-phase="breathe"] { --phase: var(--blue); }
-  .stage[data-phase="buzz"] { --phase: var(--coral); }
-  .stage[data-phase="rest"], .stage[data-phase="done"] { --phase: var(--mint); }
-  .stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px; font-family: var(--display); color: var(--ink-2); font-size: clamp(16px, 2.2vh, 24px); }
-  .stage-head b { color: var(--ink); font-weight: 700; margin-right: .35em; }
-  .note-info { color: var(--muted); font-size: .85em; }
+  .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; direction: rtl; text-align: right; background: rgba(13, 17, 23, .82); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; font-variant-numeric: tabular-nums; white-space: pre; }
+  .diag[hidden] { display: none; }
 
-  .phase { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(12px, 2vw, 28px); min-height: clamp(90px, 16vh, 180px); }
-  .phase-glyph { font-size: clamp(52px, 10vh, 112px); line-height: 1; }
-  .phase-word { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(38px, 7.5vh, 88px); line-height: 1; color: var(--phase); letter-spacing: -0.02em; transition: color .3s; }
-  .phase-hint { margin: .3em 0 0; font-family: var(--display); font-weight: 500; font-size: clamp(18px, 2.9vh, 32px); line-height: 1.25; color: var(--ink-2); text-wrap: balance; }
-  .count { font-family: var(--display); font-weight: 700; font-size: clamp(64px, 14vh, 160px); line-height: .85; color: var(--phase); font-variant-numeric: tabular-nums; min-width: 1.1em; text-align: right; transition: color .3s; }
-  .pop { animation: pop .3s cubic-bezier(.2, 1.6, .4, 1); }
-  @keyframes pop { from { transform: scale(.7); } to { transform: scale(1); } }
-
-  .lane { align-self: start; background: rgba(255, 255, 255, .8); border-radius: 28px; padding: clamp(6px, 1.4vw, 18px); box-shadow: 0 8px 30px rgba(40, 100, 160, .12); }
-  .lane svg { display: block; width: 100%; height: auto; max-height: 46vh; }
-
-  .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
-  .tip { color: var(--ink-2); font-size: clamp(14px, 1.9vh, 18px); max-width: 60ch; }
-  .tip b { font-family: var(--display); color: var(--ink); }
-  .transport-btns { display: flex; gap: 12px; margin-left: auto; }
-  .btn { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.4vh, 24px); border-radius: 999px; padding: .6em 1.4em; cursor: pointer; border: 2px solid transparent; }
-  .btn.primary { background: var(--blue); color: #fff; min-width: 7.5em; }
-  .btn.primary:hover { background: #0f63b8; }
-  .btn.ghost { background: var(--panel); border-color: var(--line); color: var(--ink-2); }
-  .btn.ghost:hover { border-color: var(--blue); }
-  .btn:disabled { opacity: .4; cursor: default; }
-
-  @media (max-width: 640px) {
-    .brand { width: 100%; }
-    .phase { grid-template-columns: auto 1fr; }
-    .count { display: none; }
-    .transport-btns { width: 100%; }
-    .transport-btns .btn { flex: 1; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cloud, .pop { animation: none; }
-  }
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; background: var(--panel); border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .count { font-weight: 800; font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tip { font-size: clamp(15px, 2.2vh, 20px); color: var(--ink); }
+  kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
 </style>
 </head>
 <body>
-<div class="sky" aria-hidden="true">
-  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
-  <svg class="cloud" viewBox="0 0 220 110"><g fill="#fff"><circle cx="70" cy="62" r="38"/><circle cx="118" cy="46" r="46"/><circle cx="164" cy="66" r="32"/><rect x="36" y="62" width="160" height="38" rx="19"/></g></svg>
-</div>
-
 <div class="app">
-  <header class="console" aria-label="Teacher controls">
-    <a class="brand" href="index.html" title="Back to Brass App"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool">/ Buzz-Along</span></a>
-    <div class="seg" role="group" aria-label="Instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true">Trumpet</button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false">Trombone</button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false">Horn</button>
+  <header class="console">
+    <a href="index.html">‹ Brass App</a>
+    <div class="seg" role="group" aria-label="כלי">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true">חצוצרה</button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false">קרן</button>
     </div>
-    <div class="seg" role="group" aria-label="Breath before buzzing">
-      <button id="br2" class="seg-btn" aria-pressed="true" title="Rest 2 counts, breathe in for 2">Breathe 2</button>
-      <button id="br1" class="seg-btn" aria-pressed="false" title="Rest 3 counts, breathe in on 4">Breathe 1</button>
+    <div class="seg" role="group" aria-label="שלב">
+      <button id="st1" class="seg-btn" aria-pressed="true" title="מזמזמים">1 🐝</button>
+      <button id="st2" class="seg-btn" aria-pressed="false" title="אותו צליל">2 🌸</button>
+      <button id="st3" class="seg-btn" aria-pressed="false" title="ארוך ויציב">3 🍯</button>
+      <button id="st4" class="seg-btn" aria-pressed="false" title="סירנה">4 〰️</button>
     </div>
-    <div class="levels" role="group" aria-label="Level"><span class="k">Level</span><span id="levels" class="levels"></span></div>
-    <label class="ctl" for="tempo"><span class="k">Count speed</span><input id="tempo" type="range" min="40" max="100" step="1" value="60"><output id="tempoOut" for="tempo">60</output></label>
-    <label class="toggle" for="model"><input id="model" type="checkbox" checked><span>Model sound</span></label>
-    <label class="toggle" for="click"><input id="click" type="checkbox" checked><span>Click</span></label>
-    <button id="fullscreen" class="icon-btn" title="Full screen (F)">⛶ Full screen</button>
+    <div class="seg" role="group" aria-label="כמה זמן" id="holdSeg" hidden>
+      <button id="hold4" class="seg-btn" aria-pressed="true">4″</button>
+      <button id="hold8" class="seg-btn" aria-pressed="false">8″</button>
+    </div>
+    <div class="seg" role="group" aria-label="סירנה" id="sirenSeg" hidden>
+      <button id="sirFree" class="seg-btn" aria-pressed="true" title="חופשי">✏️</button>
+      <button id="sir2" class="seg-btn" aria-pressed="false" title="מסלול: טון">〰 2</button>
+      <button id="sir4" class="seg-btn" aria-pressed="false" title="מסלול: טרצה">〰 3</button>
+      <button id="sir7" class="seg-btn" aria-pressed="false" title="מסלול: קווינטה">〰 5</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="mic" id="micBox"><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
+    <button id="tone" class="icon-btn" title="לשמוע את הזמזום (T)">🔊</button>
+    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
   </header>
 
-  <main class="stage" id="stage" data-phase="idle">
-    <div class="stage-head">
-      <div><b id="levelNum">Level 1</b><span id="levelName"></span></div>
-      <div class="note-info" id="noteInfo"></div>
-    </div>
-    <div class="phase" aria-live="polite">
-      <div class="phase-glyph" id="phaseGlyph" aria-hidden="true">🐝</div>
+  <main class="stage" id="stage">
+    <svg class="scene" id="scene" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="דבורה שעפה עם הזמזום"></svg>
+    <div class="overlay" id="overlay">
       <div>
-        <p class="phase-word" id="phaseWord">Buzz-Along</p>
-        <p class="phase-hint" id="phaseHint">Press Play</p>
+        <p id="overlayText">נלחץ ונתחיל להקשיב</p>
+        <button class="big-btn" id="startBtn">התחלה</button>
       </div>
-      <div class="count" id="count"></div>
     </div>
-    <div class="lane" id="lane"></div>
+    <div class="diag" id="diag" hidden></div>
   </main>
 
   <footer class="transport">
-    <div class="tip" id="tip"></div>
-    <div class="transport-btns">
-      <button id="againBtn" class="btn ghost">↻ Again</button>
-      <button id="nextBtn" class="btn primary">▶ Play</button>
-    </div>
+    <span class="count" id="counter">0</span>
+    <span class="tip" id="tip"></span>
+    <span class="spacer"></span>
+    <span><kbd>T</kbd> לשמוע · <kbd>Space</kbd> פרח הבא · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>R</kbd> כיול</span>
   </footer>
 </div>
 <script>
 "use strict";
 
-/* ---------- Buzz-Along ----------
-   Every step is whole 4/4 bars on one steady click:
-   count-in (1 bar) → listen (the phrase) → breathing bar (rest, then breathe in) → buzz (the phrase) → lips rest (1 bar).
-   Each note is a ribbon: longer = longer, higher = higher, a hill = a siren. */
+/* ---------- iPad audio ----------
+   Older iPads (Safari before 14.1) have no float sample reader: build it from the byte one.
+   A suspended or interrupted iPad audio engine (lock screen, a call) wakes on any tap.
+   Tapping the microphone status opens the microphone check (no keyboard needed). */
+if (window.AnalyserNode && !AnalyserNode.prototype.getFloatTimeDomainData) {
+  AnalyserNode.prototype.getFloatTimeDomainData = function (out) {
+    const bytes = new Uint8Array(out.length);
+    this.getByteTimeDomainData(bytes);
+    for (let i = 0; i < out.length; i++) out[i] = (bytes[i] - 128) / 128;
+  };
+}
+["touchend", "click"].forEach(type => document.addEventListener(type, () => {
+  if (ctx && ctx.state !== "running" && ctx.state !== "closed") ctx.resume();
+}, true));
+document.getElementById("micText").parentElement.addEventListener("click", () => {
+  const d = document.getElementById("diag");
+  d.hidden = !d.hidden;
+});
+// iPad/iPhone: the raw microphone is too quiet for a horn at a normal distance (measured in class), so use
+// the device's own voice processing and automatic volume. Elsewhere raw is louder than enough and purer.
+// ?voice=1 / ?voice=0 forces either way. (iPadOS Safari calls itself a Mac; the touch points give it away.)
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+const VOICE_PARAM = new URLSearchParams(location.search).get("voice");
+const MIC_OPTIONS = (VOICE_PARAM === null ? IS_IOS : VOICE_PARAM !== "0") ? true
+  : { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+// The check panel's first lines: is the engine moving, what the iPad says about the mic, the raw level in dB.
+let lastEngineTime = -1, engineMovedAt = 0;
+const audioLine = () => {
+  if (!ctx) return "אודיו   —\n";
+  if (ctx.currentTime !== lastEngineTime) { lastEngineTime = ctx.currentTime; engineMovedAt = performance.now(); }
+  const moving = performance.now() - engineMovedAt < 500;     // the clock advances in bursts, not every frame
+  const tr = micStream && micStream.getAudioTracks()[0];
+  const st = tr && tr.getSettings ? tr.getSettings() : {};
+  const db = state.rms > 0 ? (20 * Math.log10(state.rms)).toFixed(0) + " dB" : "0";
+  return `אודיו   ${ctx.state} · ${ctx.sampleRate} · ${moving ? "זז" : "עומד"}\n` +
+    `מיקרופון ${tr ? tr.readyState + (tr.muted ? " muted" : "") + (tr.enabled ? "" : " off") : "—"} · ${st.sampleRate || "?"} · ${MIC_OPTIONS === true ? "voice" : "raw"} ec:${st.echoCancellation} agc:${st.autoGainControl}\n` +
+    `רמה    ${db}\n`;
+};
+
+
+/* ---------- Buzzing with a bee ----------
+   The teacher's own order: copy a buzz → match a pitch → hold it long and steady → sirens.
+   1 🐝 any buzz makes the bee fly across the meadow; flowers open as it passes (no pitch).
+   2 🌸 the app buzzes a note and a flower grows to that height; the bee's height is the child's pitch;
+        reaching the flower lands the bee on it and collects a drop of honey.
+   3 🍯 same, but stay on the flower 4 or 8 s while the honeycomb fills; wandering off only pauses it.
+   4 〰️ free: the bee draws the buzz as a trail. Path: dots trace a siren; the ones the bee meets bloom.
+   The model buzz is synthetic (a bright, raspy pulse with a little breath and wobble), unless a real
+   recording sounds/buzz/<instrument>.m4a exists: then that is used, pitch-shifted.
+   Silence is waiting, never failure: nothing falls, closes or turns red. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
 
-// Model starting note (concert Hz) and what students read. Siren tops: a step, a 3rd, a 4th, a 5th above.
+// Concert pitch of a comfortable first mouthpiece buzz, and the sky's range around it (semitones).
 const INSTRUMENTS = {
-  trumpet: { label: "Trumpet", lo: 349.23, start: "written Sol (G)", tops: ["La (A)", "Si (B)", "Do (C)", "Re (D)"] },
-  trombone: { label: "Trombone", lo: 174.61, start: "Fa (F)", tops: ["Sol (G)", "La (A)", "Si♭ (B♭)", "Do (C)"] },
-  horn: { label: "Horn", lo: 261.63, start: "written Sol (G)", tops: ["La (A)", "Si (B)", "Do (C)", "Re (D)"] }
+  trumpet:  { he: "חצוצרה", base: 349.23, lo: -4, hi: 9 },
+  trombone: { he: "טרומבון", base: 174.61, lo: -4, hi: 9 },
+  horn:     { he: "קרן",    base: 261.63, lo: -4, hi: 9 }
+};
+const TARGETS = [0, 2, 4, 5, 7, 3, -2];   // step 2/3 flowers, in semitones above the first buzz, in order
+const TIPS = ["הפומית נוגעת בעדינות בשפתיים", "מתחילים עם הלשון, אוויר יציב", "שואפים בנחת לפני כל זמזום", "השפתיים נחות בין זמזום לזמזום"];
+
+const IN_CENTS = 80, OUT_CENTS = 110;     // a beginner's buzz wobbles: a wide window, with hysteresis
+const GATE_DB = 12, HOLD_DB = 6, ONSET_MS = 150, GAP_MS = 300, ANALYSE_MS = 50;
+const LAND_S = 0.5;                       // step 2: on the flower this long = honey
+const FLY_SPEED = 150;                    // step 1 and 4: px per second the meadow / trail moves
+const SIREN_S = 6;                        // step 4 path: one siren up and back takes this long
+
+const state = {
+  inst: "trumpet", step: 1, hold: 4, siren: 0, ti: 0, counter: 0,
+  phase: "play", phaseT: 0, approach: 0, onFlower: 0, fill: 0, inBand: false, honey: 0,
+  listening: false, rms: 0, freq: 0, clarity: 0, semi: null, smoothSemi: 0,
+  noiseFloor: 0.002, soundOn: false, lastHeard: 0, onsetSince: 0, muteUntil: 0, lastAnalyse: 0
 };
 
-// Patterns in beats: "L" = starting note, "LHL" = siren up and back, "LH"/"HL" = slide up / down, null = rest.
-const SIRENS = [[["LHL", 4], [null, 4]], [["LHL", 8]], [["LH", 4], ["HL", 4]]];
-const LEVELS = [
-  { name: "Long tone · 4 counts", bars: 1, patterns: [[["L", 4]]] },
-  { name: "Long tone · 8 counts", bars: 2, patterns: [[["L", 8]]] },
-  { name: "Rhythm · long notes", bars: 2, patterns: [
-    [["L", 2], ["L", 2], ["L", 4]],
-    [["L", 2], [null, 2], ["L", 2], [null, 2]],
-    [["L", 4], ["L", 2], [null, 2]],
-    [["L", 2], ["L", 2], ["L", 2], [null, 2]]
-  ] },
-  { name: "Rhythm · short notes", bars: 2, patterns: [
-    [["L", 1], ["L", 1], ["L", 2], ["L", 4]],
-    [["L", 1], ["L", 1], ["L", 1], [null, 1], ["L", 4]],
-    [["L", 2], ["L", 1], ["L", 1], ["L", 4]],
-    [["L", 1], [null, 1], ["L", 1], [null, 1], ["L", 2], [null, 2]]
-  ] },
-  { name: "Siren · a step", bars: 2, semis: 2, top: 0, patterns: SIRENS },
-  { name: "Siren · a 3rd", bars: 2, semis: 4, top: 1, patterns: SIRENS },
-  { name: "Siren · a 4th", bars: 2, semis: 5, top: 2, patterns: SIRENS },
-  { name: "Siren · a 5th", bars: 2, semis: 7, top: 3, patterns: SIRENS }
-];
+/* ---------- Audio ---------- */
 
-const LISTEN_HINT = ["One long, steady note", "One long, steady note", "Long notes and rests", "Short and long notes", "Hear the siren go up and back", "Hear the siren go up and back", "Hear the siren go up and back", "Hear the siren go up and back"];
-const BUZZ_HINT = ["Start with your tongue, steady air", "Keep the air going to the end", "Count the long notes", "A clean start on every note", "Slide smoothly, keep the air going", "Slide smoothly, keep the air going", "Slide smoothly, keep the air going", "Slide smoothly, keep the air going"];
+let ctx = null, analyser = null, micStream = null, raw = null, deci = null, realBuzz = {};
 
-const TIPS = [
-  "<b>Mouthpiece rests lightly.</b> Never press it into your lips.",
-  "<b>Breathe in time.</b> Big relaxed breath, shoulders down.",
-  "<b>Start with your tongue,</b> not a push of air.",
-  "<b>Steady air, steady buzz.</b> Keep the air moving to the end of the note.",
-  "<b>Rest your lips</b> between buzzes. Short and often beats long and tired."
-];
-
-const GOLD = "#c98a12", CORAL = "#e4513f", BLUE = "#1a7fe2", MINT = "#17905a", GREY = "#8190a1";
-
-const state = { inst: "trumpet", li: 0, bpm: 60, model: true, click: true, breath: 2, phase: "idle", notes: [], lane: null, run: null, prev: -1, tip: 0 };
-
-/* ---------- Sound ---------- */
-
-const Sound = (() => {
-  let ctx = null, bus = null, noise = null;
-
-  function ensure() {
-    if (!ctx) {
-      if (navigator.audioSession) navigator.audioSession.type = "playback";
-      ctx = new (window.AudioContext || window.webkitAudioContext)();
-      noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-      const d = noise.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    }
-    if (ctx.state === "suspended") ctx.resume();
-    return ctx;
+function ensureCtx() {
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.onstatechange = () => { if (state.listening && micStream) $("micText").textContent = ctx.state === "running" ? "מקשיב" : "לגעת במסך"; };
   }
-
-  function open() {
-    close();
-    bus = ctx.createGain();
-    bus.gain.value = 0.8;
-    bus.connect(ctx.destination);
-  }
-
-  function close() {
-    if (!bus) return;
-    const b = bus, t = ctx.currentTime;
-    bus = null;
-    b.gain.cancelScheduledValues(0);
-    b.gain.setValueAtTime(b.gain.value, t);
-    b.gain.linearRampToValueAtTime(0, t + 0.05);
-    setTimeout(() => b.disconnect(), 150);
-  }
-
-  function env(g, t, peak, attack, decay) {
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(peak, t + attack);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
-  }
-
-  function tick(t, accent) {
-    const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    o.type = "triangle";
-    o.frequency.setValueAtTime(accent ? 520 : 500, t);
-    o.frequency.exponentialRampToValueAtTime(400, t + 0.03);
-    f.type = "lowpass";
-    f.frequency.value = 1500;
-    env(g, t, accent ? 0.26 : 0.14, 0.003, accent ? 0.08 : 0.05);
-    o.connect(f); f.connect(g); g.connect(bus);
-    o.start(t); o.stop(t + 0.12);
-  }
-
-  // Soft rising whoosh at the moment to breathe in.
-  function breath(t, dur) {
-    const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    n.buffer = noise;
-    f.type = "bandpass"; f.Q.value = 0.9;
-    f.frequency.setValueAtTime(500, t);
-    f.frequency.exponentialRampToValueAtTime(1400, t + dur);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.09, t + dur * 0.4);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    n.connect(f); f.connect(g); g.connect(bus);
-    n.start(t); n.stop(t + dur + 0.05);
-  }
-
-  // Buzzy model note: detuned sawtooths, a tongue "t" at the start, slides timed to match the ribbon.
-  function tone(t, dur, path, lo, hi) {
-    const end = t + Math.max(0.15, dur - 0.08);
-    const v = [...path].map(c => (c === "H" ? hi : lo));
-    const f = ctx.createBiquadFilter(), g = ctx.createGain();
-    f.type = "lowpass"; f.frequency.value = 2000; f.Q.value = 1.5;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.13, t + 0.04);
-    g.gain.setValueAtTime(0.13, end - 0.08);
-    g.gain.exponentialRampToValueAtTime(0.0001, end);
-    f.connect(g); g.connect(bus);
-    for (const detune of [0, 7]) {
-      const o = ctx.createOscillator(), fr = o.frequency;
-      o.type = "sawtooth";
-      o.detune.value = detune;
-      fr.setValueAtTime(v[0], t);
-      if (v.length === 2) { fr.setValueAtTime(v[0], t + dur * 0.12); fr.exponentialRampToValueAtTime(v[1], t + dur * 0.88); }
-      if (v.length === 3) { fr.setValueAtTime(v[0], t + dur * 0.1); fr.exponentialRampToValueAtTime(v[1], t + dur * 0.5); fr.exponentialRampToValueAtTime(v[2], t + dur * 0.9); }
-      o.connect(f); o.start(t); o.stop(end + 0.02);
-    }
-    const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
-    n.buffer = noise; bp.type = "bandpass"; bp.frequency.value = 2600; bp.Q.value = 1;
-    env(ng, t, 0.12, 0.002, 0.03);
-    n.connect(bp); bp.connect(ng); ng.connect(bus);
-    n.start(t); n.stop(t + 0.06);
-  }
-
-  const now = () => ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
-  return { ensure, open, close, tick, breath, tone, now };
-})();
-
-/* ---------- Lane ---------- */
-
-const smooth = x => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
-
-// 0 = starting note, 1 = top note, at fraction f through the note (same timing as the audio slide).
-function pitchAt(path, f) {
-  const v = [...path].map(c => (c === "H" ? 1 : 0));
-  if (v.length === 1) return v[0];
-  if (v.length === 2) return v[0] + (v[1] - v[0]) * smooth((f - 0.12) / 0.76);
-  return f < 0.5 ? v[0] + (v[1] - v[0]) * smooth((f - 0.1) / 0.4) : v[1] + (v[2] - v[1]) * smooth((f - 0.5) / 0.4);
+  if (ctx.state === "suspended") ctx.resume();
+  return ctx;
 }
 
-function el(tag, attrs, parent) {
+async function startMic() {
+  ensureCtx();                                  // created inside the click, before any await
+  loadRealBuzz();
+  if (new URLSearchParams(location.search).get("test")) return startTest();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_OPTIONS });
+  } catch (err) {
+    return fail(err && err.name === "NotAllowedError" ? "אין אישור למיקרופון" : err && err.name === "NotFoundError" ? "לא נמצא מיקרופון"
+      : err && err.name === "NotReadableError" ? "המיקרופון תפוס בתוכנה אחרת" : "לא הצלחנו לפתוח את המיקרופון");
+  }
+  // iPad switches the hardware to the microphone's rate; an audio engine made before that can stay deaf.
+  const track = micStream.getAudioTracks()[0];
+  const micRate = track && track.getSettings ? track.getSettings().sampleRate : 0;
+  if (micRate && ctx.sampleRate !== micRate) { ctx.close(); ctx = null; ensureCtx(); }
+  ctx.resume();
+  const src = ctx.createMediaStreamSource(micStream);
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  src.connect(analyser);
+  // iPad (WebKit) feeds an analyser only if it leads to the speakers: a silent gain does that, with no sound.
+  const pull = ctx.createGain();
+  pull.gain.value = 0;
+  analyser.connect(pull);
+  pull.connect(ctx.destination);
+  raw = new Float32Array(analyser.fftSize);
+  listening();
+  micStream.getAudioTracks().forEach(t => {
+    t.addEventListener("ended", () => fail("המיקרופון נותק"));
+    t.addEventListener("mute", () => { $("micText").textContent = "מושתק"; });
+    t.addEventListener("unmute", () => { $("micText").textContent = "מקשיב"; });
+  });
+}
+
+function listening() {
+  state.listening = true;
+  state.noiseFloor = state.noiseFloor || 0.002;
+  $("overlay").hidden = true;
+  $("micDot").classList.add("on");
+  $("micText").textContent = micStream ? "מקשיב" : "בדיקה";
+  enterStep();
+}
+
+// ?test=1: a buzz straight into the analyser. Console: testBuzz(semitones, gain) buzzes at that pitch
+// above the first buzz (gain 0 stops); testNoise(gain) adds hiss.
+function startTest() {
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 8192;
+  analyser.smoothingTimeConstant = 0;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = "sawtooth"; o.frequency.value = INSTRUMENTS[state.inst].base;
+  g.gain.value = 0;
+  o.connect(g); g.connect(analyser); o.start();
+  const hiss = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), hd = hiss.getChannelData(0);
+  for (let i = 0; i < hd.length; i++) hd[i] = Math.random() * 2 - 1;
+  const ns = ctx.createBufferSource(), ng = ctx.createGain();
+  ns.buffer = hiss; ns.loop = true; ng.gain.value = 0;
+  ns.connect(ng); ng.connect(analyser); ns.start();
+  window.testBuzz = (semi, gain = 0.2) => {
+    o.frequency.setTargetAtTime(INSTRUMENTS[state.inst].base * Math.pow(2, semi / 12), ctx.currentTime, 0.03);
+    g.gain.setTargetAtTime(gain, ctx.currentTime, 0.01);
+  };
+  window.testNoise = v => ng.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
+  raw = new Float32Array(analyser.fftSize);
+  state.noiseFloor = 0.00001;
+  listening();
+}
+
+function fail(message) {
+  state.listening = false;
+  $("overlay").hidden = false;
+  $("overlayText").textContent = message;
+  $("startBtn").textContent = "לנסות שוב";
+  $("micDot").classList.remove("on");
+  $("micText").textContent = "ללא מיקרופון";
+}
+
+function stopMic() {
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  micStream = null;
+  state.listening = false;
+  $("micDot").classList.remove("on");
+}
+addEventListener("pagehide", stopMic);
+document.addEventListener("visibilitychange", () => { if (document.hidden) stopMic(); });
+
+/* ---------- The model buzz ---------- */
+
+// A real recording, if the teacher adds one: sounds/buzz/<instrument>.m4a, a steady buzz on the first note.
+function loadRealBuzz() {
+  for (const k in INSTRUMENTS) {
+    if (realBuzz[k] !== undefined) continue;
+    realBuzz[k] = null;
+    fetch(`sounds/buzz/${k}.m4a`).then(r => r.ok ? r.arrayBuffer() : null)
+      .then(b => b && new Promise((ok, no) => ensureCtx().decodeAudioData(b, ok, no))).then(buf => { if (buf) realBuzz[k] = buf; }).catch(() => {});
+  }
+}
+
+let buzzWave = null;
+// Lips buzz like a reed: a sharp pulse every cycle, so many bright overtones, a little breath noise,
+// a small scoop into the note and a slow natural wobble. contour = [[seconds, semitones], ...] for sirens.
+function playBuzz(contour, dur) {
+  const c = ensureCtx(), I = INSTRUMENTS[state.inst], t0 = c.currentTime + 0.05;
+  const hz = s => I.base * Math.pow(2, s / 12);
+  state.muteUntil = performance.now() + (dur + 0.6) * 1000;   // the model is never heard as the child
+  const out = c.createGain();
+  out.gain.setValueAtTime(0.0001, t0);
+  out.gain.exponentialRampToValueAtTime(0.5, t0 + 0.06);
+  out.gain.setValueAtTime(0.5, t0 + dur - 0.12);
+  out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  out.connect(c.destination);
+
+  const real = realBuzz[state.inst];
+  if (real) {
+    const src = c.createBufferSource();
+    src.buffer = real; src.loop = true;
+    src.loopStart = Math.min(0.3, real.duration / 3); src.loopEnd = Math.max(src.loopStart + 0.2, real.duration - 0.2);
+    contour.forEach(([t, s]) => src.playbackRate.linearRampToValueAtTime(Math.pow(2, s / 12), t0 + t));
+    src.playbackRate.setValueAtTime(Math.pow(2, contour[0][1] / 12), t0);
+    src.connect(out); src.start(t0); src.stop(t0 + dur + 0.05);
+    return;
+  }
+  if (!buzzWave) {
+    const N = 40, re = new Float32Array(N + 1), im = new Float32Array(N + 1);
+    for (let n = 1; n <= N; n++) im[n] = Math.pow(n, -0.6) * (n % 2 ? 1 : 0.8);
+    buzzWave = c.createPeriodicWave(re, im);
+  }
+  const o = c.createOscillator();
+  o.setPeriodicWave(buzzWave);
+  o.frequency.setValueAtTime(hz(contour[0][1] - 0.5), t0);                 // the little scoop up into the note
+  o.frequency.exponentialRampToValueAtTime(hz(contour[0][1]), t0 + 0.12);
+  contour.slice(1).forEach(([t, s]) => o.frequency.exponentialRampToValueAtTime(hz(s), t0 + t));
+  const wob = c.createOscillator(), wobG = c.createGain();                // a slow, uneven wobble
+  wob.frequency.value = 4.7; wobG.gain.value = hz(contour[0][1]) * 0.006;
+  wob.connect(wobG); wobG.connect(o.frequency);
+  // Body: cut the low rumble, lift the bright "zz" region, soften the very top.
+  const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 140;
+  const f1 = c.createBiquadFilter(); f1.type = "peaking"; f1.frequency.value = 1300; f1.Q.value = 1.2; f1.gain.value = 8;
+  const f2 = c.createBiquadFilter(); f2.type = "peaking"; f2.frequency.value = 2900; f2.Q.value = 1.5; f2.gain.value = 6;
+  const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 5200;
+  const tone = c.createGain(); tone.gain.value = 0.16;
+  o.connect(hp); hp.connect(f1); f1.connect(f2); f2.connect(lp); lp.connect(tone); tone.connect(out);
+  // Breath: a little filtered air under the buzz.
+  const nb = c.createBuffer(1, c.sampleRate, c.sampleRate), nd = nb.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  const ns = c.createBufferSource(), nf = c.createBiquadFilter(), ng = c.createGain();
+  ns.buffer = nb; ns.loop = true; nf.type = "bandpass"; nf.frequency.value = 2500; nf.Q.value = 0.7; ng.gain.value = 0.025;
+  ns.connect(nf); nf.connect(ng); ng.connect(out);
+  [o, wob, ns].forEach(n => { n.start(t0); n.stop(t0 + dur + 0.05); });
+}
+
+function playModel() {
+  if (state.step === 4) {
+    const top = state.siren || 4, q = SIREN_S / 2;
+    playBuzz([[0, 0], [0.4, 0], [0.4 + q, top], [0.4 + 2 * q, 0], [0.8 + 2 * q, 0]], 0.8 + 2 * q);
+  } else playBuzz([[0, state.step === 1 ? 0 : TARGETS[state.ti]]], 2.2);
+}
+
+/* ---------- Hearing the buzz ---------- */
+
+function analyse() {
+  if (!state.listening || !analyser) return;
+  analyser.getFloatTimeDomainData(raw);
+  let sum = 0;
+  for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
+  state.rms = Math.sqrt(sum / raw.length);
+  // A real microphone in a room is never exactly silent: say so instead of waiting forever.
+  if (state.rms === 0 && micStream) {
+    if (!state.zeroSince) state.zeroSince = performance.now();
+    else if (performance.now() - state.zeroSince > 3000) $("micText").textContent = "אין קול מהמיקרופון";
+  } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = "מקשיב"; }
+
+  const now = performance.now(), muted = now < state.muteUntil, I = INSTRUMENTS[state.inst];
+  const gate = Math.max(state.noiseFloor * Math.pow(10, GATE_DB / 20), 0.0015);
+  const holdGate = Math.max(state.noiseFloor * Math.pow(10, HOLD_DB / 20), 0.001);
+  let got = null;
+  if (!muted && state.rms > holdGate) {
+    // Decimate to about 8 kHz: cheaper, and the averaging removes the breath noise that ruins detection.
+    const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+    if (!deci || deci.length !== n) deci = new Float32Array(n);
+    for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
+    got = detect(deci, sr2, I.base * Math.pow(2, (I.lo - 4) / 12), I.base * Math.pow(2, (I.hi + 4) / 12));
+    if (got && got.clarity < 0.5) got = null;
+  }
+  if (!state.soundOn) {
+    if (got && state.rms > gate) {
+      if (!state.onsetSince) state.onsetSince = now;
+      else if (now - state.onsetSince >= ONSET_MS) { state.soundOn = true; state.lastHeard = now; state.onsetSince = 0; bump(); }
+    } else state.onsetSince = 0;
+  } else if (got || muted) state.lastHeard = now;
+  else if (now - state.lastHeard > GAP_MS) state.soundOn = false;
+  // The room's noise floor never rises while a buzz sounds, or a long buzz would become "background".
+  if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
+  else if (!state.soundOn && !got) state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
+
+  state.freq = got ? got.freq : 0;
+  state.clarity = got ? got.clarity : 0;
+  state.semi = state.soundOn && got ? 12 * Math.log2(got.freq / I.base) : null;
+}
+
+function detect(buf, sampleRate, fMin, fMax) {
+  const n = buf.length;
+  const minLag = Math.max(2, Math.floor(sampleRate / fMax));
+  const maxLag = Math.min(Math.floor(sampleRate / fMin), n - 2);
+  if (maxLag <= minLag) return null;
+  const nsdf = new Float32Array(maxLag + 2);
+  let peak = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let ac = 0, m = 0;
+    for (let i = 0, end = n - lag; i < end; i++) { const a = buf[i], b = buf[i + lag]; ac += a * b; m += a * a + b * b; }
+    const v = m > 0 ? (2 * ac) / m : 0;
+    nsdf[lag] = v;
+    if (v > peak) peak = v;
+  }
+  if (peak < 0.4) return null;
+  const threshold = peak * 0.9;
+  for (let lag = minLag + 1; lag < maxLag; lag++) {
+    if (nsdf[lag] > threshold && nsdf[lag] >= nsdf[lag - 1] && nsdf[lag] >= nsdf[lag + 1]) {
+      const y1 = nsdf[lag - 1], y2 = nsdf[lag], y3 = nsdf[lag + 1];
+      const denom = 2 * (2 * y2 - y1 - y3);
+      const shift = Math.abs(denom) > 1e-9 ? (y3 - y1) / denom : 0;
+      return { freq: sampleRate / (lag + shift), clarity: y2 };
+    }
+  }
+  return null;
+}
+
+/* ---------- Scene ---------- */
+
+const el = (tag, attrs, parent) => {
   const n = document.createElementNS(SVGNS, tag);
   for (const k in attrs) n.setAttribute(k, attrs[k]);
   if (parent) parent.appendChild(n);
   return n;
+};
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = p => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+
+const GROUND = 560, SKY_TOP = 100, SKY_BOTTOM = 520, BEE_X = 560, FLOWER_X = 1060;
+const semiY = s => { const I = INSTRUMENTS[state.inst]; return SKY_BOTTOM - (s - I.lo) / (I.hi - I.lo) * (SKY_BOTTOM - SKY_TOP); };
+const PETALS = ["#ff8fb1", "#ffc81a", "#b07ae8", "#ff7a59", "#5aa7e8"];
+let scene = {};
+
+function buildScene() {
+  const svg = $("scene");
+  svg.textContent = "";
+  scene = { trail: [], dots: [], meadow: [] };
+  el("path", { d: `M -400 ${GROUND} C 300 ${GROUND - 16} 900 ${GROUND + 8} 2000 ${GROUND - 10} L 2000 900 L -400 900 Z`, fill: "#7cc77a" }, svg);
+  scene.back = el("g", {}, svg);
+  if (state.step === 1) buildMeadow();
+  if (state.step === 2 || state.step === 3) buildFlowerTarget();
+  if (state.step === 4) { scene.trailPath = el("path", { fill: "none", stroke: "#f2b705", "stroke-width": 8, "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-dasharray": "2 16" }, scene.back); }
+  scene.bee = bee(svg);
+  scene.beeY = semiY(0);
+  scene.drops = el("g", {}, svg);
 }
 
-function toNotes(pattern) {
-  const notes = [];
-  let beat = 0;
-  for (const [path, dur] of pattern) {
-    if (path) notes.push({ start: beat, dur, path });
-    beat += dur;
-  }
-  return notes;
+function bee(parent) {
+  const g = el("g", {}, parent);
+  scene.wingBack = el("ellipse", { cx: -8, cy: -40, rx: 26, ry: 40, fill: "#dff1ff", opacity: .75, stroke: "#9fc8ee", "stroke-width": 3 }, g);
+  el("ellipse", { rx: 58, ry: 40, fill: "#ffc81a", stroke: "#3b2a10", "stroke-width": 4 }, g);
+  [-18, 6, 30].forEach(x => el("path", { d: `M ${x - 7} -38 Q ${x + 4} 0 ${x - 7} 38 L ${x + 7} 38 Q ${x + 18} 0 ${x + 7} -38 Z`, fill: "#3b2a10" }, g));
+  el("path", { d: "M -56 0 L -78 -6 L -78 6 Z", fill: "#3b2a10" }, g);
+  el("circle", { cx: 50, cy: -6, r: 26, fill: "#ffc81a", stroke: "#3b2a10", "stroke-width": 4 }, g);
+  el("circle", { cx: 58, cy: -12, r: 6, fill: "#15181d" }, g);
+  el("circle", { cx: 60, cy: -14, r: 2, fill: "#fff" }, g);
+  el("path", { d: "M 50 6 Q 60 14 70 4", fill: "none", stroke: "#15181d", "stroke-width": 3.5, "stroke-linecap": "round" }, g);
+  el("path", { d: "M 44 -28 Q 40 -50 30 -58", fill: "none", stroke: "#3b2a10", "stroke-width": 3.5 }, g);
+  el("path", { d: "M 56 -30 Q 60 -52 70 -58", fill: "none", stroke: "#3b2a10", "stroke-width": 3.5 }, g);
+  el("circle", { cx: 30, cy: -58, r: 5, fill: "#3b2a10" }, g);
+  el("circle", { cx: 70, cy: -58, r: 5, fill: "#3b2a10" }, g);
+  scene.wingFront = el("ellipse", { cx: 8, cy: -44, rx: 26, ry: 42, fill: "#eef8ff", opacity: .85, stroke: "#9fc8ee", "stroke-width": 3 }, g);
+  scene.buzzLines = el("g", { opacity: 0, stroke: "#56616f", "stroke-width": 4, "stroke-linecap": "round", fill: "none" }, g);
+  [[-96, -24], [-104, 0], [-96, 24]].forEach(([x, y]) => el("path", { d: `M ${x} ${y} q -8 -6 -16 0 q -8 6 -16 0` }, scene.buzzLines));
+  return g;
 }
 
-function renderLane(L, notes) {
-  const VW = 1600, VH = 440, X0 = 120, X1 = 1560, R = 30;
-  const beats = L.bars * 4, bw = (X1 - X0) / beats;
-  const siren = !!L.semis;
-  const yLow = siren ? 320 : 220, yHigh = siren ? 320 - (L.semis / 7) * 200 : 220; // bigger siren = taller hill
-  const yOf = p => yLow + (yHigh - yLow) * p;
-  const box = $("lane");
-  box.textContent = "";
-  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": "Notes as ribbons: longer is longer, higher is higher" }, box);
-  const mask = el("mask", { id: "ribbonMask", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: VW, height: VH }, el("defs", {}, svg));
+function flower(parent, x, baseY, topY, colour, scale = 1) {
+  const g = el("g", {}, parent);
+  const stem = el("path", { d: "", fill: "none", stroke: "#2f9e66", "stroke-width": 8 * scale, "stroke-linecap": "round" }, g);
+  const leaf = el("path", { d: "", fill: "#3fae5c" }, g);
+  const head = el("g", {}, g);
+  for (let i = 0; i < 8; i++) el("ellipse", { cx: 0, cy: -26, rx: 13, ry: 24, transform: `rotate(${i * 45})`, fill: colour }, head);
+  el("circle", { r: 16, fill: "#f2a900" }, head);
+  const f = { g, stem, leaf, head, x, baseY, topY, scale, open: 1 };
+  placeFlower(f, topY);
+  return f;
+}
+function placeFlower(f, topY) {
+  f.topY = topY;
+  f.stem.setAttribute("d", `M ${f.x} ${f.baseY} C ${f.x - 14} ${lerp(f.baseY, topY, .4)} ${f.x + 14} ${lerp(f.baseY, topY, .7)} ${f.x} ${topY}`);
+  const ly = lerp(f.baseY, topY, .3);
+  f.leaf.setAttribute("d", `M ${f.x} ${ly} C ${f.x + 20} ${ly - 20} ${f.x + 46} ${ly - 18} ${f.x + 56} ${ly - 30} C ${f.x + 40} ${ly - 4} ${f.x + 20} ${ly + 2} ${f.x} ${ly} Z`);
+  f.head.setAttribute("transform", `translate(${f.x} ${topY}) scale(${(f.scale * (0.35 + 0.65 * f.open)).toFixed(3)})`);
+}
 
-  const labels = [];
-  for (let b = 0; b <= beats; b++) {
-    const x = X0 + b * bw, bar = b % 4 === 0;
-    el("line", { x1: x, x2: x, y1: 60, y2: 370, stroke: bar ? "#a9bccf" : "#e3eaf1", "stroke-width": bar ? 3 : 2 }, svg);
-    if (b < beats) {
-      const t = el("text", { x: x + bw / 2, y: 422, "text-anchor": "middle", "font-size": 40, "font-weight": 600, fill: "#a3b0bf", style: "font-family: var(--display)" }, svg);
-      t.textContent = (b % 4) + 1;
-      labels.push(t);
-    }
+// Step 1: a strip of buds that open as the bee flies past.
+function buildMeadow() {
+  for (let i = 0; i < 9; i++) {
+    const f = flower(scene.back, 200 + i * 200, GROUND + 6, GROUND - 90 - (i % 3) * 30, PETALS[i % PETALS.length], 0.9);
+    f.open = 0; f.wx = 200 + i * 200;
+    scene.meadow.push(f);
   }
-  if (siren) {
-    for (const [y, word] of [[yHigh, "high"], [yLow, "low"]]) {
-      el("line", { x1: X0, x2: X1, y1: y, y2: y, stroke: "#d3dde8", "stroke-width": 2, "stroke-dasharray": "10 12" }, svg);
-      el("text", { x: X0 - 16, y: y + 10, "text-anchor": "end", "font-size": 28, "font-weight": 600, fill: GREY, style: "font-family: var(--display)" }, svg).textContent = word;
-    }
-  }
+  scene.scroll = 0;
+}
 
-  const ribbons = el("g", {}, svg);
-  const geo = notes.map(n => {
-    const x0 = X0 + n.start * bw + R + 8, x1 = Math.max(x0, X0 + (n.start + n.dur) * bw - R - 8);
-    let d = "";
-    const steps = n.path.length === 1 ? 1 : 40;
-    for (let i = 0; i <= steps; i++) {
-      const f = i / steps;
-      d += `${i ? "L" : "M"} ${(x0 + (x1 - x0) * f).toFixed(1)} ${yOf(pitchAt(n.path, f)).toFixed(1)} `;
-    }
-    el("path", { d, fill: "none", stroke: "#c9d6e3", "stroke-width": 2 * R + 8, "stroke-linecap": "round", "stroke-linejoin": "round" }, ribbons);
-    el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": 2 * R, "stroke-linecap": "round", "stroke-linejoin": "round" }, ribbons);
-    el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": 2 * R, "stroke-linecap": "round", "stroke-linejoin": "round" }, mask);
-    return { ...n, x0, x1 };
+// Steps 2 and 3: one tall flower at the target pitch, a soft band around it, and the honeycomb.
+function buildFlowerTarget() {
+  const y = semiY(TARGETS[state.ti]);
+  scene.band = el("rect", { x: 0, width: 1600, y: semiY(TARGETS[state.ti] + IN_CENTS / 100), height: semiY(TARGETS[state.ti] - IN_CENTS / 100) - semiY(TARGETS[state.ti] + IN_CENTS / 100), fill: "#fff", opacity: .35 }, scene.back);
+  scene.guide = el("line", { x1: 120, x2: FLOWER_X - 40, y1: y, y2: y, stroke: "#f2b705", "stroke-width": 4, "stroke-dasharray": "4 18", "stroke-linecap": "round", opacity: .8 }, scene.back);
+  scene.target = flower(scene.back, FLOWER_X, GROUND + 6, GROUND - 40, PETALS[state.ti % PETALS.length], 1.6);
+  scene.target.goalY = y; scene.target.grow = 0;
+  scene.comb = el("g", { transform: `translate(${FLOWER_X + 200} 140)`, opacity: state.step === 3 ? 1 : 0 }, scene.back);
+  scene.cells = [];
+  const hex = "M 0 -22 L 19 -11 L 19 11 L 0 22 L -19 11 L -19 -11 Z";
+  [[0, 0], [38, 0], [-38, 0], [19, 33], [-19, 33], [19, -33], [-19, -33]].forEach(([x, yy]) => {
+    scene.cells.push(el("path", { d: hex, transform: `translate(${x} ${yy})`, fill: "#fff6d8", stroke: "#e0a500", "stroke-width": 4 }, scene.comb));
   });
-  const fill = el("rect", { x: 0, y: 0, width: 0, height: VH, fill: GOLD, mask: "url(#ribbonMask)" }, ribbons);
-  const bead = el("circle", { r: R * 0.6, fill: "#fff", stroke: GOLD, "stroke-width": 8, opacity: 0 }, svg);
+  scene.jar = el("g", { transform: "translate(110 120)" }, scene.back);
+  el("rect", { x: -34, y: -40, width: 68, height: 80, rx: 14, fill: "#fff", opacity: .7, stroke: "#c98a00", "stroke-width": 4 }, scene.jar);
+  el("rect", { x: -40, y: -52, width: 80, height: 16, rx: 6, fill: "#c98a00" }, scene.jar);
+  scene.jarFill = el("rect", { x: -30, width: 60, rx: 10, fill: "#ffb703" }, scene.jar);
+  setJar();
+}
+function setJar() {
+  if (!scene.jarFill) return;
+  const h = Math.min(72, state.honey * 9);
+  scene.jarFill.setAttribute("y", 36 - h);
+  scene.jarFill.setAttribute("height", h);
+}
 
-  // Count boxes shown over the lane for the count-in, the breathing bar and the rest bar.
-  const pillsG = el("g", { opacity: 0 }, svg);
-  const pills = [0, 1, 2, 3].map(i => {
-    const x = 330 + i * 250;
-    const r = el("rect", { x, y: 130, width: 190, height: 170, rx: 30, "stroke-width": 5 }, pillsG);
-    const t = el("text", { x: x + 95, y: 240, "text-anchor": "middle", "font-size": 80, "font-weight": 700, style: "font-family: var(--display)" }, pillsG);
-    return { r, t };
+/* ---------- Steps ---------- */
+
+function setPhase(p) { state.phase = p; state.phaseT = 0; }
+
+function enterStep() {
+  state.approach = 0; state.onFlower = 0; state.fill = 0; state.inBand = false;
+  setPhase(state.step === 2 || state.step === 3 ? "grow" : "play");
+  buildScene();
+  if (state.listening && state.step !== 1 && state.step !== 4) setTimeout(playModel, 700);   // listen first, then copy
+}
+
+function nextFlower() {
+  if (state.step !== 2 && state.step !== 3) return;
+  state.ti = (state.ti + 1) % TARGETS.length;
+  enterStep();
+}
+
+function update(dt) {
+  const s = state;
+  s.phaseT += dt;
+  if (s.semi !== null) s.smoothSemi += (s.semi - s.smoothSemi) * Math.min(1, dt * 10);
+  if (s.step !== 2 && s.step !== 3) return;
+  if (s.phase === "grow" && s.phaseT > 1.2) setPhase("play");
+  if (s.phase !== "play") return;
+  const off = s.semi === null ? null : Math.abs(s.smoothSemi - TARGETS[s.ti]) * 100;
+  s.inBand = off !== null && off < (s.inBand ? OUT_CENTS : IN_CENTS);
+  // The bee flies over to the flower while the pitch is right, and drifts back slowly when it is not.
+  s.approach = s.inBand ? Math.min(1, s.approach + dt / 0.7) : Math.max(0, s.approach - dt / 2.5);
+  const landed = s.approach >= 1 && s.inBand;
+  if (s.step === 2) {
+    s.onFlower = landed ? s.onFlower + dt : 0;
+    if (s.onFlower >= LAND_S) win();
+  } else if (landed) {
+    s.fill = Math.min(1, s.fill + dt / s.hold);       // wandering off only pauses it
+    if (s.fill >= 1) win();
+  }
+}
+
+function win() {
+  setPhase("won");
+  state.honey++;
+  chime();
+  const fy = semiY(TARGETS[state.ti]);
+  burst(FLOWER_X, fy);
+  const d = el("circle", { r: 14, fill: "#ffb703", stroke: "#c98a00", "stroke-width": 3 }, scene.drops), t0 = performance.now();
+  (function fly(now) {
+    const p = Math.min(1, (now - t0) / 1100), e = ease(p);
+    d.setAttribute("cx", lerp(FLOWER_X, 110, e)); d.setAttribute("cy", lerp(fy, 120, e) - Math.sin(p * Math.PI) * 120);
+    if (p < 1) requestAnimationFrame(fly); else { d.remove(); setJar(); }
+  })(t0);
+}
+
+function draw(dt) {
+  const s = state, t = performance.now() / 1000;
+  const buzzing = s.soundOn;
+  // The bee: its height is the buzz's pitch (step 1: it just bobs along). Silent, it hovers where it is.
+  let bx = BEE_X, by = scene.beeY;
+  if (s.step === 1) by = 330 + Math.sin(t * 1.6) * 14;
+  else if (buzzing && s.semi !== null) by = semiY(s.smoothSemi);
+  if (s.step === 2 || s.step === 3) bx = lerp(BEE_X, FLOWER_X - 120, ease(s.approach));
+  if (s.step === 4) bx = 900;
+  scene.beeY += (by - scene.beeY) * Math.min(1, dt * (s.step === 1 ? 4 : 12));
+  const tilt = s.step === 1 && buzzing ? 6 : 0;
+  scene.bee.setAttribute("transform", `translate(${bx.toFixed(1)} ${(scene.beeY + (buzzing ? 0 : Math.sin(t * 2) * 6)).toFixed(1)}) rotate(${tilt})`);
+  const flap = buzzing ? Math.sin(t * 34) * 0.35 : Math.sin(t * 8) * 0.15;      // a shimmer, not a flash
+  scene.wingFront.setAttribute("transform", `rotate(${(-12 + flap * 30).toFixed(1)} 8 -4)`);
+  scene.wingBack.setAttribute("transform", `rotate(${(14 - flap * 30).toFixed(1)} -8 -4)`);
+  scene.buzzLines.setAttribute("opacity", buzzing ? 0.8 : 0);
+
+  if (s.step === 1) {
+    // The meadow slides by while buzzing; buds open as the bee reaches them.
+    if (buzzing) scene.scroll += FLY_SPEED * dt;
+    for (const f of scene.meadow) {
+      let x = f.wx - scene.scroll;
+      if (x < -120) { f.wx += scene.meadow.length * 200; f.open = 0; x = f.wx - scene.scroll; }
+      if (x < BEE_X + 40 && f.open === 0) { f.open = 0.001; }
+      if (f.open > 0 && f.open < 1) f.open = Math.min(1, f.open + dt * 2.5);
+      f.g.setAttribute("transform", `translate(${(x - f.x).toFixed(1)} 0)`);
+      placeFlower(f, f.topY);
+    }
+  }
+
+  if (s.step === 2 || s.step === 3) {
+    const f = scene.target;
+    f.grow = s.phase === "grow" ? ease(clamp01(s.phaseT / 1.2)) : 1;
+    placeFlower(f, lerp(GROUND - 40, f.goalY, f.grow));
+    f.head.setAttribute("transform", `translate(${f.x} ${f.topY}) scale(${(1.6 * (s.phase === "won" ? 1 + Math.sin(t * 6) * 0.06 : 1)).toFixed(3)}) rotate(${s.phase === "won" ? (t * 40 % 360).toFixed(1) : 0})`);
+    scene.band.setAttribute("opacity", s.inBand ? 0.55 : 0.3);
+    scene.cells.forEach((c, i) => c.setAttribute("fill", (s.phase === "won" && s.step === 3) || s.fill * scene.cells.length > i + 0.001 ? "#ffb703" : "#fff6d8"));
+  }
+
+  if (s.step === 4) drawSiren(dt, t);
+}
+
+function drawSiren(dt, t) {
+  const s = state;
+  // Free and path both scroll the past to the left; free draws the bee's trail.
+  const step = FLY_SPEED * dt;
+  scene.trail.forEach(p => { p.x -= step; });
+  if (s.soundOn && s.semi !== null) scene.trail.push({ x: 900, y: scene.beeY, gap: !scene.lastOn });
+  scene.lastOn = s.soundOn && s.semi !== null;
+  while (scene.trail.length && scene.trail[0].x < -40) scene.trail.shift();
+  scene.trailPath.setAttribute("d", scene.trail.map(p => `${p.gap ? "M" : "L"} ${p.x.toFixed(0)} ${p.y.toFixed(0)}`).join(" "));
+  scene.trailPath.setAttribute("opacity", s.siren ? 0.35 : 1);
+  if (!s.siren) return;
+  // Path: dots trace the siren up and back; each dot the bee meets turns into a little flower.
+  scene.sirenT = (scene.sirenT || 0) + dt;
+  if (scene.sirenT - (scene.lastDot || 0) > 0.25) {
+    scene.lastDot = scene.sirenT;
+    const ph = (scene.sirenT % SIREN_S) / SIREN_S, semi = s.siren * (0.5 - 0.5 * Math.cos(ph * Math.PI * 2));
+    const g = el("g", {}, scene.back);
+    el("circle", { r: 9, fill: "#fff", stroke: "#f2b705", "stroke-width": 4 }, g);
+    scene.dots.push({ g, x: 1640, semi, y: semiY(semi), met: false });
+  }
+  for (const d of scene.dots) {
+    d.x -= step;
+    if (!d.met && Math.abs(d.x - 900) < 30 && s.semi !== null && Math.abs(s.smoothSemi - d.semi) * 100 < IN_CENTS + 20) {
+      d.met = true;
+      d.g.textContent = "";
+      for (let i = 0; i < 6; i++) el("ellipse", { cx: 0, cy: -10, rx: 6, ry: 11, transform: `rotate(${i * 60})`, fill: PETALS[(i + Math.round(d.semi)) % PETALS.length] }, d.g);
+      el("circle", { r: 6, fill: "#f2a900" }, d.g);
+    }
+    d.g.setAttribute("transform", `translate(${d.x.toFixed(0)} ${d.y.toFixed(0)})`);
+  }
+  while (scene.dots.length && scene.dots[0].x < -40) scene.dots.shift().g.remove();
+}
+
+function chime() {
+  const c = ensureCtx(), t0 = c.currentTime + 0.03;
+  [659.25, 783.99, 1046.5].forEach((hz, i) => {
+    const o = c.createOscillator(), g = c.createGain(), t = t0 + i * 0.1;
+    o.type = "triangle"; o.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.1, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + 0.65);
   });
-  let lastSig = "", activeLabel = -1;
+  state.muteUntil = Math.max(state.muteUntil, performance.now() + 1000);
+}
 
-  function setPills(kind, beatPos) {
-    const cur = Math.min(3, Math.floor(beatPos));
-    const sig = kind + cur + state.breath;
-    if (sig === lastSig) return;
-    lastSig = sig;
-    pills.forEach((p, i) => {
-      const breatheHere = kind === "breath" && i >= 4 - state.breath;
-      const color = kind === "countin" ? GOLD : kind === "rest" ? MINT : breatheHere ? BLUE : GREY;
-      const text = breatheHere ? "in" : String(i + 1);
-      p.t.textContent = text;
-      if (i === cur) { p.r.setAttribute("fill", color); p.r.setAttribute("stroke", color); p.t.setAttribute("fill", "#fff"); }
-      else if (i < cur) { p.r.setAttribute("fill", "#f2f5f9"); p.r.setAttribute("stroke", "#dfe6ee"); p.t.setAttribute("fill", "#b6c1cd"); }
-      else { p.r.setAttribute("fill", "#fff"); p.r.setAttribute("stroke", breatheHere ? BLUE : "#cfdae6"); p.t.setAttribute("fill", color); }
-    });
+function burst(x, y) {
+  const svg = $("scene");
+  for (let i = 0; i < 12; i++) {
+    const a = (Math.PI * 2 * i) / 12, d = 80 + Math.random() * 60;
+    const c = el("ellipse", { rx: 7, ry: 12, fill: PETALS[i % PETALS.length] }, svg);
+    const t0 = performance.now();
+    (function fly(now) {
+      const p = (now - t0) / 900;
+      if (p >= 1) { c.remove(); return; }
+      c.setAttribute("cx", x + Math.cos(a) * d * p);
+      c.setAttribute("cy", y + Math.sin(a) * d * p + 50 * p * p);
+      c.setAttribute("opacity", 1 - p);
+      requestAnimationFrame(fly);
+    })(t0);
   }
-
-  return {
-    update(kind, beatPos) {
-      const moving = kind === "listen" || kind === "buzz";
-      const boxes = kind === "countin" || kind === "breath" || kind === "rest";
-      const color = kind === "buzz" || kind === "rest" || kind === "done" ? CORAL : GOLD;
-      ribbons.setAttribute("opacity", boxes ? 0.25 : 1);
-      pillsG.setAttribute("opacity", boxes ? 1 : 0);
-      if (boxes) setPills(kind, beatPos); else lastSig = "";
-
-      fill.setAttribute("fill", color);
-      const x = moving ? X0 + Math.min(beats, Math.max(0, beatPos)) * bw : kind === "breath" || kind === "rest" || kind === "done" ? VW : 0;
-      fill.setAttribute("width", x);
-
-      const idx = moving ? Math.min(beats - 1, Math.floor(beatPos)) : -1;
-      if (idx !== activeLabel) {
-        if (labels[activeLabel]) { labels[activeLabel].setAttribute("fill", "#a3b0bf"); labels[activeLabel].setAttribute("font-size", 40); }
-        if (labels[idx]) { labels[idx].setAttribute("fill", color); labels[idx].setAttribute("font-size", 52); }
-        activeLabel = idx;
-      }
-
-      const g = moving && geo.find(n => beatPos >= n.start && beatPos < n.start + n.dur);
-      if (g) {
-        const bx = Math.min(g.x1, Math.max(g.x0, x));
-        const by = yOf(pitchAt(g.path, g.x1 > g.x0 ? (bx - g.x0) / (g.x1 - g.x0) : 0));
-        bead.setAttribute("cx", bx.toFixed(1));
-        bead.setAttribute("cy", by.toFixed(1));
-        bead.setAttribute("stroke", color);
-        bead.setAttribute("opacity", 1);
-      } else {
-        bead.setAttribute("opacity", 0);
-      }
-    }
-  };
 }
 
-/* ---------- Game ---------- */
-
-function setPhaseText(glyph, word, hint) {
-  const g = $("phaseGlyph");
-  if (g.textContent !== glyph) { g.textContent = glyph; g.classList.remove("pop"); void g.offsetWidth; g.classList.add("pop"); }
-  $("phaseWord").textContent = word;
-  $("phaseHint").textContent = hint;
+function bump() {
+  state.counter++;
+  $("counter").textContent = state.counter;
 }
 
-function setCount(v) {
-  const c = $("count"), text = String(v);
-  if (c.textContent === text) return;
-  c.textContent = text;
-  c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop");
+/* ---------- Screen ---------- */
+
+function setStep(n) {
+  state.step = n;
+  for (let i = 1; i <= 4; i++) $("st" + i).setAttribute("aria-pressed", String(i === n));
+  $("holdSeg").hidden = n !== 3;
+  $("sirenSeg").hidden = n !== 4;
+  save();
+  enterStep();
 }
 
-function show(kind, count, breatheNow) {
-  const stage = $("stage");
-  if (kind === "countin") { stage.dataset.phase = "ready"; setPhaseText("👂", "Get ready", "Listen after 4"); }
-  else if (kind === "listen") { stage.dataset.phase = "listen"; setPhaseText("👂", "Listen", LISTEN_HINT[state.li]); }
-  else if (kind === "breath" && !breatheNow) { stage.dataset.phase = "ready"; setPhaseText("🌬️", "Get ready", `Mouthpiece up · breathe in on ${4 - state.breath + 1}`); }
-  else if (kind === "breath") { stage.dataset.phase = "breathe"; setPhaseText("🌬️", "Breathe in", "Buzz after 4"); }
-  else if (kind === "buzz") { stage.dataset.phase = "buzz"; setPhaseText("🐝", "Buzz!", BUZZ_HINT[state.li]); }
-  else if (kind === "rest") { stage.dataset.phase = "rest"; setPhaseText("😌", "Lips rest", "Mouthpiece down, relax your lips"); }
-  else if (kind === "done") { stage.dataset.phase = "done"; setPhaseText("👍", "Nice buzzing!", "Again, or Next?"); }
-  else { stage.dataset.phase = "idle"; setPhaseText("🐝", "Buzz-Along", "Press Play"); }
-  setCount(count ?? "");
+function setInstrument(k) {
+  state.inst = k;
+  for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === k));
+  try { localStorage.setItem("brass-inst", k); } catch (_) {}
+  enterStep();
 }
 
-function updateHeader() {
-  const L = LEVELS[state.li], I = INSTRUMENTS[state.inst];
-  $("levelNum").textContent = `Level ${state.li + 1}`;
-  $("levelName").textContent = L.name;
-  const notes = L.semis ? `siren ${I.start} → ${I.tops[L.top]}` : `model note ${I.start}`;
-  $("noteInfo").textContent = state.model ? `${I.label} · ${notes}` : `${I.label} · model sound off: demonstrate live`;
-  document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i === state.li)));
-  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
-  $("br2").setAttribute("aria-pressed", String(state.breath === 2));
-  $("br1").setAttribute("aria-pressed", String(state.breath === 1));
+function setHold(n) {
+  state.hold = n;
+  $("hold4").setAttribute("aria-pressed", String(n === 4));
+  $("hold8").setAttribute("aria-pressed", String(n === 8));
+  save();
+  enterStep();
 }
 
-function updateButtons() {
-  $("nextBtn").textContent = state.phase === "idle" ? "▶ Play" : "Next ▶";
-  $("againBtn").disabled = state.phase === "idle";
+function setSiren(n) {
+  state.siren = n;
+  [["sirFree", 0], ["sir2", 2], ["sir4", 4], ["sir7", 7]].forEach(([id, v]) => $(id).setAttribute("aria-pressed", String(v === n)));
+  save();
+  enterStep();
 }
 
-function newPattern() {
-  const L = LEVELS[state.li];
-  let i = Math.floor(Math.random() * L.patterns.length);
-  if (L.patterns.length > 1 && i === state.prev) i = (i + 1) % L.patterns.length;
-  state.prev = i;
-  state.notes = toNotes(L.patterns[i]);
-  state.lane = renderLane(L, state.notes);
-  state.lane.update("idle", 0);
-}
-
-function stopRun() {
-  Sound.close();
-  state.run = null;
-}
-
-function toIdle() {
-  stopRun();
-  state.phase = "idle";
-  show("idle");
-  if (state.lane) state.lane.update("idle", 0);
-  updateButtons();
-}
-
-function play() {
-  const L = LEVELS[state.li], I = INSTRUMENTS[state.inst], beat = 60 / state.bpm, phrase = L.bars * 4;
-  const hi = I.lo * Math.pow(2, (L.semis || 0) / 12);
-  const ctx = Sound.ensure();
-  Sound.open();
-  const segs = [];
-  let t = ctx.currentTime + 0.25;
-  const add = (kind, n) => { segs.push({ kind, beats: n, start: t, end: t + n * beat }); t += n * beat; };
-  add("countin", 4); add("listen", phrase); add("breath", 4); add("buzz", phrase); add("rest", 4);
-
-  if (state.click) {
-    for (const s of segs) {
-      if (s.kind === "rest") continue;
-      for (let i = 0; i < s.beats; i++) Sound.tick(s.start + i * beat, i % 4 === 0);
-    }
-  }
-  const breathSeg = segs[2];
-  Sound.breath(breathSeg.start + (4 - state.breath) * beat, Math.min(1.2, state.breath * beat * 0.9));
-  if (state.model) for (const n of state.notes) Sound.tone(segs[1].start + n.start * beat, n.dur * beat, n.path, I.lo, hi);
-
-  $("tip").innerHTML = TIPS[state.tip++ % TIPS.length];
-  state.run = { segs, beat, end: t, key: "" };
-  state.phase = "playing";
-  updateButtons();
-}
-
-function primary() {
-  if (state.phase !== "idle") newPattern();
-  play();
-}
-
-function again() {
-  if (state.phase !== "idle") play();
-}
-
-function frame() {
-  const run = state.run;
-  if (run) {
-    const now = Sound.now();
-    if (now >= run.end) {
-      stopRun();
-      state.phase = "done";
-      show("done");
-      state.lane.update("done", 0);
-      updateButtons();
-    } else {
-      const seg = run.segs.find(s => now < s.end);
-      const beatPos = Math.max(0, now - seg.start) / run.beat;
-      const count = (Math.floor(beatPos) % 4) + 1;
-      const breatheNow = seg.kind === "breath" && Math.floor(beatPos) >= 4 - state.breath;
-      const key = seg.kind + count + breatheNow;
-      if (key !== run.key) { run.key = key; show(seg.kind, count, breatheNow); }
-      state.lane.update(seg.kind, beatPos);
-    }
-  }
-  requestAnimationFrame(frame);
+function save() {
+  try { localStorage.setItem("buzz", JSON.stringify({ step: state.step, hold: state.hold, siren: state.siren })); } catch (_) {}
 }
 
 function toggleFullscreen() {
   const d = document, root = d.documentElement;
   try {
     if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
-    else {
-      const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
-      if (p && p.catch) p.catch(() => {});
-    }
-  } catch (_) { /* not allowed here */ }
+    else { const p = (root.requestFullscreen || root.webkitRequestFullscreen).call(root); if (p && p.catch) p.catch(() => {}); }
+  } catch (_) {}
+}
+
+/* ---------- Loop ---------- */
+
+let last = 0, tipAt = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - (last || now)) / 1000);
+  last = now;
+  if (now - state.lastAnalyse > ANALYSE_MS) { state.lastAnalyse = now; analyse(); }
+  update(dt);
+  draw(dt);
+  if (now - tipAt > 20000) { tipAt = now; $("tip").textContent = TIPS[Math.floor(now / 20000) % TIPS.length]; }
+  if (!$("diag").hidden) {
+    const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
+    const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
+    $("diag").textContent = audioLine() + `בדיקת מיקרופון (D)\n` +
+      `עוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\n` +
+      `צליל   ${state.freq ? state.freq.toFixed(0) + " Hz" : "—"}  ${state.semi === null ? "" : (state.semi > 0 ? "+" : "") + state.semi.toFixed(1)}\n` +
+      `רצפה   ${(20 * Math.log10(Math.max(state.noiseFloor, 1e-7))).toFixed(0)} dB · ${state.soundOn ? "זמזום" : "שקט"}\n` +
+      `v1`;
+  }
+  requestAnimationFrame(frame);
 }
 
 /* ---------- Wiring ---------- */
 
-LEVELS.forEach((L, i) => {
-  const b = document.createElement("button");
-  b.className = "lvl";
-  b.id = "lvl" + (i + 1);
-  b.textContent = i + 1;
-  b.title = `Level ${i + 1}: ${L.name}`;
-  b.setAttribute("aria-label", b.title);
-  b.addEventListener("click", () => { state.li = i; state.prev = -1; updateHeader(); newPattern(); toIdle(); });
-  $("levels").appendChild(b);
-});
-
-for (const k in INSTRUMENTS) {
-  $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => { state.inst = k; updateHeader(); toIdle(); });
-}
-$("br2").addEventListener("click", () => { state.breath = 2; updateHeader(); toIdle(); });
-$("br1").addEventListener("click", () => { state.breath = 1; updateHeader(); toIdle(); });
-$("nextBtn").addEventListener("click", primary);
-$("againBtn").addEventListener("click", again);
-$("tempo").addEventListener("input", e => { state.bpm = +e.target.value; $("tempoOut").textContent = state.bpm; });
-$("model").addEventListener("change", e => { state.model = e.target.checked; updateHeader(); });
-$("click").addEventListener("change", e => { state.click = e.target.checked; });
+for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
+for (let i = 1; i <= 4; i++) $("st" + i).addEventListener("click", () => setStep(i));
+$("hold4").addEventListener("click", () => setHold(4));
+$("hold8").addEventListener("click", () => setHold(8));
+[["sirFree", 0], ["sir2", 2], ["sir4", 4], ["sir7", 7]].forEach(([id, v]) => $(id).addEventListener("click", () => setSiren(v)));
+$("startBtn").addEventListener("click", e => { e.stopPropagation(); startMic(); });
+$("overlay").addEventListener("click", startMic);
+$("tone").addEventListener("click", playModel);
 $("fullscreen").addEventListener("click", toggleFullscreen);
-
-document.addEventListener("click", e => {
-  const b = e.target.closest("button");
-  if (b && e.detail) b.blur();
-});
+$("stage").addEventListener("click", e => { if ($("overlay").hidden && state.phase === "won") nextFlower(); });
+document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
 
 document.addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
-  const t = e.target, k = e.key;
-  if ((k === " " || k === "Enter") && (t.tagName === "BUTTON" || t.type === "checkbox")) return;
-  const onRange = t.type === "range";
-  if (k === " " || k === "Enter" || k === "PageDown" || (k === "ArrowRight" && !onRange)) { e.preventDefault(); primary(); }
-  else if (e.code === "KeyR" || k === "PageUp" || (k === "ArrowLeft" && !onRange)) { e.preventDefault(); again(); }
-  else if (e.code === "KeyF") toggleFullscreen();
-  else if (k === "Escape" && state.run) toIdle();
+  const t = e.target;
+  if (t.tagName === "BUTTON" || t.tagName === "INPUT") return;
+  const c = e.code;
+  if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); nextFlower(); }
+  else if (/^Digit[1-4]$/.test(c)) setStep(+c.slice(5));
+  else if (c === "KeyT") playModel();
+  else if (c === "KeyR") state.noiseFloor = 0.002;
+  else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
+  else if (c === "KeyF") toggleFullscreen();
 });
 
-const rootEl = document.documentElement;
-if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+const params = new URLSearchParams(location.search);
+try {
+  const savedInst = localStorage.getItem("brass-inst");
+  if (INSTRUMENTS[savedInst]) state.inst = savedInst;
+  const saved = JSON.parse(localStorage.getItem("buzz") || "{}");
+  if (saved.step >= 1 && saved.step <= 4) state.step = saved.step;
+  if (saved.hold === 8) state.hold = 8;
+  if ([0, 2, 4, 7].includes(saved.siren)) state.siren = saved.siren;
+} catch (_) {}
+if (INSTRUMENTS[params.get("inst")]) state.inst = params.get("inst");
+if (/^[1-4]$/.test(params.get("step") || "")) state.step = +params.get("step");
+if (params.get("diag") === "1") $("diag").hidden = false;
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+if (location.protocol === "file:") fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 
-$("tip").innerHTML = TIPS[0];
-updateHeader();
-newPattern();
-toIdle();
+$("tip").textContent = TIPS[0];
+for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === state.inst));
+setHold(state.hold);
+setSiren(state.siren);
+setStep(state.step);
 requestAnimationFrame(frame);
 </script>
 </body>
