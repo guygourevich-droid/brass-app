@@ -90,6 +90,10 @@
       <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
       <button id="inHorn" class="seg-btn" aria-pressed="true">קרן</button>
     </div>
+    <div class="seg" role="group" aria-label="סוג הסולם">
+      <button id="kindScale" class="seg-btn" aria-pressed="false" title="הצלילים שהכיתה מכירה">דו רה מי</button>
+      <button id="kindOpen" class="seg-btn" aria-pressed="true" title="צלילים פתוחים, בלי אצבעות">פתוחים</button>
+    </div>
     <div class="seg" role="group" aria-label="מצב">
       <button id="modeExplore" class="seg-btn" aria-pressed="true">חופשי</button>
       <button id="modeAim" class="seg-btn" aria-pressed="false">🍌 בננה</button>
@@ -114,8 +118,11 @@
 
     <section class="sheet" id="sheet" hidden aria-label="הגדרות">
       <h2>הסולם</h2>
-      <div class="row"><span>שלב תחתון</span><div class="seg" role="group" id="loSeg"></div></div>
-      <div class="row"><span>שלב עליון</span><div class="seg" role="group" id="hiSeg"></div></div>
+      <div id="openRows">
+        <div class="row"><span>שלב תחתון</span><div class="seg" role="group" id="loSeg"></div></div>
+        <div class="row"><span>שלב עליון</span><div class="seg" role="group" id="hiSeg"></div></div>
+      </div>
+      <div id="scaleRows"><p>הצלילים שהכיתה מכירה (משותף עם צליל נכון, נינג'ה ושירים):</p><div class="notes" id="scaleChips"></div></div>
       <h2>על אילו שלבים תופיע בננה?</h2>
       <div class="notes" id="targetChips"></div>
       <h2>הגדרות</h2>
@@ -216,7 +223,9 @@ const audioLine = () => {
    Explore: the monkey just follows. Banana: one rung holds a banana, the app plays it on the real instrument,
    hold that rung and the monkey gets the banana. Nothing turns red; silence is waiting.
    Horn plays high in its series, where the partials sit close: a long ladder. Trumpet and trombone start
-   low, where they are far apart: a short ladder of a few rungs. */
+   low, where they are far apart: a short ladder of a few rungs.
+   The other kind, "דו רה מי": the rungs are the notes the class knows, step by step (the shared picker of
+   Right Note, Ninja and Songs). It is the default for trumpet and trombone; horn starts on open notes. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -257,17 +266,56 @@ const INSTRUMENTS = {
     lo: [2, 3], hi: [4, 5, 6], start: { lo: 2, hi: 5, targets: [2, 3, 4] }
   }
 };
-let inst = "horn", PARTIALS, F1, TO_WRITTEN, LO_CHOICES, HI_CHOICES;
+// Step by step: the written notes the class can tick (same lists and first choices as Right Note), and every
+// recording there is (concert name → cents off), so each note borrows the nearest one.
+const SCALE = {
+  horn:     { kind: "open",  notes: [60, 62, 64, 65, 67, 69, 71, 72, 76], def: [60, 62, 64, 65, 67],
+              rec: { F2: -34, C3: 5, F3: 13, G3: 4, A3: -14, Bb3: 10, C4: -7, D4: 9, E4: 8, Eb4: 11, F4: 14, G4: 18, A4: 7, C5: 2 } },
+  trumpet:  { kind: "scale", notes: [60, 62, 64, 65, 67, 69, 71, 72], def: [60, 62, 64, 65, 67],
+              rec: { Bb3: -10, C4: 16, D4: 13, Eb4: 3, F4: -3, G4: 11, A4: 7, Bb4: 8 } },
+  trombone: { kind: "scale", notes: [46, 48, 50, 51, 53, 55, 57, 58], def: [46, 48, 50, 51, 53],
+              rec: { Bb2: -5, C3: -7, D3: -16, Eb3: -24, F3: 2, G3: 1, A3: 1, Bb3: 10 } }
+};
+const midiOfName = name => {
+  const [, l, acc, oct] = name.match(/^([A-G])(b?)(\d)$/);
+  return 12 * (+oct + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[l] - (acc ? 1 : 0);
+};
+
+let inst = "horn", RUNGS, F1, TO_WRITTEN, LO_CHOICES, HI_CHOICES;
 function useInstrument(k) {
   inst = k;
   const I = INSTRUMENTS[k];
-  PARTIALS = I.partials; F1 = I.fund; TO_WRITTEN = I.toWritten; LO_CHOICES = I.lo; HI_CHOICES = I.hi;
+  F1 = I.fund; TO_WRITTEN = I.toWritten; LO_CHOICES = I.lo; HI_CHOICES = I.hi;
+}
+// The rungs of the current ladder. Open: the instrument's partials. Step by step: the class's notes (n = written midi).
+function makeRungs() {
+  if (state.kind === "open") { RUNGS = INSTRUMENTS[inst].partials; return; }
+  const rec = SCALE[inst].rec;
+  RUNGS = sharedNotes().map(w => {
+    const concert = w - TO_WRITTEN;
+    const sample = Object.keys(rec).reduce((a, b) => Math.abs(midiOfName(b) - concert) < Math.abs(midiOfName(a) - concert) ? b : a);
+    return { n: w, w, sample, off: rec[sample] };
+  });
+}
+// The shared "notes the class knows" (Right Note's picker), sorted low to high.
+function sharedNotes() {
+  const S = SCALE[inst];
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem("right-note-" + inst) || "null"); } catch (_) {}
+  const list = saved && Array.isArray(saved.chosen) ? saved.chosen.filter(n => S.notes.includes(n)) : [];
+  return (list.length >= 2 ? list : S.def).slice().sort((a, b) => a - b);
+}
+function setSharedNotes(list) {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("right-note-" + inst) || "{}") || {}; } catch (_) {}
+  saved.chosen = list;
+  try { localStorage.setItem("right-note-" + inst, JSON.stringify(saved)); } catch (_) {}
 }
 useInstrument("horn");
 
 const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
 const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
-const STEP_OF_PC = { 0: [0, 0], 2: [1, 0], 4: [2, 0], 5: [3, 0], 7: [4, 0], 9: [5, 0], 10: [6, -1], 11: [6, 0] };
+const STEP_OF_PC = { 0: [0, 0], 1: [1, -1], 2: [1, 0], 3: [2, -1], 4: [2, 0], 5: [3, 0], 6: [4, -1], 7: [4, 0], 8: [5, -1], 9: [5, 0], 10: [6, -1], 11: [6, 0] };
 
 const TOL = { wide: 75, normal: 50, tight: 30 };
 const HOLDS = [1, 2, 3, 4, 5];
@@ -276,7 +324,7 @@ const VOL_LABEL = { soft: "שקט", mid: "בינוני", loud: "חזק" };
 const SNAP_MS = 300;       // a new rung must be steady this long before the monkey jumps
 
 const state = {
-  mode: "explore", lo: 3, hi: 8, targets: [4, 5, 6], target: 5,
+  mode: "explore", kind: "open", lo: 3, hi: 8, targets: [4, 5, 6], target: 5,
   order: "random", names: true, style: "sol", arrow: true, hold: 2, tol: "normal", ref: true, vol: "mid",
   bananas: 0,
   listening: false, holdProgress: 0, inBand: false, inBandSince: 0, drainFrom: 0, drainSince: 0,
@@ -289,8 +337,9 @@ const state = {
 
 /* ---------- Notes ---------- */
 
-const partial = n => PARTIALS.find(p => p.n === n);
-const hzOf = n => n * F1;
+const partial = n => RUNGS.find(p => p.n === n);
+// Open notes sit where the instrument's physics puts them (natural partials); step-by-step notes on the piano.
+const hzOf = n => state.kind === "open" ? n * F1 : hzOfMidi(n - TO_WRITTEN);
 const writtenOf = hz => 69 + 12 * Math.log2(hz / 440) + TO_WRITTEN;   // fractional written midi
 function nameOf(n) {
   const w = partial(n).w, [step, alter] = STEP_OF_PC[w % 12];
@@ -301,10 +350,10 @@ function fullName(n) {
   const w = partial(n).w, [step, alter] = STEP_OF_PC[w % 12];
   return nameOf(n) + " · " + LETTERS[step] + (alter === -1 ? "♭" : "") + (Math.floor(w / 12) - 1);
 }
-const shown = () => PARTIALS.filter(p => p.n >= state.lo && p.n <= state.hi).map(p => p.n);
+const shown = () => state.kind === "open" ? RUNGS.filter(p => p.n >= state.lo && p.n <= state.hi).map(p => p.n) : RUNGS.map(p => p.n);
 const nearestPartial = hz => {
   let best = null, cents = 0;
-  for (const p of PARTIALS) {
+  for (const p of RUNGS) {
     const c = 1200 * Math.log2(hz / hzOf(p.n));
     if (best === null || Math.abs(c) < Math.abs(cents)) { best = p.n; cents = c; }
   }
@@ -316,7 +365,8 @@ const nearestPartial = hz => {
 function save() {
   try {
     localStorage.setItem(storeKey(), JSON.stringify({
-      mode: state.mode, lo: state.lo, hi: state.hi, targets: state.targets, order: state.order, names: state.names,
+      mode: state.mode, kind: state.kind, lo: state.lo, hi: state.hi, order: state.order, names: state.names,
+      [state.kind === "open" ? "targets" : "scaleTargets"]: state.targets, [state.kind === "open" ? "scaleTargets" : "targets"]: state.otherTargets,
       style: state.style, arrow: state.arrow, hold: state.hold, tol: state.tol, ref: state.ref, vol: state.vol
     }));
   } catch (_) {}
@@ -326,14 +376,19 @@ const storeKey = () => inst === "horn" ? "horn-ladder" : "horn-ladder-" + inst;
 
 function load() {
   const st = INSTRUMENTS[inst].start;
-  state.lo = st.lo; state.hi = st.hi; state.targets = st.targets.slice();
+  state.lo = st.lo; state.hi = st.hi;
+  state.kind = SCALE[inst].kind;
   let s = null;
   try { s = JSON.parse(localStorage.getItem(storeKey()) || "null"); } catch (_) {}
+  if (s && (s.kind === "open" || s.kind === "scale")) state.kind = s.kind;
+  const open = Array.isArray(s && s.targets) ? s.targets : st.targets.slice(), scale = Array.isArray(s && s.scaleTargets) ? s.scaleTargets : [];
+  state.targets = state.kind === "open" ? open : scale;
+  state.otherTargets = state.kind === "open" ? scale : open;
+  makeRungs();
   if (!s) return;
   if (s.mode === "aim" || s.mode === "explore") state.mode = s.mode;
   if (LO_CHOICES.includes(s.lo)) state.lo = s.lo;
   if (HI_CHOICES.includes(s.hi)) state.hi = s.hi;
-  if (Array.isArray(s.targets)) state.targets = s.targets.filter(n => partial(n));
   if (s.order === "sequence" || s.order === "random") state.order = s.order;
   state.names = s.names !== false;
   state.style = s.style === "abc" ? "abc" : "sol";
@@ -348,7 +403,7 @@ function load() {
 function fixTargets() {
   const on = shown();
   state.targets = state.targets.filter(n => on.includes(n));
-  if (!state.targets.length) state.targets = on.filter(n => n >= 4 && n <= 6);
+  if (!state.targets.length) state.targets = state.kind === "open" ? on.filter(n => n >= 4 && n <= 6) : on.slice(0, 3);
   if (!state.targets.length) state.targets = [on[0]];
   if (!state.targets.includes(state.target)) state.target = state.targets[0];
 }
@@ -370,7 +425,7 @@ function ensureCtx() {
 // The recorded horn notes. Fetched once; the service worker keeps them for offline use.
 function loadSamples() {
   ensureCtx();
-  return Promise.all(PARTIALS.map(p => buffers[sampleKey(p)] ? null :
+  return Promise.all(RUNGS.map(p => buffers[sampleKey(p)] ? null :
     fetch("sounds/" + sampleKey(p) + ".m4a")
       .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(a => new Promise((ok, bad) => ctx.decodeAudioData(a, ok, bad)))
@@ -554,7 +609,7 @@ function analyse() {
   for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
 
   // Search the whole ladder and a little beyond, so a slip to any partial is caught.
-  const got = detect(deci, sr2, hzOf(state.lo) * 0.75, Math.min(hzOf(state.hi) * 1.3, 1000));
+  const on = shown(), got = detect(deci, sr2, hzOf(on[0]) * 0.75, Math.min(hzOf(on[on.length - 1]) * 1.3, 1000));
   if (!got || got.clarity < 0.6) { state.clarity = 0; state.heardN = null; return; }
   state.freq = got.freq;
   state.clarity = got.clarity;
@@ -768,7 +823,8 @@ function follow(now) {
 // A partial off the visible ladder: the monkey reaches past the end rather than vanishing.
 function yOfRungClamped(n) {
   if (scene.rungs[n]) return scene.rungs[n].y;
-  return n > state.hi ? TOP - 40 : BOTTOM + 40;
+  const on = shown();
+  return hzOf(n) > hzOf(on[on.length - 1]) ? TOP - 40 : BOTTOM + 40;
 }
 
 function draw(now) {
@@ -915,8 +971,26 @@ function segButtons(box, items, isOn, pick) {
 }
 
 function buildSheet() {
-  segButtons($("loSeg"), LO_CHOICES.map(n => [n, fullName(n)]), n => state.lo === n, n => { state.lo = n; });
-  segButtons($("hiSeg"), HI_CHOICES.map(n => [n, fullName(n)]), n => state.hi === n, n => { state.hi = n; });
+  $("openRows").hidden = state.kind !== "open";
+  $("scaleRows").hidden = state.kind === "open";
+  const sc = $("scaleChips");
+  sc.textContent = "";
+  if (state.kind !== "open") SCALE[inst].notes.forEach(w => {
+    const b = document.createElement("button"), on = sharedNotes();
+    b.className = "note-chip";
+    b.textContent = (state.style === "abc" ? LETTERS : SOLFEGE)[STEP_OF_PC[w % 12][0]] + (STEP_OF_PC[w % 12][1] ? "♭" : "") + " · " + LETTERS[STEP_OF_PC[w % 12][0]] + (STEP_OF_PC[w % 12][1] ? "♭" : "") + (Math.floor(w / 12) - 1);
+    b.setAttribute("aria-pressed", String(on.includes(w)));
+    b.addEventListener("click", () => {
+      const i = on.indexOf(w);
+      if (i >= 0) { if (on.length > 2) on.splice(i, 1); } else on.push(w);
+      setSharedNotes(on); makeRungs(); fixTargets(); save(); rebuild();
+    });
+    sc.appendChild(b);
+  });
+  if (state.kind === "open") {
+    segButtons($("loSeg"), LO_CHOICES.map(n => [n, fullName(n)]), n => state.lo === n, n => { state.lo = n; });
+    segButtons($("hiSeg"), HI_CHOICES.map(n => [n, fullName(n)]), n => state.hi === n, n => { state.hi = n; });
+  }
   segButtons($("holdSeg"), HOLDS.map(h => [h, String(h)]), h => state.hold === h, h => { state.hold = h; });
   segButtons($("volSeg"), Object.keys(VOLS).map(v => [v, VOL_LABEL[v]]), v => state.vol === v, v => { state.vol = v; playReference(state.target); });
 
@@ -944,6 +1018,7 @@ function buildSheet() {
   set("ordRandom", state.order === "random"); set("ordSeq", state.order === "sequence");
   set("refOn", state.ref); set("refOff", !state.ref);
   set("modeExplore", state.mode === "explore"); set("modeAim", state.mode === "aim");
+  set("kindScale", state.kind === "scale"); set("kindOpen", state.kind === "open");
 }
 
 function rebuild() {
@@ -959,6 +1034,19 @@ function setMode(m) {
   buildSheet();
   placeTarget();
   if (m === "aim" && state.ref && state.listening) setTimeout(playReference, 250);
+}
+
+function setKind(k) {
+  if (state.kind === k) return;
+  [state.targets, state.otherTargets] = [state.otherTargets || [], state.targets];
+  state.kind = k;
+  makeRungs();
+  state.rung = null; state.heardN = null; state.holdProgress = 0;
+  fixTargets();
+  state.target = state.targets[0];
+  save();
+  rebuild();
+  loadSamples();
 }
 
 function setInstrument(k) {
@@ -999,6 +1087,8 @@ $("sheetDone").addEventListener("click", () => toggleSheet(false));
 $("fullscreen").addEventListener("click", toggleFullscreen);
 $("modeExplore").addEventListener("click", () => setMode("explore"));
 for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
+$("kindScale").addEventListener("click", () => setKind("scale"));
+$("kindOpen").addEventListener("click", () => setKind("open"));
 $("modeAim").addEventListener("click", () => setMode("aim"));
 flag("namesOn", () => { state.names = true; });
 flag("namesOff", () => { state.names = false; });
