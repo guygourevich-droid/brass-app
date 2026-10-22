@@ -156,6 +156,29 @@
     .ctl input[type="range"] { width: 84px; }
     .transport-btns { width: 100%; }
     .transport-btns .btn { flex: 1; }
+    .console { gap: 8px 12px; }
+    .click-ctl { display: none; }       /* a phone has its own volume buttons */
+  }
+  /* Short screens (a phone on its side): smaller cue and buttons so the rhythm and the controls fit. */
+  @media (max-height: 500px) {
+    .console { padding-block: 4px; gap: 4px 14px; }
+    .seg-btn { padding: 4px 12px; }
+    .lvl { width: 28px; height: 28px; }
+    .stage { padding-block: 4px; gap: 4px; }
+    .level-title { font-size: 16px; }
+    .tempo-mark { font-size: 15px; }
+    .score svg { max-height: 40vh; }
+    .cue { min-height: 0; flex-direction: row; gap: 12px; }
+    .cue-glyph { font-size: 40px; }
+    .cue-word { font-size: 18px; }
+    .qscore svg { max-height: 11vh; }
+    .quiz-rows { gap: 4px; }
+    .qrow { padding-block: 0; border-radius: 12px; }
+    .qletter { width: 30px; height: 30px; font-size: 16px; }
+    .is-quiz .cue { min-height: 0; }
+    .is-quiz .cue-glyph { font-size: 24px; }
+    .transport { padding-block: 6px 8px; }
+    .btn { font-size: 16px; padding: .45em 1.1em; }
   }
   @media (prefers-reduced-motion: reduce) {
     .cue.pop .cue-glyph, .qrow.wrong { animation: none; }
@@ -180,7 +203,7 @@
     </div>
     <div class="levels" role="group" data-t-aria="level"><span class="levels-k" data-t="level"></span><span id="levels" class="levels"></span></div>
     <label class="ctl" for="tempo"><span class="ctl-k note">♩ =</span><input id="tempo" type="range" min="50" max="120" step="1" value="80"><output id="tempoOut" for="tempo">80</output></label>
-    <label class="ctl" for="clickVol"><span class="ctl-k" data-t="click"></span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
+    <label class="ctl click-ctl" for="clickVol"><span class="ctl-k" data-t="click"></span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
     <label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span data-t="counts"></span></label>
     <button id="pauseBtn" class="icon-btn" data-t-title="pause">⏸</button>
     <button id="fullscreen" class="icon-btn" data-t-title="fullscreen" data-t="fullBtn"></button>
@@ -241,7 +264,7 @@ const COMMON = {
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
@@ -252,7 +275,7 @@ const COMMON = {
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
   }
 };
 const T = (key, ...args) => {

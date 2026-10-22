@@ -71,12 +71,27 @@
   .pause-box { text-align: center; }
   .pause-icon { font-size: clamp(80px, 22vh, 220px); line-height: 1; color: #1a7fe2; }
   .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
+  /* Touch screens have no keyboard: no key hints. */
+  @media (hover: none) and (pointer: coarse) { .keys { display: none; } }
+  /* Phone upright: the picture is drawn wide, so suggest turning the phone. */
+  .turn { display: none; }
+  @media (orientation: portrait) and (max-width: 600px) { .overlay .turn { display: block; margin: 22px 0 0; font-size: 16px; font-weight: 500; opacity: .75; } }
+  /* Phones: one compact top bar; the way home is the app's icon. */
+  .home-icon { display: none; }
+  @media (max-width: 600px) {
+    .console { gap: 6px 8px; padding: 6px 10px; }
+    .home { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; font-size: 20px; }
+    .home-word { display: none; }
+    .home-icon { display: block; width: 30px; height: 30px; border-radius: 22%; }
+    .icon-btn { min-width: 40px; min-height: 40px; padding: 0 8px; }
+    .seg-btn { padding: 0 10px; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="console">
-    <a href="index.html">‹ Brass App</a>
+    <a class="home" href="index.html" aria-label="Brass App">‹<img class="home-icon" src="icons/icon-192.png" alt=""><span class="home-word"> Brass App</span></a>
     <div class="seg" role="group" data-t-aria="step">
       <button id="st1" class="seg-btn" aria-pressed="true" data-t-title="st1">1 🐝</button>
       <button id="st2" class="seg-btn" aria-pressed="false" data-t-title="st2">2 🌸</button>
@@ -106,6 +121,7 @@
       <div>
         <p id="overlayText" data-t="startPrompt"></p>
         <button class="big-btn" id="startBtn" data-t="start"></button>
+        <p class="turn" data-t="turn"></p>
       </div>
     </div>
     <button class="big-btn next-btn" id="nextBtn" hidden></button>
@@ -117,7 +133,7 @@
     <span class="count" id="counter">0</span>
     <span class="tip" id="tip"></span>
     <span class="spacer"></span>
-    <span data-t-html="keys"></span>
+    <span class="keys" data-t-html="keys"></span>
   </footer>
 </div>
 <script>
@@ -144,7 +160,7 @@ const COMMON = {
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
@@ -155,7 +171,7 @@ const COMMON = {
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
   }
 };
 const T = (key, ...args) => {
@@ -1012,6 +1028,10 @@ setHold(state.hold);
 setSiren(state.siren);
 setStep(state.step);
 requestAnimationFrame(frame);
+// Phone upright: the picture stands on the bottom edge (ground at the bottom, sky above) instead of floating mid-screen.
+const fitScene = () => $("scene").setAttribute("preserveAspectRatio", innerHeight > innerWidth ? "xMidYMax meet" : "xMidYMid meet");
+addEventListener("resize", fitScene);
+fitScene();
 </script>
 </body>
 </html>

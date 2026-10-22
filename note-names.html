@@ -103,6 +103,26 @@
     .brand { width: 100%; }
     .transport-btns { width: 100%; }
     .transport-btns .btn { flex: 1; }
+    .console { gap: 8px 10px; }
+    .seg-btn { padding: 6px 10px; }
+    .info { display: none; }
+    .btn { white-space: nowrap; font-size: 17px; padding: .55em .9em; }
+  }
+  @media (max-width: 640px) and (max-height: 700px) {
+    .tip { display: none; }
+    .card svg { max-height: 36vh; }
+  }
+  /* Short screens (a phone on its side): drop the extras so the staff and the buttons fit. */
+  @media (max-height: 500px) {
+    .console { gap: 6px 12px; padding-block: 6px; }
+    .info, .tip { display: none; }
+    .stage { padding-block: 6px; gap: 6px; }
+    .stage-head { font-size: 17px; }
+    .card { padding: 4px 8px; border-radius: 18px; }
+    .card svg { max-height: 38vh; }
+    .answer { font-size: 20px; padding: .2em .7em; }
+    .transport { padding-block: 6px 8px; }
+    .btn { font-size: 16px; padding: .45em 1.1em; }
   }
   @media (prefers-reduced-motion: reduce) {
     .cloud, .answer.wrong { animation: none; }
@@ -176,7 +196,7 @@ const COMMON = {
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
@@ -187,7 +207,7 @@ const COMMON = {
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
   }
 };
 const T = (key, ...args) => {

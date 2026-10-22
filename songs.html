@@ -106,12 +106,24 @@
   .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
   .pause-stop { display: block; margin: 2.5vh auto 0; background: none; border: 0; font: inherit; font-size: clamp(16px, 2.6vh, 24px); color: #56616f; text-decoration: underline; cursor: pointer; min-height: 44px; }
   .seg[hidden] { display: none; }
+  /* Touch screens have no keyboard: no key hints. */
+  @media (hover: none) and (pointer: coarse) { .keys { display: none; } }
+  /* Phones: one compact top bar; the way home is the app's icon. */
+  .home-icon { display: none; }
+  @media (max-width: 600px) {
+    .console { gap: 6px 8px; padding: 6px 10px; }
+    .home { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; font-size: 20px; }
+    .home-word { display: none; }
+    .home-icon { display: block; width: 30px; height: 30px; border-radius: 22%; }
+    .icon-btn { min-width: 40px; min-height: 40px; padding: 0 8px; }
+    .seg-btn { padding: 0 10px; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="console">
-    <a href="index.html">‹ Brass App</a>
+    <a class="home" href="index.html" aria-label="Brass App">‹<img class="home-icon" src="icons/icon-192.png" alt=""><span class="home-word"> Brass App</span></a>
     <button id="listBtn" class="icon-btn" data-t-title="listTip" data-t="songsBtn"></button>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText" data-t="mic"></span></span>
@@ -192,7 +204,7 @@ const COMMON = {
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
@@ -203,7 +215,7 @@ const COMMON = {
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
   }
 };
 const T = (key, ...args) => {
@@ -371,7 +383,7 @@ const TOL_CENTS = 50;
 const FOLLOW_HOLD_MS = 250;      // follow mode: hold this long on the right note to move on
 const DETECT_LAG_MS = 100;       // in time: how late the detector reports a sound
 const TEMPOS = [50, 60, 72, 90];
-const BARS_PER_LINE = 4;
+let BARS_PER_LINE = 4;                 // 2 on an upright phone (see setLineBars)
 
 const state = {
   inst: "trumpet", chosen: [], mode: "follow", tempo: 60, names: true, style: "sol", repeat: "attack", band: true, guide: false, judge: true,
@@ -798,7 +810,17 @@ const el = (tag, attrs, parent) => {
 };
 
 const S = 34, STAFF_X0 = 30, STAFF_X1 = 1280, STAFF_TOP = 170, BARS_X0 = 250;
-const BAR_W = (STAFF_X1 - BARS_X0) / BARS_PER_LINE;
+let BAR_W = (STAFF_X1 - BARS_X0) / BARS_PER_LINE;
+// An upright phone shows two bars per line, so the notes stay big enough to read.
+const PHONE_UPRIGHT = matchMedia("(orientation: portrait) and (max-width: 600px)");
+function setLineBars() {
+  const n = PHONE_UPRIGHT.matches ? 2 : 4;
+  if (n === BARS_PER_LINE) return false;
+  BARS_PER_LINE = n;
+  BAR_W = (STAFF_X1 - BARS_X0) / n;
+  return true;
+}
+setLineBars();
 const bottomLine = () => INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;     // E4 / G2
 const staffY = d => STAFF_TOP + 4 * S - (d - bottomLine()) * S / 2;
 let g = {}, noteEls = [];
@@ -819,7 +841,7 @@ function buildScene() {
 
 const lineOf = i => Math.floor(state.song.events[Math.min(i, state.song.events.length - 1)].bar / BARS_PER_LINE);
 
-// One line of four bars at a time, and the next line waiting below it, small and faded. When the song
+// One line of four bars (two on an upright phone) at a time, and the next line waiting below it, small and faded. When the song
 // reaches it, it slides up into place and comes to full strength while the finished line drifts away above.
 const PREVIEW = { x: 325, y: 383, s: 0.5 };          // where the next line waits: half size, centred, below
 const previewAt = k => `translate(${PREVIEW.x * k} ${PREVIEW.y * k}) scale(${1 - (1 - PREVIEW.s) * k})`;
@@ -854,7 +876,7 @@ function drawLine(line, slide) {
   paintNotes();
 }
 
-// Draw one line of four bars into `grp`. Notes are spaced by duration but never closer than a note head allows.
+// Draw one line of bars into `grp`. Notes are spaced by duration but never closer than a note head allows.
 function renderLine(grp, line) {
   const song = state.song, I = INSTRUMENTS[state.inst], els = [];
   const treble = I.clef === "treble";
@@ -1336,6 +1358,8 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.ser
 buildScene();
 buildPanels();
 buildList();
+// Turning the phone changes how many bars fit on a line: draw the current line again.
+PHONE_UPRIGHT.addEventListener("change", () => { if (setLineBars()) buildScene(); });
 if (location.protocol === "file:") fail(T("onlyOnline"));
 requestAnimationFrame(frame);
 document.getElementById("pauseBtn").addEventListener("click", () => setPaused(true));

@@ -74,24 +74,56 @@
   @media (display-mode: standalone) { .install { display: none; } }
 
   /* First visit (and "change"): the language, then the instrument. */
-  .setup { position: fixed; inset: 0; z-index: 10; background: linear-gradient(180deg, #e8f4ff 0%, #ffffff 60%); overflow-y: auto; display: grid; place-items: center; padding: 24px 16px; }
+  .setup { position: fixed; inset: 0; z-index: 10; background: linear-gradient(180deg, #e8f4ff 0%, #ffffff 60%); overflow-y: auto; display: flex; padding: 24px 16px; }
+  body:has(> .setup:not([hidden])) { overflow: hidden; }
   .setup[hidden] { display: none; }
-  .card { width: min(100%, 760px); text-align: center; }
+  .card { width: min(100%, 760px); margin: auto; text-align: center; }
   .card img { width: 84px; border-radius: 22%; }
   .card h2 { margin: 14px 0 22px; font-size: clamp(24px, 4vw, 34px); font-weight: 700; }
-  .langs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; max-width: 520px; margin: 0 auto; }
-  .lang { border: 3px solid var(--line); background: #fff; border-radius: 22px; min-height: 110px; font-size: clamp(28px, 4vw, 38px); font-weight: 700; cursor: pointer; }
+  .card h2.two span { display: block; }
+  .card h2.two span + span { font-size: .8em; color: var(--ink-2); }
+  .langs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(10px, 3vw, 16px); max-width: 520px; margin: 0 auto; }
+  .lang { border: 3px solid var(--line); background: #fff; border-radius: 22px; min-height: clamp(88px, 22vw, 110px); font-size: clamp(26px, 4vw, 38px); font-weight: 700; cursor: pointer; }
   .lang:hover, .inst:not([disabled]):hover { border-color: var(--blue); }
   .lang[aria-pressed="true"], .inst[aria-pressed="true"] { border-color: var(--blue); background: #eef6ff; }
-  .insts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-  .inst { position: relative; border: 3px solid var(--line); background: #fff; border-radius: 20px; padding: 14px 10px 12px; cursor: pointer; display: grid; justify-items: center; gap: 6px; font-size: 20px; font-weight: 700; }
+  .insts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 40vw), 1fr)); gap: clamp(10px, 2.5vw, 14px); }
+  .inst { position: relative; border: 3px solid var(--line); background: #fff; border-radius: 20px; padding: 14px 10px 12px; cursor: pointer; display: grid; justify-items: center; align-content: start; gap: 6px; font-size: 20px; font-weight: 700; }
   .inst img { width: 116px; height: 116px; }
   .inst[disabled] { cursor: default; color: var(--muted); background: #f7f9fc; }
   .inst[disabled] img { opacity: .6; filter: saturate(.55); }
-  .soon { font-size: 13px; font-weight: 600; color: var(--brass-deep); background: #fff3d6; border-radius: 999px; padding: 1px 10px; }
+  .soon { white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--brass-deep); background: #fff3d6; border-radius: 999px; padding: 1px 10px; }
   .back { margin-top: 22px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 16px; min-height: 44px; }
 
-  @media (max-width: 520px) { .tool { grid-template-columns: 1fr; } .me { margin-inline-start: 0; } }
+  /* Phones: each tile is the picture and the name on one line, the sentence under them; no chips. */
+  @media (max-width: 600px) {
+    .wrap { gap: 22px; padding-block: 20px 28px; }
+    .masthead { gap: 12px 14px; }
+    .me { margin-inline-start: 0; }
+    .home { padding: 14px 16px; }
+    .home h2 { font-size: 18px; }
+    .home ol { font-size: 15px; }
+    .tools { gap: 12px; }
+    .tool { grid-template-columns: 96px 1fr; gap: 8px 14px; padding: 14px 16px; }
+    .tool > div { display: contents; }
+    .tool svg { width: 96px; }
+    .tool h2 { font-size: 22px; align-self: center; }
+    .tool p { grid-column: 1 / -1; margin: 0; font-size: 15px; }
+    .chips { display: none; }
+    .inst { padding: 10px 8px; font-size: 18px; }
+    .inst img { width: min(104px, 26vw); height: auto; }
+  }
+  /* Phone on its side: everything in the setup fits on one screen. */
+  @media (max-height: 500px) {
+    .setup { padding-block: 12px; }
+    .card > img { width: 56px; }
+    .card h2 { margin: 6px 0 12px; font-size: 22px; }
+    .lang { min-height: 76px; }
+    .insts { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+    .soon { font-size: 11px; padding: 0 6px; }
+    .inst { padding: 6px; gap: 2px; font-size: 16px; }
+    .inst img { width: 64px; height: 64px; }
+    .back { margin-top: 6px; }
+  }
   @media (prefers-reduced-motion: reduce) { .tool { transition: none; } }
 </style>
 </head>
@@ -324,7 +356,7 @@
 <div class="setup" id="setup" hidden>
   <div class="card" id="stepLang">
     <img src="icons/icon-192.png" alt="">
-    <h2><span lang="he" dir="rtl">בחרו שפה</span> · <span lang="en" dir="ltr">Choose a language</span></h2>
+    <h2 class="two"><span lang="he" dir="rtl">בחרו שפה</span><span lang="en" dir="ltr">Choose a language</span></h2>
     <div class="langs">
       <button class="lang" id="langHe" lang="he" dir="rtl">עברית</button>
       <button class="lang" id="langEn" lang="en" dir="ltr">English</button>
@@ -404,16 +436,16 @@ const TEXT = {
     install: "<b>להתקין כמו אפליקציה:</b> באייפד ובאייפון פותחים את הדף בספארי, לוחצים שיתוף ואז <b>הוספה למסך הבית</b>. באנדרואיד: בכרום, תפריט ⋮ ואז <b>הוספה למסך הבית</b>. אחרי הפעם הראשונה זה עובד גם בלי אינטרנט.",
     instTitle: "על מה אתם מנגנים?", soon: "בקרוב", backLang: "‹ שפה",
     sax: "סקסופון", flute: "חליל צד", clarinet: "קלרינט", recorder: "חלילית",
-    mic: "מיקרופון", insts: "חצוצרה · טרומבון · קרן", tileDo: "דו",
-    t_ramzor: "רמזור", d_ramzor: "אדום עוצרים, צהוב מתכוננים ונושמים, ירוק מנגנים. בשליטה שלך.", c_ramzor: ["כיתה", "מקלדת ושלט", "ללא מיקרופון"],
+    mic: "מיקרופון", tileDo: "דו",
+    t_ramzor: "רמזור", d_ramzor: "אדום עוצרים, צהוב מתכוננים ונושמים, ירוק מנגנים. בשליטה שלך.", c_ramzor: ["כיתה", "ללא מיקרופון"],
     t_breath: "נשימה", d_breath: "שואפים, ואז נושפים לאט: בועת סבון ענקית גדלה, או שהרוח לוקחת את זרעי שן הארי. לחיצה אחת = נשימה אחת.", c_breath: ["🫧 · 🌼", "נושפים 4 · 8 · 12 · 16"],
-    t_buzz: "זמזום", d_buzz: "מזמזמים בפומית והדבורה עפה: מזמזמים, מגיעים לאותו צליל של הפרח, מחזיקים ארוך ויציב, ועושים סירנות.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️", "@insts"],
-    t_long: "צליל ארוך", d_long: "צליל אחד ארוך מטיס חללית מהאדמה אל החלל. ככל שמחזיקים יותר, מגיעים רחוק יותר.", c_long: ["@mic", "כל כלי", "4 · 8 · 12 · 16 · ∞"],
-    t_right: "צליל נכון", d_right: "התו שרוצים לנגן והתו שבאמת יוצא, על אותה חמשה. מחזיקים את הצליל הנכון ומקבלים כוכב.", c_right: ["@mic", "בחירת צלילים", "@insts"],
-    t_ladder: "סולם", d_ladder: "כל שלב בסולם הוא צליל. הקוף מטפס לצליל שמנגנים, ותופסים את הבננה.", c_ladder: ["@mic", "@insts", "צלילים אמיתיים"],
-    t_ninja: "נינג'ה", d_ninja: "תווים עפים פנימה אחד אחרי השני. מנגנים את התו לפני שהזמן נגמר, והנינג'ה חותך אותו.", c_ninja: ["@mic", "סיבוב לכל ילד", "@insts"],
-    t_songs: "שירים", d_songs: "מנגנים שיר שלם: תו אחרי תו, ואחר כך בקצב עם להקה. אפשר להקשיב קודם ולתרגל רק קטע.", c_songs: ["@mic", "12 שירים", "@insts"],
-    t_names: "תווים", d_names: "מכירים את הצלילים הראשונים וקוראים להם בשם. כל כלי קורא את התווים שלו במפתח שלו ושומע את הצליל האמיתי.", c_names: ["קריאת תווים", "דו רה מי · C D E", "7 שלבים"],
+    t_buzz: "זמזום", d_buzz: "מזמזמים בפומית והדבורה עפה: מזמזמים, מגיעים לאותו צליל של הפרח, מחזיקים ארוך ויציב, ועושים סירנות.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️"],
+    t_long: "צליל ארוך", d_long: "צליל אחד ארוך מטיס חללית מהאדמה אל החלל. ככל שמחזיקים יותר, מגיעים רחוק יותר.", c_long: ["@mic", "4 · 8 · 12 · 16 · ∞"],
+    t_right: "צליל נכון", d_right: "התו שרוצים לנגן והתו שבאמת יוצא, על אותה חמשה. מחזיקים את הצליל הנכון ומקבלים כוכב.", c_right: ["@mic", "בחירת צלילים"],
+    t_ladder: "סולם", d_ladder: "כל שלב בסולם הוא צליל. הקוף מטפס לצליל שמנגנים, ותופסים את הבננה.", c_ladder: ["@mic", "צלילים אמיתיים"],
+    t_ninja: "נינג'ה", d_ninja: "תווים עפים פנימה אחד אחרי השני. מנגנים את התו לפני שהזמן נגמר, והנינג'ה חותך אותו.", c_ninja: ["@mic", "סיבוב לכל ילד"],
+    t_songs: "שירים", d_songs: "מנגנים שיר שלם: תו אחרי תו, ואחר כך בקצב עם להקה. אפשר להקשיב קודם ולתרגל רק קטע.", c_songs: ["@mic", "12 שירים"],
+    t_names: "תווים", d_names: "מכירים את הצלילים הראשונים וקוראים להם בשם, במפתח של הכלי שלכם, ושומעים את הצליל האמיתי.", c_names: ["קריאת תווים", "דו רה מי · C D E", "7 שלבים"],
     t_clap: "קצב", d_clap: "שומעים קצב ומוחאים אותו בחזרה, או בוחרים איזה משלושה קצבים שמעתם.", c_clap: ["הד", "חידון שמיעה", "9 שלבים"]
   },
   en: {
@@ -428,16 +460,16 @@ const TEXT = {
     install: "<b>Install it like an app:</b> on an iPad or iPhone, open this page in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, in Chrome: menu ⋮, then <b>Add to Home Screen</b>. After the first time it works offline too.",
     instTitle: "What do you play?", soon: "Coming soon", backLang: "‹ Language",
     sax: "Saxophone", flute: "Flute", clarinet: "Clarinet", recorder: "Recorder",
-    mic: "Microphone", insts: "Trumpet · Trombone · Horn", tileDo: "C",
-    t_ramzor: "Traffic Light", d_ramzor: "Red: stop. Yellow: get ready and breathe. Green: play. You're in control.", c_ramzor: ["Class", "Keyboard & clicker", "No microphone"],
+    mic: "Microphone", tileDo: "C",
+    t_ramzor: "Traffic Light", d_ramzor: "Red: stop. Yellow: get ready and breathe. Green: play. You're in control.", c_ramzor: ["Class", "No microphone"],
     t_breath: "Breathing", d_breath: "Breathe in, then blow out slowly: a giant soap bubble grows, or the wind carries off the dandelion seeds. One tap = one breath.", c_breath: ["🫧 · 🌼", "Blow out 4 · 8 · 12 · 16"],
-    t_buzz: "Buzzing", d_buzz: "Buzz on the mouthpiece and the bee flies: buzz, match the flower's note, hold it long and steady, then play sirens.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️", "@insts"],
-    t_long: "Long Note", d_long: "One long note flies a rocket from the ground into space. The longer you hold it, the further it goes.", c_long: ["@mic", "Any instrument", "4 · 8 · 12 · 16 · ∞"],
-    t_right: "Right Note", d_right: "The note you want and the note that really comes out, on the same staff. Hold the right note to earn a star.", c_right: ["@mic", "Choose the notes", "@insts"],
-    t_ladder: "Ladder", d_ladder: "Each rung is a note. The monkey climbs to the note you play: catch the banana.", c_ladder: ["@mic", "@insts", "Real instrument sounds"],
-    t_ninja: "Note Ninja", d_ninja: "Notes fly in one after another. Play each one before time runs out and the ninja slices it.", c_ninja: ["@mic", "One round per child", "@insts"],
-    t_songs: "Songs", d_songs: "Play a whole song: note by note, then in time with a band. Listen first, and practise just a section.", c_songs: ["@mic", "12 songs", "@insts"],
-    t_names: "Note Names", d_names: "Meet the first notes and name them. Each instrument reads its own notes in its own clef and hears the real sound.", c_names: ["Reading", "C D E", "7 levels"],
+    t_buzz: "Buzzing", d_buzz: "Buzz on the mouthpiece and the bee flies: buzz, match the flower's note, hold it long and steady, then play sirens.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️"],
+    t_long: "Long Note", d_long: "One long note flies a rocket from the ground into space. The longer you hold it, the further it goes.", c_long: ["@mic", "4 · 8 · 12 · 16 · ∞"],
+    t_right: "Right Note", d_right: "The note you want and the note that really comes out, on the same staff. Hold the right note to earn a star.", c_right: ["@mic", "Choose the notes"],
+    t_ladder: "Ladder", d_ladder: "Each rung is a note. The monkey climbs to the note you play: catch the banana.", c_ladder: ["@mic", "Real instrument sounds"],
+    t_ninja: "Note Ninja", d_ninja: "Notes fly in one after another. Play each one before time runs out and the ninja slices it.", c_ninja: ["@mic", "One round per child"],
+    t_songs: "Songs", d_songs: "Play a whole song: note by note, then in time with a band. Listen first, and practise just a section.", c_songs: ["@mic", "12 songs"],
+    t_names: "Note Names", d_names: "Meet the first notes and name them, in your instrument's clef, and hear the real sound.", c_names: ["Reading", "C D E", "7 levels"],
     t_clap: "Clap-Along", d_clap: "Hear a rhythm and clap it back, or pick which of three rhythms you heard.", c_clap: ["Echo", "Ear quiz", "9 levels"]
   }
 };
