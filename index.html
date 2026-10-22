@@ -45,7 +45,7 @@
   /* Who is playing: the instrument and the language, one tap to change them. */
   .me { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 16px 6px 8px; cursor: pointer; min-height: 52px; }
   .me:hover { border-color: var(--blue); }
-  .me svg { width: 60px; height: 38px; }
+  .me img { width: 40px; height: 40px; }
   .me b { font-weight: 700; }
   .me span { color: var(--muted); }
 
@@ -85,9 +85,9 @@
   .lang[aria-pressed="true"], .inst[aria-pressed="true"] { border-color: var(--blue); background: #eef6ff; }
   .insts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
   .inst { position: relative; border: 3px solid var(--line); background: #fff; border-radius: 20px; padding: 14px 10px 12px; cursor: pointer; display: grid; justify-items: center; gap: 6px; font-size: 20px; font-weight: 700; }
-  .inst svg { width: 140px; height: 88px; }
+  .inst img { width: 116px; height: 116px; }
   .inst[disabled] { cursor: default; color: var(--muted); background: #f7f9fc; }
-  .inst[disabled] svg { opacity: .5; filter: saturate(.5); }
+  .inst[disabled] img { opacity: .6; filter: saturate(.55); }
   .soon { font-size: 13px; font-weight: 600; color: var(--brass-deep); background: #fff3d6; border-radius: 999px; padding: 1px 10px; }
   .back { margin-top: 22px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 16px; min-height: 44px; }
 
@@ -103,7 +103,7 @@
       <h1>Brass App</h1>
       <p data-t="tagline"></p>
     </div>
-    <button class="me" id="me" data-t-title="change"><svg id="meIcon" viewBox="0 0 160 100" aria-hidden="true"></svg><b id="meInst"></b><span id="meLang"></span></button>
+    <button class="me" id="me" data-t-title="change"><img id="meIcon" alt="" width="40" height="40"><b id="meInst"></b><span id="meLang"></span></button>
   </header>
 
   <section class="home" data-t-aria="homeLabel">
@@ -447,138 +447,8 @@ const INSTRUMENTS = [
   { id: "trumpet", ready: true }, { id: "trombone", ready: true }, { id: "horn", ready: true },
   { id: "sax" }, { id: "flute" }, { id: "clarinet" }, { id: "recorder" }
 ];
-// Instrument drawings, all on a 160 × 100 box. Shared gradients live once in INST_DEFS, put into the page below.
-const INST_DEFS = `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
-  <linearGradient id="ba-brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3bf"/><stop offset=".32" stop-color="#f7cb45"/><stop offset=".7" stop-color="#d8960d"/><stop offset="1" stop-color="#9e6200"/></linearGradient>
-  <linearGradient id="ba-brassX" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a86a00"/><stop offset=".3" stop-color="#f7cb45"/><stop offset=".48" stop-color="#fff3bf"/><stop offset=".75" stop-color="#e0a116"/><stop offset="1" stop-color="#9e6200"/></linearGradient>
-  <radialGradient id="ba-bellIn" cx=".55" cy=".5" r=".6"><stop offset="0" stop-color="#6e3f00"/><stop offset=".6" stop-color="#b87700"/><stop offset="1" stop-color="#f4c443"/></radialGradient>
-  <linearGradient id="ba-silver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#e4e9ef"/><stop offset=".72" stop-color="#a8b2bf"/><stop offset="1" stop-color="#6f7a89"/></linearGradient>
-  <linearGradient id="ba-silverX" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7d8897"/><stop offset=".4" stop-color="#ffffff"/><stop offset="1" stop-color="#8e99a7"/></linearGradient>
-  <linearGradient id="ba-ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b7282"/><stop offset=".3" stop-color="#3a404d"/><stop offset="1" stop-color="#111419"/></linearGradient>
-  <linearGradient id="ba-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe6c0"/><stop offset=".4" stop-color="#e2b273"/><stop offset="1" stop-color="#a5703a"/></linearGradient>
-  <radialGradient id="ba-pearl" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#f3ead6"/><stop offset="1" stop-color="#c9bc9a"/></radialGradient>
-</defs></svg>`;
-
-// A round tube along a path: dark edge, body, shine down the middle.
-const tube = (d, w, metal = "brass") => {
-  const [edge, body, shine] = metal === "brass" ? ["#8a5600", "#e3a51d", "#ffe9a6"] : ["#5d6877", "#c3cbd5", "#ffffff"];
-  return `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${d}" stroke="${edge}" stroke-width="${w + 2.4}"/><path d="${d}" stroke="${body}" stroke-width="${w}"/><path d="${d}" stroke="${shine}" stroke-width="${(w * 0.34).toFixed(1)}" opacity=".9"/></g>`;
-};
-// A flared bell along +x: throat at x=0 (half width h0), mouth at x=len (half width h1).
-const bell = (len, h0, h1) =>
-  `<path d="M 0 ${-h0} C ${len * 0.5} ${-h0} ${len * 0.82} ${-h1 * 0.45} ${len} ${-h1} L ${len} ${h1} C ${len * 0.82} ${h1 * 0.45} ${len * 0.5} ${h0} 0 ${h0} Z" fill="url(#ba-brass)" stroke="#8a5600" stroke-width="1.4" stroke-linejoin="round"/>` +
-  `<ellipse cx="${len}" cy="0" rx="${(h1 * 0.2).toFixed(1)}" ry="${h1}" fill="url(#ba-bellIn)" stroke="#8a5600" stroke-width="1.4"/>` +
-  `<ellipse cx="${len}" cy="0" rx="${(h1 * 0.2).toFixed(1)}" ry="${h1}" fill="none" stroke="#ffe08a" stroke-width="1.2" opacity=".8" transform="translate(-1.2 0)"/>`;
-const shadow = (cx, w) => `<ellipse cx="${cx}" cy="94" rx="${w}" ry="3.5" fill="#1b2a40" opacity=".08"/>`;
-const pearl = (cx, cy, rx = 5.5, ry = 3) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#ba-pearl)" stroke="#a8996f" stroke-width="1"/>`;
-
-const ICONS = {
-  trumpet: shadow(82, 64) +
-    // main tuning slide loop under the valves
-    tube("M 60 60 H 44 A 10 10 0 0 0 44 80 H 110 A 10 10 0 0 0 110 60 H 100", 5) +
-    // first-valve slide
-    tube("M 66 66 V 74", 4) +
-    // leadpipe and bell pipe
-    tube("M 26 46 H 62", 5) + tube("M 98 46 H 112", 5.5) +
-    `<g transform="translate(108 46)">${bell(42, 3.4, 25)}</g>` +
-    // mouthpiece
-    `<path d="M 7 39.5 Q 13 40 15 44 L 28 44.6 L 28 47.4 L 15 48 Q 13 52 7 52.5 Z" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.2" stroke-linejoin="round"/>` +
-    // three piston valves: casing, caps, stems, pearl buttons
-    [66, 80, 94].map(x =>
-      `<rect x="${x - 6}" y="33" width="12" height="38" rx="2" fill="url(#ba-brassX)" stroke="#8a5600" stroke-width="1.3"/>` +
-      `<rect x="${x - 7.5}" y="29" width="15" height="5" rx="1.5" fill="url(#ba-brass)" stroke="#8a5600" stroke-width="1.2"/>` +
-      `<rect x="${x - 7.5}" y="70" width="15" height="5" rx="1.5" fill="url(#ba-brass)" stroke="#8a5600" stroke-width="1.2"/>` +
-      `<rect x="${x - 1.6}" y="19" width="3.2" height="10" fill="url(#ba-silverX)"/>` + pearl(x, 18.5)).join(""),
-
-  trombone: shadow(84, 70) +
-    // bell section: bell pipe back to the tuning slide and forward again to the slide
-    tube("M 100 32 H 30 A 8 8 0 0 0 30 48 H 56", 4.5) +
-    `<g transform="translate(96 32)">${bell(52, 3.2, 23)}</g>` +
-    // slide: thin inner tubes, thicker outer slide with its bend at the front
-    tube("M 52 62 H 92", 4) + tube("M 58 76 H 92", 4) +
-    tube("M 90 62 H 143 A 7 7 0 0 1 143 76 H 90", 5.5) +
-    // braces: bell-section brace, slide handle
-    `<rect x="54" y="46" width="5" height="18" rx="1.5" fill="url(#ba-brassX)" stroke="#8a5600" stroke-width="1"/>` +
-    `<rect x="118" y="60" width="4.5" height="18" rx="1.5" fill="url(#ba-brassX)" stroke="#8a5600" stroke-width="1"/>` +
-    // mouthpiece
-    `<path d="M 34 56 Q 39 56.5 41 60 L 53 60.5 L 53 63.5 L 41 64 Q 39 67.5 34 68 Z" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.2" stroke-linejoin="round"/>`,
-
-  horn: shadow(84, 60) +
-    // coiled tubing
-    tube("M 72 18 A 32 32 0 1 0 104 50", 5) + tube("M 72 26 A 24 24 0 1 0 96 50 A 24 24 0 0 0 72 26", 4) + tube("M 72 33 A 17 17 0 1 0 89 50 A 17 17 0 0 0 72 33", 3.5) +
-    // leadpipe and mouthpiece
-    tube("M 30 24 Q 48 22 60 32", 3.5) +
-    `<g transform="translate(30 24) rotate(176)"><path d="M -10 -5.5 Q -5 -5 -3 -1.8 L 8 -1.4 L 8 1.4 L -3 1.8 Q -5 5 -10 5.5 Z" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.1" stroke-linejoin="round" transform="scale(-1 1)"/></g>` +
-    // rotary valves and their levers
-    [[86, 26], [95, 33], [101, 42]].map(([x, y], i) =>
-      `<path d="M ${x - 2} ${y - 4} L ${x - 12 - i * 2} ${y - 14 - i} " stroke="#7d8897" stroke-width="2.4" stroke-linecap="round"/>` +
-      `<ellipse cx="${x - 13 - i * 2}" cy="${y - 15 - i}" rx="3.6" ry="2.6" fill="url(#ba-pearl)" stroke="#a8996f" stroke-width=".9"/>` +
-      `<circle cx="${x}" cy="${y}" r="6" fill="url(#ba-brass)" stroke="#8a5600" stroke-width="1.3"/><circle cx="${x}" cy="${y}" r="2.6" fill="url(#ba-silver)" stroke="#5d6877" stroke-width=".8"/>`).join("") +
-    // the big bell, sweeping out to the lower right
-    `<g transform="translate(98 58) rotate(14)">${bell(50, 3.6, 24)}</g>`,
-
-  sax: shadow(80, 34) +
-    // body, bow and bell in one piece
-    `<path d="M 58 24 L 53 70 Q 52 92 76 92 Q 100 92 104 72 L 116 40 L 88 33 L 87 64 Q 86 76 77 76 Q 69 76 69 66 L 67 24 Z" fill="url(#ba-brassX)" stroke="#8a5600" stroke-width="1.4" stroke-linejoin="round"/>` +
-    `<ellipse cx="102" cy="36.5" rx="14.4" ry="4.4" transform="rotate(14 102 36.5)" fill="url(#ba-bellIn)" stroke="#8a5600" stroke-width="1.3"/>` +
-    // neck and mouthpiece
-    tube("M 62.5 26 C 62 14 56 8 44 9", 4.2) +
-    `<rect x="28" y="5.5" width="17" height="7" rx="3.5" fill="#1d222c" transform="rotate(4 36 9)"/><rect x="38" y="5.2" width="3" height="7.6" rx="1" fill="url(#ba-silverX)" transform="rotate(4 36 9)"/>` +
-    `<rect x="55" y="22" width="15" height="4" rx="1.5" fill="url(#ba-brass)" stroke="#8a5600" stroke-width="1"/>` +
-    // key rod and pearl touch pieces
-    `<path d="M 71 30 L 70 68" stroke="#b8c1cc" stroke-width="1.6"/>` +
-    [[61.5, 34], [61, 42], [60.5, 50], [60, 59], [59.5, 67]].map(([x, y]) => pearl(x, y, 3.4, 3.1)).join("") +
-    // pad cups on the bow and bell
-    [[80, 82], [93, 79], [100, 64], [104, 52]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4.2" fill="url(#ba-brass)" stroke="#8a5600" stroke-width="1.1"/>`).join(""),
-
-  flute: shadow(80, 66) +
-    `<g transform="rotate(-14 80 52)">` +
-    `<rect x="8" y="47" width="144" height="9" rx="2.5" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.2"/>` +
-    // crown, lip plate, joints
-    `<rect x="4" y="46" width="6" height="11" rx="2" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.1"/>` +
-    `<ellipse cx="26" cy="48" rx="7" ry="3.2" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.1"/><ellipse cx="26" cy="48" rx="2.6" ry="1.3" fill="#2b3340"/>` +
-    [42, 126].map(x => `<rect x="${x}" y="45.8" width="5" height="11.4" rx="1.5" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.1"/>`).join("") +
-    // key rod and open-hole keys
-    `<path d="M 52 46.5 H 122" stroke="#7d8897" stroke-width="1.4"/>` +
-    [58, 68, 78, 92, 102, 112].map(x => `<circle cx="${x}" cy="51.5" r="4.4" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1.1"/><circle cx="${x}" cy="51.5" r="1.4" fill="#2b3340"/>`).join("") +
-    [136, 144].map(x => `<rect x="${x - 2.5}" y="47.5" width="5" height="8" rx="2.5" fill="url(#ba-silver)" stroke="#5d6877" stroke-width="1"/>`).join("") +
-    `</g>`,
-
-  clarinet: shadow(80, 56) +
-    `<g transform="rotate(30 80 50)">` +
-    // reed and mouthpiece
-    `<path d="M 9 53.2 L 25 54 L 25 55.4 L 10 54.6 Z" fill="#e8cf8f"/>` +
-    `<path d="M 8 47.6 Q 7 50 8 53 L 25 54 L 25 46 Z" fill="url(#ba-ebony)" stroke="#0c0e12" stroke-width="1" stroke-linejoin="round"/>` +
-    `<rect x="15" y="45.6" width="4.5" height="9.4" rx="1" fill="url(#ba-silver)" stroke="#5d6877" stroke-width=".8"/>` +
-    // barrel, joints, bell
-    `<rect x="25" y="44.4" width="11" height="11.2" rx="2" fill="url(#ba-ebony)" stroke="#0c0e12" stroke-width="1"/>` +
-    `<rect x="36" y="45.4" width="88" height="9.2" fill="url(#ba-ebony)" stroke="#0c0e12" stroke-width="1"/>` +
-    `<path d="M 124 45.2 C 138 45.2 146 42 153 36 L 153 64 C 146 58 138 54.8 124 54.8 Z" fill="url(#ba-ebony)" stroke="#0c0e12" stroke-width="1" stroke-linejoin="round"/>` +
-    `<ellipse cx="153" cy="50" rx="3" ry="14" fill="#07080b" stroke="url(#ba-silver)" stroke-width="1.6"/>` +
-    [[24, 12.4], [35, 12.4], [80, 11.4], [123, 11.6]].map(([x, h]) => `<rect x="${x}" y="${50 - h / 2}" width="2.6" height="${h}" rx=".8" fill="url(#ba-silver)" stroke="#5d6877" stroke-width=".7"/>`).join("") +
-    // key rods, ring keys and lever keys
-    `<path d="M 40 45.6 H 120" stroke="#c3cbd5" stroke-width="1.3"/>` +
-    [46, 55, 64, 90, 99, 108].map(x => `<circle cx="${x}" cy="50" r="2.9" fill="#0c0e12" stroke="url(#ba-silver)" stroke-width="1.5"/>`).join("") +
-    [[72, 3], [116, 4]].map(([x, w]) => `<rect x="${x}" y="47" width="${w + 3}" height="6" rx="2" fill="url(#ba-silver)" stroke="#5d6877" stroke-width=".8"/>`).join("") +
-    `</g>`,
-
-  recorder: shadow(80, 52) +
-    `<g transform="rotate(30 80 50)">` +
-    // head joint with the beak, window and windway
-    `<path d="M 12 45 Q 9 45.5 9 49 L 9 52 Q 10 56 14 56.5 L 44 57 L 44 43 Z" fill="url(#ba-wood)" stroke="#7a4a1f" stroke-width="1.1" stroke-linejoin="round"/>` +
-    `<path d="M 9.5 48.6 H 14" stroke="#5a3412" stroke-width="1.3" stroke-linecap="round"/>` +
-    `<path d="M 28 43.6 L 35 43.4 L 34.2 47.6 L 28.6 47.8 Z" fill="#4a2a0e"/>` +
-    // body and foot
-    `<path d="M 44 44.2 L 124 45 L 124 55 L 44 55.8 Z" fill="url(#ba-wood)" stroke="#7a4a1f" stroke-width="1.1"/>` +
-    `<path d="M 124 44 C 136 44 144 43 151 41.5 L 151 58.5 C 144 57 136 56 124 56 Z" fill="url(#ba-wood)" stroke="#7a4a1f" stroke-width="1.1" stroke-linejoin="round"/>` +
-    `<ellipse cx="151" cy="50" rx="2" ry="8.5" fill="#5a3412"/>` +
-    [[42, 15], [122, 12.6]].map(([x, h]) => `<rect x="${x}" y="${50 - h / 2}" width="4" height="${h}" rx="1.4" fill="#9a6230" stroke="#6a3c16" stroke-width=".8"/>`).join("") +
-    // finger holes
-    [58, 68, 78, 90, 100, 110].map(x => `<ellipse cx="${x}" cy="48.6" rx="2.2" ry="1.9" fill="#4a2a0e"/>`).join("") +
-    `<ellipse cx="136" cy="48" rx="1.5" ry="1.3" fill="#4a2a0e"/><ellipse cx="140" cy="48" rx="1.5" ry="1.3" fill="#4a2a0e"/>` +
-    `</g>`
-};
-document.body.insertAdjacentHTML("afterbegin", INST_DEFS);
+// Instrument pictures: icons/inst/<id>.png (cut from the picture sheet the teacher chose).
+const instPic = id => `icons/inst/${id}.png`;
 const instName = id => T(id);
 
 const TILES = { "ramzor.html": "ramzor", "balloon-breath.html": "breath", "buzz-along.html": "buzz", "sound-game.html": "long",
@@ -604,7 +474,7 @@ function fillTiles() {
 function fillMe() {
   let inst = "trumpet";
   try { const s = localStorage.getItem("brass-inst"); if (INSTRUMENTS.some(i => i.id === s && i.ready)) inst = s; } catch (_) {}
-  $("meIcon").innerHTML = ICONS[inst];
+  $("meIcon").src = instPic(inst);
   $("meInst").textContent = instName(inst);
   $("meLang").textContent = T("langName");
 }
@@ -627,7 +497,7 @@ function showSetup(step) {
     INSTRUMENTS.forEach(i => {
       const b = document.createElement("button");
       b.className = "inst";
-      b.innerHTML = `<svg viewBox="0 0 160 100" aria-hidden="true">${ICONS[i.id]}</svg><span></span>` + (i.ready ? "" : `<span class="soon"></span>`);
+      b.innerHTML = `<img src="${instPic(i.id)}" alt="" width="104" height="104"><span></span>` + (i.ready ? "" : `<span class="soon"></span>`);
       b.children[1].textContent = instName(i.id);
       if (!i.ready) { b.disabled = true; b.querySelector(".soon").textContent = T("soon"); }
       b.setAttribute("aria-pressed", String(i.id === cur));
