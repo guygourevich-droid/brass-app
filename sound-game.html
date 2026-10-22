@@ -72,6 +72,12 @@
   kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  /* Pause: everything freezes behind one big symbol. */
+  .pause { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .78); cursor: pointer; z-index: 5; }
+  .pause[hidden] { display: none; }
+  .pause-box { text-align: center; }
+  .pause-icon { font-size: clamp(80px, 22vh, 220px); line-height: 1; color: #1a7fe2; }
+  .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
 </style>
 </head>
 <body>
@@ -88,6 +94,7 @@
     </div>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
+    <button id="pauseBtn" class="icon-btn" title="השהיה (Esc)">⏸</button>
     <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
   </header>
 
@@ -99,6 +106,7 @@
         <button class="big-btn" id="startBtn">התחלה</button>
       </div>
     </div>
+    <div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn">▶ ממשיכים</button></div></div>
     <div class="diag" id="diag" hidden></div>
   </main>
 
@@ -106,7 +114,7 @@
     <span class="turns" id="turns" aria-label="תורות"></span>
     <span class="count" id="counter">0</span>
     <span class="spacer"></span>
-    <span><kbd>Space</kbd> תור הבא · <kbd>1</kbd>–<kbd>5</kbd> שלב · <kbd>R</kbd> כיול · <kbd>D</kbd> מידע</span>
+    <span><kbd>Space</kbd> תור הבא · <kbd>Esc</kbd> השהיה · <kbd>1</kbd>–<kbd>5</kbd> שלב · <kbd>R</kbd> כיול · <kbd>D</kbd> מידע</span>
   </footer>
 </div>
 <script>
@@ -819,7 +827,15 @@ function toggleFullscreen() {
 /* ---------- Loop ---------- */
 
 let last = 0;
+let paused = false;
+// Pause (Esc or ⏸): the game freezes where it is; Esc, Space or a tap carries on.
+function setPaused(p) {
+  paused = p;
+  $("pauseBox").hidden = !p;
+  if (!p) { last = 0; state.soundOn = false; }
+}
 function frame(now) {
+  if (paused) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - (last || now)) / 1000);
   last = now;
   if (now - state.lastAnalyse > ANALYSE_MS) { state.lastAnalyse = now; analyse(); }
@@ -842,6 +858,8 @@ function frame(now) {
 LEVELS.forEach((_, i) => $("lv" + (i + 1)).addEventListener("click", () => setLevel(i + 1)));
 $("startBtn").addEventListener("click", startMic);
 $("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });  // the whole start screen is the button
+$("pauseBtn").addEventListener("click", () => setPaused(!paused));
+$("pauseBox").addEventListener("click", e => { e.stopPropagation(); setPaused(false); });
 $("fullscreen").addEventListener("click", toggleFullscreen);
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
 
@@ -850,6 +868,8 @@ document.addEventListener("keydown", e => {
   const t = e.target;
   if (t.tagName === "BUTTON" || t.tagName === "INPUT") return;
   const c = e.code;
+  if (c === "Escape") { setPaused(!paused); return; }
+  if (paused) { if (c === "Space" || c === "Enter") { e.preventDefault(); setPaused(false); } return; }
   if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); nextTurn(); }
   else if (/^Digit[1-5]$/.test(c)) setLevel(+c.slice(5));
   else if (c === "KeyR") { state.noiseFloor = 0.002; }

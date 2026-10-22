@@ -61,6 +61,12 @@
   .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; background: var(--panel); border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
   .tip { font-size: clamp(15px, 2.2vh, 20px); color: var(--ink); }
   kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+  /* Pause: everything freezes behind one big symbol. */
+  .pause { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .78); cursor: pointer; z-index: 5; }
+  .pause[hidden] { display: none; }
+  .pause-box { text-align: center; }
+  .pause-icon { font-size: clamp(80px, 22vh, 220px); line-height: 1; color: #1a7fe2; }
+  .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
 </style>
 </head>
 <body>
@@ -81,19 +87,21 @@
     <span class="spacer"></span>
     <span class="mic" id="mic" hidden><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
     <button id="soundBtn" class="icon-btn" title="צלילים (M)" aria-pressed="true">🔔</button>
+    <button id="pauseBtn" class="icon-btn" title="השהיה (Esc)">⏸</button>
     <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
   </header>
 
   <main class="stage" id="stage">
     <svg class="scene" id="scene" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="בועת סבון ענקית"></svg>
     <div class="cue" aria-live="polite"><div class="cue-box"><span class="cue-word" id="cueWord"></span><span class="cue-count" id="cueCount"></span></div></div>
+    <div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn">▶ ממשיכים</button></div></div>
     <div class="diag" id="diag" hidden></div>
   </main>
 
   <footer class="transport">
     <span class="tip" id="tip"></span>
     <span class="spacer"></span>
-    <span><kbd>Space</kbd> נשימה · <kbd>Esc</kbd> עצירה · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>N</kbd> מתחילים מחדש</span>
+    <span><kbd>Space</kbd> נשימה · <kbd>Esc</kbd> השהיה · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>N</kbd> מתחילים מחדש</span>
   </footer>
 </div>
 <script>
@@ -409,7 +417,6 @@ const BUBBLE = {
       tx: slot[0], ty: slot[1], born: performance.now() / 1000, ph: rnd() * 6 });
     while (bubbles.length > SLOTS.length - 1) leaving.push(bubbles.shift());
   },
-  stop() { if (state.phase === "out") popAt(scene.growX, scene.growY, scene.growR); },
   clear() { bubbles.forEach(b => popAt(b.cx, b.cy, b.cr)); bubbles = []; scene.back.textContent = ""; }
 };
 
@@ -501,7 +508,6 @@ const DANDELION = {
     if (flowers.length >= FLOWER_SPOTS.length) { const old = flowers.shift(); old.node.remove(); }
     flowers.push({ node: yellowFlower(scene.back, spot[0], spot[1]), x: spot[0], y: spot[1], born: performance.now() / 1000 + 0.6 });
   },
-  stop() {},
   clear() { flowers = []; scene.back.textContent = ""; }
 };
 
@@ -518,11 +524,6 @@ function press() {
   $("tip").textContent = TIPS[state.tip % TIPS.length];
   setPhase("in");
   notes([392, 523.25]);
-}
-
-function stopBreath() {                              // Esc: the teacher stops a breath
-  WORLDS[state.world].stop();
-  if (state.phase === "in" || state.phase === "out") setPhase("idle");
 }
 
 function clearAll() {
@@ -595,7 +596,15 @@ function toggleFullscreen() {
 /* ---------- Loop ---------- */
 
 let last = 0;
+let paused = false;
+// Pause (Esc or ⏸): the game freezes where it is; Esc, Space or a tap carries on.
+function setPaused(p) {
+  paused = p;
+  $("pauseBox").hidden = !p;
+  if (!p) { last = 0; state.soundOn = false; }
+}
 function frame(now) {
+  if (paused) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - (last || now)) / 1000);
   last = now;
   if (now - state.lastAnalyse > ANALYSE_MS) { state.lastAnalyse = now; analyse(); }
@@ -618,6 +627,8 @@ LEVELS.forEach((_, i) => $("lv" + (i + 1)).addEventListener("click", () => setLe
 $("soundBtn").addEventListener("click", toggleSound);
 $("wBubble").addEventListener("click", () => setWorld("bubble"));
 $("wDandelion").addEventListener("click", () => setWorld("dandelion"));
+$("pauseBtn").addEventListener("click", () => setPaused(!paused));
+$("pauseBox").addEventListener("click", e => { e.stopPropagation(); setPaused(false); });
 $("fullscreen").addEventListener("click", toggleFullscreen);
 $("stage").addEventListener("click", press);                     // the whole picture is the button
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
@@ -627,8 +638,9 @@ document.addEventListener("keydown", e => {
   const t = e.target;
   if (t.tagName === "BUTTON" || t.tagName === "INPUT") return;
   const c = e.code;
+  if (c === "Escape") { setPaused(!paused); return; }
+  if (paused) { if (c === "Space" || c === "Enter") { e.preventDefault(); setPaused(false); } return; }
   if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight" || c === "ArrowLeft" || c === "PageUp") { e.preventDefault(); press(); }
-  else if (c === "Escape") stopBreath();
   else if (/^Digit[1-4]$/.test(c)) setLevel(+c.slice(5));
   else if (c === "KeyN") clearAll();
   else if (c === "KeyM") toggleSound();

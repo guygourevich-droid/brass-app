@@ -61,6 +61,12 @@
   .count { font-weight: 800; font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
   .tip { font-size: clamp(15px, 2.2vh, 20px); color: var(--ink); }
   kbd { font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+  /* Pause: everything freezes behind one big symbol. */
+  .pause { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .78); cursor: pointer; z-index: 5; }
+  .pause[hidden] { display: none; }
+  .pause-box { text-align: center; }
+  .pause-icon { font-size: clamp(80px, 22vh, 220px); line-height: 1; color: #1a7fe2; }
+  .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
 </style>
 </head>
 <body>
@@ -91,6 +97,7 @@
     <span class="spacer"></span>
     <span class="mic" id="micBox"><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
     <button id="tone" class="icon-btn" title="לשמוע את הזמזום (T)">🔊</button>
+    <button id="pauseBtn" class="icon-btn" title="השהיה (Esc)">⏸</button>
     <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
   </header>
 
@@ -103,6 +110,7 @@
       </div>
     </div>
     <button class="big-btn next-btn" id="nextBtn" hidden></button>
+    <div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn">▶ ממשיכים</button></div></div>
     <div class="diag" id="diag" hidden></div>
   </main>
 
@@ -110,7 +118,7 @@
     <span class="count" id="counter">0</span>
     <span class="tip" id="tip"></span>
     <span class="spacer"></span>
-    <span><kbd>T</kbd> לשמוע · <kbd>Space</kbd> הבא · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>R</kbd> כיול</span>
+    <span><kbd>T</kbd> לשמוע · <kbd>Space</kbd> הבא · <kbd>Esc</kbd> השהיה · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>R</kbd> כיול</span>
   </footer>
 </div>
 <script>
@@ -172,11 +180,11 @@ const SVGNS = "http://www.w3.org/2000/svg";
 
 // Concert pitch of a comfortable first mouthpiece buzz, and the sky's range around it (semitones).
 const INSTRUMENTS = {
-  trumpet:  { he: "חצוצרה", base: 349.23, lo: -4, hi: 9 },
-  trombone: { he: "טרומבון", base: 174.61, lo: -4, hi: 9 },
-  horn:     { he: "קרן",    base: 261.63, lo: -4, hi: 9 }
+  trumpet:  { he: "חצוצרה", base: 233.08, lo: -5, hi: 9 },   // written low C, sounding B♭3
+  trombone: { he: "טרומבון", base: 174.61, lo: -5, hi: 9 },   // F3
+  horn:     { he: "קרן",    base: 174.61, lo: -5, hi: 9 }    // written low C (below the staff), sounding F3
 };
-const TARGETS = [0, 2, 4, 5, 7, 3, -2];   // step 2/3 flowers, in semitones above the first buzz, in order
+const TARGETS = [0, 2, -2, 4, -3, 5, 7];  // step 2/3 flowers, in semitones from the first buzz: out a little, down and up
 const TIPS = ["הפומית נוגעת בעדינות בשפתיים", "מתחילים עם הלשון, אוויר יציב", "שואפים בנחת לפני כל זמזום", "השפתיים נחות בין זמזום לזמזום"];
 
 const IN_CENTS = 80, OUT_CENTS = 110;     // a beginner's buzz wobbles: a wide window, with hysteresis
@@ -864,7 +872,16 @@ function toggleFullscreen() {
 /* ---------- Loop ---------- */
 
 let last = 0, tipAt = 0;
+let paused = false;
+// Pause (Esc or ⏸): the game freezes where it is; Esc, Space or a tap carries on.
+function setPaused(p) {
+  paused = p;
+  $("pauseBox").hidden = !p;
+  if (!p) { last = 0; state.soundOn = false; }
+  else clearTimeout(modelTimer);
+}
 function frame(now) {
+  if (paused) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - (last || now)) / 1000);
   last = now;
   if (now - state.lastAnalyse > ANALYSE_MS) { state.lastAnalyse = now; analyse(); }
@@ -893,6 +910,8 @@ $("hold8").addEventListener("click", () => setHold(8));
 $("startBtn").addEventListener("click", e => { e.stopPropagation(); startMic(); });
 $("overlay").addEventListener("click", startMic);
 $("tone").addEventListener("click", playModel);
+$("pauseBtn").addEventListener("click", () => setPaused(!paused));
+$("pauseBox").addEventListener("click", e => { e.stopPropagation(); setPaused(false); });
 $("fullscreen").addEventListener("click", toggleFullscreen);
 $("nextBtn").addEventListener("click", next);
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
@@ -902,6 +921,8 @@ document.addEventListener("keydown", e => {
   const t = e.target;
   if (t.tagName === "BUTTON" || t.tagName === "INPUT") return;
   const c = e.code;
+  if (c === "Escape") { setPaused(!paused); return; }
+  if (paused) { if (c === "Space" || c === "Enter") { e.preventDefault(); setPaused(false); } return; }
   if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); next(); }
   else if (/^Digit[1-4]$/.test(c)) setStep(+c.slice(5));
   else if (c === "KeyT") playModel();
