@@ -189,6 +189,7 @@ const state = {
   level: 1, turns: 6, turn: 0, counter: 0,
   a: 0, phase: "idle", phaseT: 0, quietT: 0,      // seconds flown; idle / play / rest / won / home
   flightBest: 0, turnBest: 0,                     // the furthest place passed, this flight and this turn
+  bestSeconds: 0,                                 // endless: this turn's longest note
   listening: false, rms: 0, smoothRms: 0, freq: 0, clarity: 0,
   noiseFloor: 0.002, soundOn: false, lastHeard: 0, onsetSince: 0, onsetPitches: [],
   muteUntil: 0, lastAnalyse: 0
@@ -442,6 +443,9 @@ function buildScene() {
   }
   scene.trophies = el("g", {}, svg);        // endless: the places reached this turn, top corner
   scene.trophyCount = -1;
+  // Endless: seconds, big, top right. Counts up while flying; back home it shows this turn's longest note.
+  scene.seconds = el("text", { x: 960, y: 92, "text-anchor": "end", "font-size": 84, "font-weight": 900, fill: "#fff",
+    stroke: "#15181d", "stroke-width": 8, "paint-order": "stroke", style: "font-family: var(--display); font-variant-numeric: tabular-nums" }, svg);
 
   scene.puffLayer = el("g", {}, svg);
   const r = scene.rocket = el("g", {}, svg);
@@ -560,7 +564,7 @@ function update(dt) {
   const s = state, goal = LEVELS[s.level - 1];
   s.phaseT += dt;
   s.quietT = s.soundOn ? 0 : s.quietT + dt;
-  if (s.phase === "idle") { if (s.soundOn) setPhase("play"); }
+  if (s.phase === "idle") { if (s.soundOn) { setPhase("play"); s.a = ONSET_MS / 1000; } }   // the note began at its onset
   else if (s.phase === "play") {
     if (!s.soundOn) setPhase("rest");
     else {
@@ -644,6 +648,13 @@ function draw(dt) {
     lamp.setAttribute("stroke", lit ? "#e09b00" : s.a > 8 ? "#c7cfe8" : "#8aa0b8");
   });
 
+  if (goal === Infinity) {
+    if (s.phase === "play") s.bestSeconds = Math.max(s.bestSeconds, s.a);
+    const shown = s.phase === "play" || s.phase === "rest" ? s.a : s.bestSeconds;
+    scene.seconds.textContent = shown > 0 ? Math.floor(shown) + "″" : "";
+    scene.seconds.setAttribute("opacity", s.phase === "play" || s.phase === "idle" ? 1 : 0.6);
+  }
+
   // Endless: the places this child reached this turn stay in the top corner until the next turn.
   if (goal === Infinity && scene.trophyCount !== s.turnBest) {
     scene.trophyCount = s.turnBest;
@@ -698,7 +709,7 @@ function bump() {
 
 function setLevel(n) {
   state.level = n;
-  state.a = 0; state.flightBest = 0; state.turnBest = 0; setPhase("idle");
+  state.a = 0; state.flightBest = 0; state.turnBest = 0; state.bestSeconds = 0; setPhase("idle");
   LEVELS.forEach((_, i) => $("lv" + (i + 1)).setAttribute("aria-pressed", String(i + 1 === n)));
   try { localStorage.setItem("sound-game", JSON.stringify({ level: n })); } catch (_) {}
   buildScene();
@@ -712,7 +723,7 @@ function setTurns(n) {
 
 function nextTurn() {
   state.turn = (state.turn + 1) % state.turns;
-  state.a = 0; state.flightBest = 0; state.turnBest = 0; setPhase("idle");
+  state.a = 0; state.flightBest = 0; state.turnBest = 0; state.bestSeconds = 0; setPhase("idle");
   buildScene();
   setTurns(state.turns);
 }
