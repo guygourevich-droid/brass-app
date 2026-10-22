@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>סולם הקרן · Brass App</title>
+<title>סולם · Brass App</title>
 <meta name="theme-color" content="#bfe4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -85,6 +85,11 @@
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
+    <div class="seg" role="group" aria-label="כלי">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="false">חצוצרה</button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
+      <button id="inHorn" class="seg-btn" aria-pressed="true">קרן</button>
+    </div>
     <div class="seg" role="group" aria-label="מצב">
       <button id="modeExplore" class="seg-btn" aria-pressed="true">חופשי</button>
       <button id="modeAim" class="seg-btn" aria-pressed="false">🍌 בננה</button>
@@ -98,7 +103,7 @@
   </header>
 
   <main class="stage" id="stage">
-    <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="סולם הקרן"></svg>
+    <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="סולם הצלילים הפתוחים"></svg>
 
     <div class="overlay" id="overlay">
       <div>
@@ -205,35 +210,60 @@ const audioLine = () => {
 };
 
 
-/* ---------- Horn ladder ----------
-   The F horn with no valves: each rung is one partial of the open horn.
+/* ---------- The open-note ladder ----------
+   The instrument with no valves (trombone: 1st position): each rung is one partial, one open note.
    A monkey climbs to the rung the child is playing, so a slip to the next partial is seen as a jump.
-   Explore: the monkey just follows. Banana: one rung holds a banana, the app plays it on a real horn,
-   hold that rung and the monkey gets the banana. Nothing turns red; silence is waiting. */
+   Explore: the monkey just follows. Banana: one rung holds a banana, the app plays it on the real instrument,
+   hold that rung and the monkey gets the banana. Nothing turns red; silence is waiting.
+   Horn plays high in its series, where the partials sit close: a long ladder. Trumpet and trombone start
+   low, where they are far apart: a short ladder of a few rungs. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
+const hzOfMidi = m => 440 * Math.pow(2, (m - 69) / 12);
 
-const F1 = 440 * Math.pow(2, (29 - 69) / 12);   // concert F1, the open F horn's fundamental
-const TO_WRITTEN = 7;                            // horn in F reads a fifth above concert
-
-// Open-horn partials. `w` = written midi as the child reads it; `sample` = concert recording
-// (University of Iowa MIS, horn ff) and `off` = how many cents that recording measured off equal temperament.
-// The 11th partial sits between F and F♯ and is never played, so it is left out.
-const PARTIALS = [
-  { n: 2,  w: 48, sample: "F2",  off: -34 },
-  { n: 3,  w: 55, sample: "C3",  off: 5 },
-  { n: 4,  w: 60, sample: "F3",  off: 13 },
-  { n: 5,  w: 64, sample: "A3",  off: -14 },
-  { n: 6,  w: 67, sample: "C4",  off: -7 },
-  { n: 7,  w: 70, sample: "Eb4", off: 11 },
-  { n: 8,  w: 72, sample: "F4",  off: 14 },
-  { n: 9,  w: 74, sample: "G4",  off: 18 },
-  { n: 10, w: 76, sample: "A4",  off: 7 },
-  { n: 12, w: 79, sample: "C5",  off: 2 }
-];
-const LO_CHOICES = [2, 3, 4];
-const HI_CHOICES = [6, 7, 8, 9, 10, 12];
+// `fund` = the open instrument's fundamental (concert); `toWritten` = semitones from concert to what the child reads.
+// Partials: `w` = written midi; `sample` = a concert recording in sounds/<instrument>/ and `off` = how many cents
+// that recording measured off equal temperament. A rung with no recording of its own borrows the nearest one,
+// pitch-shifted. The horn's 11th partial sits between F and F♯ and is never played, so it is left out.
+const INSTRUMENTS = {
+  horn: {
+    fund: hzOfMidi(29), toWritten: 7,                // open F horn: F1
+    partials: [
+      { n: 2,  w: 48, sample: "F2",  off: -34 }, { n: 3,  w: 55, sample: "C3",  off: 5 },
+      { n: 4,  w: 60, sample: "F3",  off: 13 },  { n: 5,  w: 64, sample: "A3",  off: -14 },
+      { n: 6,  w: 67, sample: "C4",  off: -7 },  { n: 7,  w: 70, sample: "Eb4", off: 11 },
+      { n: 8,  w: 72, sample: "F4",  off: 14 },  { n: 9,  w: 74, sample: "G4",  off: 18 },
+      { n: 10, w: 76, sample: "A4",  off: 7 },   { n: 12, w: 79, sample: "C5",  off: 2 }
+    ],
+    lo: [2, 3, 4], hi: [6, 7, 8, 9, 10, 12], start: { lo: 3, hi: 8, targets: [4, 5, 6] }
+  },
+  trumpet: {
+    fund: hzOfMidi(46), toWritten: 2,                // open B♭ trumpet: B♭2
+    partials: [
+      { n: 2, w: 60, sample: "Bb3", off: -10 }, { n: 3, w: 67, sample: "F4", off: -3 },
+      { n: 4, w: 72, sample: "Bb4", off: 8 },   { n: 5, w: 76, sample: "Bb4", off: 8 },
+      { n: 6, w: 79, sample: "Bb4", off: 8 }
+    ],
+    lo: [2, 3], hi: [4, 5, 6], start: { lo: 2, hi: 5, targets: [2, 3, 4] }
+  },
+  trombone: {
+    fund: hzOfMidi(34), toWritten: 0,                // 1st position: B♭1
+    partials: [
+      { n: 2, w: 46, sample: "Bb2", off: -5 }, { n: 3, w: 53, sample: "F3", off: 2 },
+      { n: 4, w: 58, sample: "Bb3", off: 10 }, { n: 5, w: 62, sample: "Bb3", off: 10 },
+      { n: 6, w: 65, sample: "Bb3", off: 10 }
+    ],
+    lo: [2, 3], hi: [4, 5, 6], start: { lo: 2, hi: 5, targets: [2, 3, 4] }
+  }
+};
+let inst = "horn", PARTIALS, F1, TO_WRITTEN, LO_CHOICES, HI_CHOICES;
+function useInstrument(k) {
+  inst = k;
+  const I = INSTRUMENTS[k];
+  PARTIALS = I.partials; F1 = I.fund; TO_WRITTEN = I.toWritten; LO_CHOICES = I.lo; HI_CHOICES = I.hi;
+}
+useInstrument("horn");
 
 const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
 const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
@@ -285,16 +315,20 @@ const nearestPartial = hz => {
 
 function save() {
   try {
-    localStorage.setItem("horn-ladder", JSON.stringify({
+    localStorage.setItem(storeKey(), JSON.stringify({
       mode: state.mode, lo: state.lo, hi: state.hi, targets: state.targets, order: state.order, names: state.names,
       style: state.style, arrow: state.arrow, hold: state.hold, tol: state.tol, ref: state.ref, vol: state.vol
     }));
   } catch (_) {}
 }
 
+const storeKey = () => inst === "horn" ? "horn-ladder" : "horn-ladder-" + inst;
+
 function load() {
+  const st = INSTRUMENTS[inst].start;
+  state.lo = st.lo; state.hi = st.hi; state.targets = st.targets.slice();
   let s = null;
-  try { s = JSON.parse(localStorage.getItem("horn-ladder") || "null"); } catch (_) {}
+  try { s = JSON.parse(localStorage.getItem(storeKey()) || "null"); } catch (_) {}
   if (!s) return;
   if (s.mode === "aim" || s.mode === "explore") state.mode = s.mode;
   if (LO_CHOICES.includes(s.lo)) state.lo = s.lo;
@@ -336,11 +370,11 @@ function ensureCtx() {
 // The recorded horn notes. Fetched once; the service worker keeps them for offline use.
 function loadSamples() {
   ensureCtx();
-  return Promise.all(PARTIALS.map(p => buffers[p.sample] ? null :
-    fetch("sounds/horn/" + p.sample + ".m4a")
+  return Promise.all(PARTIALS.map(p => buffers[sampleKey(p)] ? null :
+    fetch("sounds/" + sampleKey(p) + ".m4a")
       .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(a => new Promise((ok, bad) => ctx.decodeAudioData(a, ok, bad)))
-      .then(b => { buffers[p.sample] = b; })
+      .then(b => { buffers[sampleKey(p)] = b; })
       .catch(() => {})));
 }
 
@@ -408,7 +442,7 @@ function startTestTone() {
     g.gain.value = 0.25;
     if (params.get("test") === "horn") {
       await loadSamples();
-      const p = partial(n), b = buffers[p.sample];
+      const p = partial(n), b = buffers[sampleKey(p)];
       testSrc = ctx.createBufferSource();
       testSrc.buffer = b;
       testSrc.loop = true; testSrc.loopStart = 0.4; testSrc.loopEnd = 1.5;
@@ -435,12 +469,18 @@ function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop())
 addEventListener("pagehide", stopMic);
 document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) { stopMic(); fail("נלחץ ונמשיך להקשיב"); } });
 
-const sampleHz = p => 440 * Math.pow(2, (p.w - TO_WRITTEN - 69 + p.off / 100) / 12);
+const sampleKey = p => inst + "/" + p.sample;
+// The recording's own pitch, from its name (e.g. "Bb4") and how far off it measured.
+const sampleHz = p => {
+  const [, l, acc, oct] = p.sample.match(/^([A-G])(b?)(\d)$/);
+  const midi = 12 * (+oct + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[l] - (acc ? 1 : 0);
+  return hzOfMidi(midi + p.off / 100);
+};
 
 // Play a rung on a real horn, tuned to where the open horn really sits (its partial, not the piano).
 function playReference(n) {
   if (typeof n !== "number") n = state.mode === "aim" ? state.target : (state.rung || state.target);
-  const c = ensureCtx(), p = partial(n), b = buffers[p.sample], t = c.currentTime + 0.03;
+  const c = ensureCtx(), p = partial(n), b = buffers[sampleKey(p)], t = c.currentTime + 0.03;
   const g = c.createGain();
   g.connect(c.destination);
   let dur;
@@ -921,6 +961,19 @@ function setMode(m) {
   if (m === "aim" && state.ref && state.listening) setTimeout(playReference, 250);
 }
 
+function setInstrument(k) {
+  if (!INSTRUMENTS[k]) return;
+  useInstrument(k);
+  try { localStorage.setItem("brass-inst", k); } catch (_) {}
+  for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === k));
+  load();
+  state.rung = null; state.heardN = null; state.holdProgress = 0;
+  fixTargets();
+  state.target = state.targets[0];
+  rebuild();
+  loadSamples();
+}
+
 function toggleSheet(show) {
   const open = show === undefined ? $("sheet").hidden : show;
   $("sheet").hidden = !open;
@@ -945,6 +998,7 @@ $("settings").addEventListener("click", () => toggleSheet());
 $("sheetDone").addEventListener("click", () => toggleSheet(false));
 $("fullscreen").addEventListener("click", toggleFullscreen);
 $("modeExplore").addEventListener("click", () => setMode("explore"));
+for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 $("modeAim").addEventListener("click", () => setMode("aim"));
 flag("namesOn", () => { state.names = true; });
 flag("namesOff", () => { state.names = false; });
@@ -980,6 +1034,12 @@ document.addEventListener("keydown", e => {
 });
 
 const params = new URLSearchParams(location.search);
+// The instrument: from the link, else the one this computer last used in any game; horn if none.
+let startInst = "horn";
+try { const saved = localStorage.getItem("brass-inst"); if (INSTRUMENTS[saved]) startInst = saved; } catch (_) {}
+if (INSTRUMENTS[params.get("inst")]) startInst = params.get("inst");
+useInstrument(startInst);
+for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === inst));
 load();
 fixTargets();
 state.target = state.targets[0];
