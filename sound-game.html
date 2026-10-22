@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>צליל · Brass App</title>
+<title>צליל ארוך · Brass App</title>
 <meta name="theme-color" content="#bfe4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,44 +15,40 @@
 <style>
   :root {
     --ink: #15181d;
-    --ink-2: #3b434e;
     --muted: #56616f;
     --line: rgba(21, 24, 29, .14);
     --panel: rgba(255, 255, 255, .92);
-    --sky-1: #bfe4ff;
-    --sky-2: #e8f4ff;
-    --sky-3: #fff4e3;
     --go: #1b8f58;
     --accent: #1a7fe2;
     --display: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
     color-scheme: light;
     font-synthesis: none;
   }
+  /* Each level flies further from home: day, deeper blue, dusk, night. The layers cross-fade. */
+  .sky { position: fixed; inset: 0; opacity: 0; transition: opacity .8s; }
+  #sky2 { background: linear-gradient(180deg, #7fb8ee 0%, #b9dbf8 55%, #e6f1fc 100%); }
+  #sky3 { background: linear-gradient(180deg, #5b5aa8 0%, #9b87c9 55%, #f3c6a6 100%); }
+  #sky4 { background: linear-gradient(180deg, #0c1638 0%, #1d2b5e 55%, #3b3f7a 100%); }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
-  body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 55%, var(--sky-3) 100%) fixed; overflow: hidden; }
-  button, select { font: inherit; color: inherit; }
+  body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e8f4ff 55%, #fff4e3 100%) fixed; overflow: hidden; }
+  button { font: inherit; color: inherit; }
   :focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); border-radius: 12px; }
 
-  .app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+  .app { position: relative; height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
 
-  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px clamp(12px, 3vw, 28px); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .console { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px clamp(12px, 3vw, 28px); background: var(--panel); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
   .console a { color: var(--muted); text-decoration: none; }
   .spacer { margin-inline-start: auto; }
-  .seg { display: inline-flex; background: var(--panel); border-radius: 999px; padding: 3px; gap: 2px; }
-  .seg-btn { border: 0; background: transparent; min-height: 38px; padding: 0 14px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 500; }
+  .seg { display: inline-flex; background: #eef2f7; border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg-btn { border: 0; background: transparent; min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
   .seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(21, 24, 29, .18); }
-  .icon-btn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; }
+  .icon-btn { background: #fff; border: 1px solid var(--line); border-radius: 10px; min-height: 44px; min-width: 44px; padding: 0 12px; cursor: pointer; }
   .mic-dot { width: 12px; height: 12px; border-radius: 50%; background: #c3ccd8; display: inline-block; vertical-align: -1px; }
   .mic-dot.on { background: var(--go); }
 
-  /* Stage */
-  .stage { position: relative; min-height: 0; padding: 1vh clamp(8px, 2vw, 24px) 0; }
-  .scene { width: 100%; height: 100%; display: block; direction: ltr; }
-
-  .headline { position: absolute; inset-inline: 0; top: 2vh; text-align: center; pointer-events: none; }
-  .target-name { font-weight: 900; font-size: clamp(32px, 9vh, 120px); line-height: 1; color: var(--ink); }
-  .target-name bdi { color: var(--muted); font-size: .45em; font-weight: 700; }
+  .stage { position: relative; min-height: 0; overflow: hidden; padding: 1vh clamp(8px, 2vw, 24px) 0; }
+  .scene { width: 100%; height: 100%; display: block; direction: ltr; overflow: visible; }
 
   /* Start / error overlay */
   .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, .82); text-align: center; padding: 4vh 6vw; }
@@ -64,7 +60,7 @@
   .diag { position: absolute; inset-inline-end: 10px; bottom: 10px; direction: rtl; text-align: right; background: rgba(13, 17, 23, .82); color: #d7e4f5; font-size: 13px; line-height: 1.6; padding: 8px 12px; border-radius: 10px; font-variant-numeric: tabular-nums; white-space: pre; }
   .diag[hidden] { display: none; }
 
-  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 8px clamp(12px, 3vw, 28px) 12px; background: var(--panel); border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
   .turns { display: inline-flex; gap: 8px; }
   .turn { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--accent); opacity: .45; }
   .turn.on { background: var(--accent); opacity: 1; }
@@ -75,28 +71,24 @@
 </style>
 </head>
 <body>
+<div class="sky" id="sky2"></div><div class="sky" id="sky3"></div><div class="sky" id="sky4"></div>
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
-    <div class="seg" role="group" aria-label="כלי">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true">חצוצרה</button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false">קרן</button>
-    </div>
     <div class="seg" role="group" aria-label="שלב">
-      <button id="lv1" class="seg-btn" aria-pressed="true">1</button>
-      <button id="lv2" class="seg-btn" aria-pressed="false">2</button>
-      <a id="lv3link" class="seg-btn" href="right-note.html" style="text-decoration:none;line-height:40px">צליל נכון ←</a>
+      <button id="lv1" class="seg-btn" aria-pressed="true" title="4 שניות · מעל העננים">☀️ 4</button>
+      <button id="lv2" class="seg-btn" aria-pressed="false" title="8 שניות · לוויין">🛰️ 8</button>
+      <button id="lv3" class="seg-btn" aria-pressed="false" title="12 שניות · ירח">🌙 12</button>
+      <button id="lv4" class="seg-btn" aria-pressed="false" title="16 שניות · שבתאי">🪐 16</button>
+      <button id="lv5" class="seg-btn" aria-pressed="false" title="כמה שאפשר">∞</button>
     </div>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
-    <button id="tone" class="icon-btn" title="לשמוע את הצליל (T)">🔊</button>
     <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
   </header>
 
   <main class="stage" id="stage">
-    <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="משחק הצליל"></svg>
-    <div class="headline"><div class="target-name" id="targetName"></div></div>
+    <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="חללית שטסה עם צליל ארוך"></svg>
     <div class="overlay" id="overlay">
       <div>
         <p id="overlayText">נלחץ ונתחיל להקשיב</p>
@@ -110,7 +102,7 @@
     <span class="turns" id="turns" aria-label="תורות"></span>
     <span class="count" id="counter">0</span>
     <span class="spacer"></span>
-    <span><kbd>Space</kbd> תור הבא · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> שלב · <kbd>T</kbd> צליל · <kbd>R</kbd> כיול · <kbd>D</kbd> מידע</span>
+    <span><kbd>Space</kbd> תור הבא · <kbd>1</kbd>–<kbd>5</kbd> שלב · <kbd>R</kbd> כיול · <kbd>D</kbd> מידע</span>
   </footer>
 </div>
 <script>
@@ -156,52 +148,50 @@ const audioLine = () => {
 };
 
 
-/* ---------- Sound game ----------
-   Level 1: any sound at all fills a balloon (no pitch).
-   Level 2: the bird mirrors the pitch, with no target and no score.
-   Level 3: one target note, a wide band, hold it and a balloon pops.
-   Silence is a waiting state, never a failure: nothing ever turns red and nothing falls. */
+/* ---------- Long note ----------
+   One long note flies a rocket up from the ground into space. The sky slowly turns from day to night and
+   it passes landmarks on the way: birds, a plane, clouds, a satellite, an astronaut, the Moon, Saturn...
+   Each level is how far the flight goes (4, 8, 12 or 16 seconds; the last level is as far as you can).
+   No pitch: any steady tone counts, so this works for every instrument. Each second lights a star.
+   When the note stops, the rocket waits a moment and floats back on a parachute: nothing falls, breaks
+   or turns red. Arriving celebrates once and waits there until the room is quiet. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
 
-// written = concert + toWritten. The child always sees the written note in their own clef.
-const INSTRUMENTS = {
-  trumpet:  { he: "חצוצרה", target: 349.23, written: 67, toWritten: 2, clef: "treble", name: "סוֹל", latin: "G", lo: 180, hi: 900 },
-  trombone: { he: "טרומבון", target: 174.61, written: 53, toWritten: 0, clef: "bass",   name: "פָה",  latin: "F", lo: 90,  hi: 500 },
-  horn:     { he: "קרן",    target: 261.63, written: 67, toWritten: 7, clef: "treble", name: "סוֹל", latin: "G", lo: 140, hi: 700 }
-};
+// Places with a face, passed every 4 seconds; a level ends at one of them.
+const CHECKS = [{ t: 4, kind: "sun" }, { t: 8, kind: "satellite" }, { t: 12, kind: "moon" }, { t: 16, kind: "saturn" },
+  { t: 20, kind: "mars" }, { t: 24, kind: "star" }];
+for (let t = 28; t <= 180; t += 4) CHECKS.push({ t, kind: "star" });
+const LEVELS = [4, 8, 12, 16, Infinity];   // seconds to the level's end; the last level never ends
+// Things on the way, by the second they are passed at, and which side of the rocket.
+const SIGHTS = [
+  [1, "bird", 270], [1.7, "bird", 760], [2.6, "plane", 250], [3.5, "cloud", 160], [3.9, "cloud", 860],
+  [4.4, "cloud", 330], [4.7, "cloud", 650], [6, "plane-far", 230], [6.8, "cloud-high", 800], [9.6, "astronaut", 240],
+  [10.8, "meteor", 760], [14, "asteroid", 250], [18, "comet", 250], [22, "ufo", 250]
+];
+for (let t = 26; t <= 180; t += 4) SIGHTS.push([t, ["asteroid", "comet", "ufo", "meteor"][(t / 4) % 4], 250]);
 
-// Bravura (SMuFL): font-size = 4 staff spaces, every symbol sits on its reference line.
-const GLYPH = { gClef: "\uE050", fClef: "\uE062", flat: "\uE260", sharp: "\uE262", head: "\uE0A4", headOpen: "\uE0A3" };
-const MUSIC_FONT = "font-family: Bravura";
-const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
-const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
-const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
-
-// A written midi note -> the nearest line or space, plus any accidental and how far off it is.
-function spell(midi) {
-  const pc = ((Math.round(midi) % 12) + 12) % 12;
-  let octave = Math.floor(Math.round(midi) / 12) - 1;
-  let step = 0, alter = 0;
-  for (let i = 6; i >= 0; i--) if (SEMITONE[i] <= pc) { step = i; alter = pc - SEMITONE[i]; break; }
-  // Brass reads flats: B♭ and E♭, never A♯ or D♯.
-  if (alter > 0) { step = (step + 1) % 7; alter = -1; if (step === 0) octave += 1; }      // prefer a flat over a double sharp
-  return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
-}
-const diatonicOf = sp => sp.octave * 7 + sp.step;
-
-const HOLD_SECONDS = 3;         // level 3: hold the right note this long for the reward
-const GOAL_SECONDS = [2, 3, 4]; // level 1: the three marks on the way up
-const IN_CENTS = 50, OUT_CENTS = 65;  // hysteresis, so a wobble does not reset the ring
-const GATE_DB = 12;             // decibels above the rolling noise floor
+const RX = 500, PAD_Y = 505, NOSE = 136;    // the rocket's x, its base at home, base to nose (scaled)
+const SPEED = 90, CRUISE_Y = 380;           // px per second of note; where the rocket stays once flying
+const LAMP_X = 70, LAMP_TOP = 130, LAMP_BOTTOM = 480;   // one star per second, bottom to top
+const F_LO = 80, F_HI = 1000;   // any wind or brass beginner's note, in concert Hz
+const GATE_DB = 12;             // a note starts this many decibels above the room's noise floor...
+const HOLD_DB = 6;              // ...and keeps going down to here (iPad voice mode fades a long note)
+const ONSET_MS = 250;           // a steady tone this long counts as a sound: talk, claps and breath do not
+const ONSET_SPREAD = 150;       // cents the pitch may wander during that onset
+const GAP_MS = 300;             // a dropout shorter than this is still the same note
+const PAUSE_S = 0.3;            // after the note stops, wait this long before floating back
+const WON_MIN_S = 3;            // the celebration lasts at least this long, then waits for silence
 const ANALYSE_MS = 50;
 
 const state = {
-  inst: "trumpet", level: 1, turns: 6, turn: 0, counter: 0,
-  listening: false, level1Held: 0, holdProgress: 0, inBand: false,
-  rms: 0, smoothRms: 0, cents: null, smoothCents: 0, freq: 0, clarity: 0,
-  noiseFloor: 0.002, soundOn: false, soundSince: 0, muteUntil: 0, lastAnalyse: 0, trail: []
+  level: 1, turns: 6, turn: 0, counter: 0,
+  a: 0, phase: "idle", phaseT: 0, quietT: 0,      // seconds flown; idle / play / rest / won / home
+  flightBest: 0, turnBest: 0,                     // the furthest place passed, this flight and this turn
+  listening: false, rms: 0, smoothRms: 0, freq: 0, clarity: 0,
+  noiseFloor: 0.002, soundOn: false, lastHeard: 0, onsetSince: 0, onsetPitches: [],
+  muteUntil: 0, lastAnalyse: 0
 };
 
 /* ---------- Audio ---------- */
@@ -260,32 +250,30 @@ async function startMic() {
   });
 }
 
-// Test hook: feed a known tone straight into the analyser so detection can be checked without a microphone.
-// ?test=1 plays the target; ?test=1&cents=100 plays a semitone above; ?test=harm plays harmonics 2-5 only.
+// Test hook: a tone straight into the analyser, so the game can be checked without a microphone.
+// ?test=1 starts silent. Console: testSound(0.25) plays, testSound(0.02) quietly, testSound(0) stops;
+// testNoise(0.1) adds hiss (must not count as a note).
 function startTestTone() {
-  const q = new URLSearchParams(location.search);
-  const I = INSTRUMENTS[state.inst];
-  const hz = I.target * Math.pow(2, (+(q.get("cents") || 0)) / 1200);
   analyser = ctx.createAnalyser();
   analyser.fftSize = 8192;
   analyser.smoothingTimeConstant = 0;
-  const g = ctx.createGain();
-  g.gain.value = 0.25;
-  const partials = q.get("test") === "harm" ? [2, 3, 4, 5] : [1];
-  for (const n of partials) {
-    const o = ctx.createOscillator();
-    o.type = "sine";
-    o.frequency.value = hz * n;
-    o.connect(g);
-    o.start();
-  }
-  g.connect(analyser);
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.value = 349.23;
+  g.gain.value = 0;
+  o.connect(g); g.connect(analyser); o.start();
+  const hiss = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), hd = hiss.getChannelData(0);
+  for (let i = 0; i < hd.length; i++) hd[i] = Math.random() * 2 - 1;
+  const ns = ctx.createBufferSource(), ng = ctx.createGain();
+  ns.buffer = hiss; ns.loop = true; ng.gain.value = 0;
+  ns.connect(ng); ng.connect(analyser); ns.start();
+  window.testSound = v => g.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
+  window.testNoise = v => ng.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
   raw = new Float32Array(analyser.fftSize);
   state.listening = true;
   state.noiseFloor = 0.00001;
   $("overlay").hidden = true;
   $("micDot").classList.add("on");
-  $("micText").textContent = "בדיקה " + hz.toFixed(1) + " Hz";
+  $("micText").textContent = "בדיקה";
 }
 
 function fail(message) {
@@ -306,22 +294,7 @@ function stopMic() {
 addEventListener("pagehide", stopMic);
 document.addEventListener("visibilitychange", () => { if (document.hidden) stopMic(); });
 
-// The reference tone must never be heard as the child: the detector is muted while it sounds.
-function playReference() {
-  const c = ensureCtx(), t = c.currentTime + 0.05, hz = INSTRUMENTS[state.inst].target;
-  const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
-  o.type = "sawtooth"; o.frequency.value = hz;
-  f.type = "lowpass"; f.frequency.value = Math.min(5000, hz * 6); f.Q.value = 1;
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.16, t + 0.05);
-  g.gain.setValueAtTime(0.16, t + 1.1);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-  o.connect(f); f.connect(g); g.connect(c.destination);
-  o.start(t); o.stop(t + 1.5);
-  state.muteUntil = performance.now() + 1900;
-}
-
-/* ---------- Pitch detection (McLeod-style, on a decimated signal) ---------- */
+/* ---------- Is a note sounding? ---------- */
 
 function analyse() {
   if (!state.listening || !analyser) return;
@@ -336,35 +309,45 @@ function analyse() {
     else if (performance.now() - state.zeroSince > 3000) $("micText").textContent = "אין קול מהמיקרופון";
   } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = "מקשיב"; }
 
-  // Track the quietest recent level as the room's noise floor; AGC moves it around.
-  state.noiseFloor = state.rms < state.noiseFloor ? state.rms * 0.2 + state.noiseFloor * 0.8 : state.noiseFloor * 0.999 + state.rms * 0.001;
+  const now = performance.now(), muted = now < state.muteUntil;
   const gate = Math.max(state.noiseFloor * Math.pow(10, GATE_DB / 20), 0.0015);
-  const muted = performance.now() < state.muteUntil;
-  const sounding = state.rms > gate && !muted;
+  const holdGate = Math.max(state.noiseFloor * Math.pow(10, HOLD_DB / 20), 0.001);
 
-  if (sounding && !state.soundOn) { state.soundOn = true; state.soundSince = performance.now(); bump(); }
-  else if (!sounding && state.soundOn) { state.soundOn = false; }
+  // Only a tone counts (a clear pitch), so talk, claps, chairs and breathing into the mic do not.
+  let got = null;
+  if (!muted && state.rms > holdGate) {
+    // Decimate to about 8 kHz: cheaper, and the averaging removes the breath noise that ruins detection.
+    const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+    if (!deci || deci.length !== n) deci = new Float32Array(n);
+    for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
+    got = detect(deci, sr2, F_LO, F_HI);
+    if (got && got.clarity < 0.6) got = null;
+  }
+  state.freq = got ? got.freq : 0;
+  state.clarity = got ? got.clarity : 0;
 
-  if (!sounding || state.level === 1) { state.cents = null; state.clarity = 0; return; }
-  if (performance.now() - state.soundSince < 250) return;   // beginner attacks are a splat; ignore them
+  if (!state.soundOn) {
+    // A new note: loud enough and steady in pitch for ONSET_MS.
+    if (got && state.rms > gate) {
+      if (!state.onsetSince) { state.onsetSince = now; state.onsetPitches = []; }
+      state.onsetPitches.push(1200 * Math.log2(got.freq / 440));
+      const spread = Math.max(...state.onsetPitches) - Math.min(...state.onsetPitches);
+      if (spread > ONSET_SPREAD) { state.onsetSince = now; state.onsetPitches = [state.onsetPitches.pop()]; }
+      else if (now - state.onsetSince >= ONSET_MS) {
+        state.soundOn = true; state.lastHeard = now; state.onsetSince = 0;
+        bump();
+      }
+    } else state.onsetSince = 0;
+  } else if (got || muted) state.lastHeard = now;       // our own chime is not the note ending
+  else if (now - state.lastHeard > GAP_MS) state.soundOn = false;
 
-  // Decimate to about 8 kHz: cheaper, and the averaging removes the breath noise that ruins detection.
-  const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
-  if (!deci || deci.length !== n) deci = new Float32Array(n);
-  for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
-
-  const I = INSTRUMENTS[state.inst];
-  let fMin, fMax;
-  // Level 3 must be able to show the note they really played, so it listens across the whole range.
-  fMin = I.lo; fMax = I.hi;
-
-  const got = detect(deci, sr2, fMin, fMax);
-  if (!got) { state.clarity = 0; return; }
-  state.freq = got.freq;
-  state.clarity = got.clarity;
-  state.cents = 1200 * Math.log2(got.freq / I.target);
+  // The room's noise floor follows the quietest recent level (iPad volume control moves it around),
+  // but never while a note is sounding: a long tone would otherwise slowly become "background".
+  if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
+  else if (!state.soundOn && !got) state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
 }
 
+// McLeod-style pitch: the first strong peak of the normalised autocorrelation.
 function detect(buf, sampleRate, fMin, fMax) {
   const n = buf.length;
   const minLag = Math.max(2, Math.floor(sampleRate / fMax));
@@ -400,191 +383,292 @@ const el = (tag, attrs, parent) => {
   if (parent) parent.appendChild(n);
   return n;
 };
+const clamp01 = v => Math.max(0, Math.min(1, v));
+// World height of the second t: the rocket's nose is level with it after t seconds of note.
+const worldY = t => PAD_Y - NOSE - t * SPEED;
+const camera = () => Math.max(0, state.a * SPEED - (PAD_Y - CRUISE_Y));
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const SKY = Array.from({ length: 40 }, (_, i) => ({ x: rnd() * 1000, y: rnd() * 640, r: 1.5 + (i % 3) * 1.5 }));
+const starPath = (r, inner) => {
+  let d = "";
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * inner : r;
+    d += (i ? " L " : "M ") + (Math.cos(a) * rr).toFixed(1) + " " + (Math.sin(a) * rr).toFixed(1);
+  }
+  return d + " Z";
+};
 
-const VW = 1000, VH = 620, TOP = 90, BOTTOM = 500;   // the scene never uses the bottom of the screen
 let scene = {};
 
 function buildScene() {
-  const svg = $("scene");
+  const svg = $("scene"), goal = LEVELS[state.level - 1];
   svg.textContent = "";
-  scene = {};
-  const defs = el("defs", {}, svg);
-  const hatch = el("pattern", { id: "hatch", width: 16, height: 16, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
-  el("rect", { width: 16, height: 16, fill: "#2fa36b", opacity: .13 }, hatch);
-  el("line", { x1: 0, y1: 0, x2: 0, y2: 16, stroke: "#2fa36b", "stroke-width": 5, opacity: .22 }, hatch);
+  scene = { puffs: [], lastPuff: 0, things: [] };
 
-  if (state.level === 1) {
-    scene.goalMarks = GOAL_SECONDS.map((s, i) => {
-      const y = BOTTOM - (BOTTOM - TOP) * (s / GOAL_SECONDS[GOAL_SECONDS.length - 1]);
-      const g = el("g", {}, svg);
-      el("line", { x1: 300, x2: 700, y1: y, y2: y, stroke: "#9fb6cc", "stroke-width": 3, "stroke-dasharray": "14 12" }, g);
-      const t = el("text", { x: 724, y: y + 12, "font-size": 34, "font-weight": 700, fill: "#6b7a8c", style: "font-family: var(--display)" }, g);
-      t.textContent = s;
-      return { y, g };
-    });
-    scene.balloon = el("g", {}, svg);
-    el("path", { d: "M 0 -120 C 62 -120 100 -74 100 -26 C 100 20 48 54 12 64 L -12 64 C -48 54 -100 20 -100 -26 C -100 -74 -62 -120 0 -120 Z", fill: "#ff6f59" }, scene.balloon);
-    el("ellipse", { cx: -44, cy: -72, rx: 16, ry: 32, transform: "rotate(-24 -44 -72)", fill: "#fff", opacity: .45 }, scene.balloon);
-    el("path", { d: "M -13 62 L 13 62 L 6 82 L -6 82 Z", fill: "#c9392a" }, scene.balloon);
-    return;
+  scene.sky = el("g", {}, svg);
+  SKY.forEach(st => el("circle", { cx: st.x, cy: st.y, r: st.r, fill: "#fff6d0", opacity: 0 }, scene.sky));
+
+  // The world scrolls down past the rocket: ground, then sights and places higher and higher.
+  const w = scene.world = el("g", {}, svg);
+  el("path", { d: `M -700 ${PAD_Y + 14} C 0 ${PAD_Y - 6} 300 ${PAD_Y + 4} 500 ${PAD_Y + 14} S 1200 ${PAD_Y - 10} 1700 ${PAD_Y + 10} L 1700 ${PAD_Y + 400} L -700 ${PAD_Y + 400} Z`, fill: "#7cc77a" }, w);
+  house(w, 170, PAD_Y + 10); tree(w, 300, PAD_Y + 12, 1); tree(w, 720, PAD_Y + 12, 1.2); tree(w, 860, PAD_Y + 10, .9); house(w, 960, PAD_Y + 12, .8);
+  el("rect", { x: RX - 80, y: PAD_Y, width: 160, height: 14, rx: 7, fill: "#8a97a8" }, w);
+
+  for (const [t, kind, x] of SIGHTS) {
+    if (t > goal + 3) break;
+    scene.things.push(Object.assign(thing(w, kind, x, worldY(t)), { t, kind, x, y: worldY(t) }));
+  }
+  scene.checks = [];
+  for (const c of CHECKS) {
+    if (c.t > goal) break;
+    const x = 760, y = worldY(c.t), last = c.t === goal;
+    if (last) {   // the end of this level: a golden line across, under a flag
+      el("line", { x1: 120, x2: 900, y1: y + 40, y2: y + 40, stroke: "#f2b705", "stroke-width": 6, "stroke-dasharray": "18 14", "stroke-linecap": "round" }, w);
+    }
+    scene.checks.push(Object.assign(thing(w, c.kind, x, y, last ? 1 : .8), { t: c.t, kind: c.kind, x, y }));
   }
 
-  if (state.level === 3) {
-    buildStaff(svg);
-    return;
+  // One star per second of the level, lit as the rocket goes (not in the endless level).
+  scene.lamps = [];
+  if (goal !== Infinity) {
+    const n = goal, step = (LAMP_BOTTOM - LAMP_TOP) / Math.max(1, n - 1), zig = n > 6 ? 18 : 0;
+    const size = Math.min(22, zig ? step * 0.7 : step * 0.4);
+    for (let i = 0; i < n; i++) {
+      const y = LAMP_BOTTOM - i * step, x = LAMP_X + (i % 2 ? zig : -zig);
+      scene.lamps.push(el("path", { d: starPath(size, 0.45), transform: `translate(${x} ${y.toFixed(1)})`,
+        fill: "none", stroke: "#8aa0b8", "stroke-width": 3, "stroke-linejoin": "round" }, svg));
+    }
   }
+  scene.trophies = el("g", {}, svg);        // endless: the places reached this turn, top corner
+  scene.trophyCount = -1;
 
-  scene.trail = el("path", { fill: "none", stroke: "#1a7fe2", "stroke-width": 6, "stroke-linecap": "round", opacity: .3 }, svg);
-  scene.bird = el("g", {}, svg);
-  scene.ring = el("circle", { r: 74, fill: "none", stroke: "#2fa36b", "stroke-width": 14, "stroke-linecap": "round",
-    "stroke-dasharray": 465, "stroke-dashoffset": 465, transform: "rotate(-90)", opacity: 0 }, scene.bird);
-  el("ellipse", { rx: 54, ry: 40, fill: "#f2b705" }, scene.bird);
-  scene.wing = el("path", { d: "M -10 -6 C -46 -42 -76 -30 -74 -6 C -52 2 -26 6 -10 -6 Z", fill: "#e09b00" }, scene.bird);
-  el("circle", { cx: 26, cy: -12, r: 7, fill: "#15181d" }, scene.bird);
-  el("path", { d: "M 52 -4 L 82 4 L 52 12 Z", fill: "#e2641f" }, scene.bird);
+  scene.puffLayer = el("g", {}, svg);
+  const r = scene.rocket = el("g", {}, svg);
+  scene.chute = el("g", { opacity: 0 }, r);
+  el("line", { x1: -86, y1: -252, x2: -22, y2: -150, stroke: "#56616f", "stroke-width": 3 }, scene.chute);
+  el("line", { x1: 86, y1: -252, x2: 22, y2: -150, stroke: "#56616f", "stroke-width": 3 }, scene.chute);
+  el("path", { d: "M -92 -250 Q 0 -350 92 -250 Q 46 -268 0 -250 Q -46 -268 -92 -250 Z", fill: "#2fa36b" }, scene.chute);
+  el("path", { d: "M 0 -318 L 0 -252", stroke: "#fff", "stroke-width": 4, opacity: .5 }, scene.chute);
+  scene.flame = el("g", {}, r);
+  el("path", { d: "M -21 -8 Q -28 34 0 86 Q 28 34 21 -8 Z", fill: "#ff9f1c" }, scene.flame);
+  el("path", { d: "M -11 -8 Q -14 22 0 52 Q 14 22 11 -8 Z", fill: "#fff1a8" }, scene.flame);
+  el("path", { d: "M -40 -62 L -74 -12 L -74 6 L -40 -22 Z", fill: "#ff6f59" }, r);
+  el("path", { d: "M 40 -62 L 74 -12 L 74 6 L 40 -22 Z", fill: "#ff6f59" }, r);
+  el("rect", { x: -22, y: -24, width: 44, height: 16, rx: 3, fill: "#6b7a8c" }, r);
+  el("path", { d: "M 0 -170 C 42 -132 48 -72 40 -22 L -40 -22 C -48 -72 -42 -132 0 -170 Z", fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3 }, r);
+  el("path", { d: "M 0 -170 C 22 -152 32 -130 36 -112 L -36 -112 C -32 -130 -22 -152 0 -170 Z", fill: "#ff6f59" }, r);
+  el("circle", { cy: -76, r: 18, fill: "#8fd3ff", stroke: "#1a7fe2", "stroke-width": 6 }, r);
 }
 
-const S = 46, STAFF_X0 = 150, STAFF_X1 = 950, STAFF_TOP = 170;   // one staff space = S
-
-const staffY = diatonic => {
-  const bottom = INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;   // E4 or G2 on the bottom line
-  return STAFF_TOP + 4 * S - (diatonic - bottom) * S / 2;
-};
-
-function buildStaff(svg) {
-  const I = INSTRUMENTS[state.inst];
-  for (let i = 0; i < 5; i++)
-    el("line", { x1: STAFF_X0, x2: STAFF_X1, y1: STAFF_TOP + i * S, y2: STAFF_TOP + i * S, stroke: "#15181d", "stroke-width": Math.max(2, S * 0.1) }, svg);
-  const treble = I.clef === "treble";
-  el("text", { x: STAFF_X0 + 20, y: treble ? STAFF_TOP + 3 * S : STAFF_TOP + S, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, svg)
-    .textContent = treble ? GLYPH.gClef : GLYPH.fClef;
-
-  // The target: a hollow note the class is aiming at.
-  const tSpell = spell(I.written), tY = staffY(diatonicOf(tSpell));
-  scene.targetLedger = el("g", {}, svg);
-  ledgers(scene.targetLedger, 690, diatonicOf(tSpell));
-  scene.ring = el("circle", { cx: 716, cy: tY, r: 1.9 * S, fill: "none", stroke: "#2fa36b", "stroke-width": 12,
-    "stroke-linecap": "round", "stroke-dasharray": 2 * Math.PI * 1.9 * S, "stroke-dashoffset": 2 * Math.PI * 1.9 * S,
-    transform: `rotate(-90 716 ${tY})`, opacity: 0 }, svg);
-  scene.target = el("text", { x: 690, y: tY, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, svg);
-  scene.target.textContent = GLYPH.headOpen;
-
-  // Where the player actually is: a solid note that moves to whatever they play.
-  scene.playedG = el("g", { opacity: 0 }, svg);
-  scene.playedLedger = el("g", {}, svg);
-  scene.playedG.appendChild(scene.playedLedger);
-  scene.playedAcc = el("text", { "font-size": 4 * S, fill: "#1a7fe2", style: MUSIC_FONT }, scene.playedG);
-  scene.played = el("text", { "font-size": 4 * S, fill: "#1a7fe2", style: MUSIC_FONT }, scene.playedG);
-  scene.played.textContent = GLYPH.head;
-  scene.playedName = el("text", { "text-anchor": "middle", "font-size": 46, "font-weight": 800, fill: "#1a7fe2", style: "font-family: var(--display)", direction: "rtl" }, scene.playedG);
-  scene.arrow = el("path", { fill: "#1a7fe2", opacity: 0 }, svg);
-  scene.star = el("text", { x: 716, y: STAFF_TOP - 50, "text-anchor": "middle", "font-size": 90, opacity: 0 }, svg);
-  scene.star.textContent = "⭐";
+function house(p, x, y, s = 1) {
+  const g = el("g", { transform: `translate(${x} ${y}) scale(${s})` }, p);
+  el("rect", { x: -40, y: -60, width: 80, height: 60, fill: "#fff1dc" }, g);
+  el("path", { d: "M -50 -58 L 0 -100 L 50 -58 Z", fill: "#e2643a" }, g);
+  el("rect", { x: -10, y: -34, width: 20, height: 34, fill: "#a0663b" }, g);
+  el("rect", { x: 16, y: -48, width: 16, height: 14, fill: "#8fd3ff" }, g);
+}
+function tree(p, x, y, s) {
+  const g = el("g", { transform: `translate(${x} ${y}) scale(${s})` }, p);
+  el("rect", { x: -7, y: -40, width: 14, height: 40, fill: "#8a5a2b" }, g);
+  el("circle", { cy: -64, r: 34, fill: "#3f9e4d" }, g);
+  el("circle", { cx: -20, cy: -48, r: 22, fill: "#4fb35c" }, g);
 }
 
-function ledgers(group, x, diatonic) {
-  group.textContent = "";
-  const bottom = INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;
-  const pos = diatonic - bottom;                       // 0 = bottom line, 8 = top line
-  for (let q = -2; q >= pos; q -= 2) el("line", { x1: x - 18, x2: x + 1.9 * S + 18, y1: staffY(bottom + q), y2: staffY(bottom + q), stroke: "#15181d", "stroke-width": Math.max(2, S * 0.12) }, group);
-  for (let q = 10; q <= pos; q += 2) el("line", { x1: x - 18, x2: x + 1.9 * S + 18, y1: staffY(bottom + q), y2: staffY(bottom + q), stroke: "#15181d", "stroke-width": Math.max(2, S * 0.12) }, group);
+// Everything on the way. Places (sun, moon, planets, stars) have a face that smiles once passed.
+function thing(parent, kind, x, y, scale = 1) {
+  const g = el("g", { transform: `translate(${x} ${y}) scale(${scale})` }, parent);
+  const r = { g, mouth: null, spin: null, wing: null, scale };
+  const face = () => {
+    el("circle", { cx: -16, cy: -2, r: 5, fill: "#5a3f1c" }, g);
+    el("circle", { cx: 16, cy: -2, r: 5, fill: "#5a3f1c" }, g);
+    r.mouth = el("path", { d: "M -12 18 L 12 18", fill: "none", stroke: "#5a3f1c", "stroke-width": 5, "stroke-linecap": "round" }, g);
+  };
+  if (kind === "sun") {
+    r.spin = el("g", {}, g);
+    for (let i = 0; i < 12; i++) el("line", { x1: 0, y1: -66, x2: 0, y2: -88, stroke: "#f2b705", "stroke-width": 7, "stroke-linecap": "round", transform: `rotate(${i * 30})` }, r.spin);
+    el("circle", { r: 56, fill: "#ffd25a" }, g); face();
+  } else if (kind === "moon") {
+    el("circle", { r: 56, fill: "#ffe9a8", stroke: "#f2c94c", "stroke-width": 4 }, g);
+    el("circle", { cx: -30, cy: -24, r: 9, fill: "#f6d77c" }, g);
+    el("circle", { cx: 32, cy: -18, r: 6, fill: "#f6d77c" }, g);
+    el("circle", { cx: 30, cy: 32, r: 7, fill: "#f6d77c" }, g); face();
+  } else if (kind === "mars") {
+    el("circle", { r: 56, fill: "#e2643a" }, g);
+    el("path", { d: "M -52 -20 C -30 -34 -10 -18 10 -30 C 30 -42 44 -30 54 -22 L 52 -14 C 30 -24 18 -10 -4 -14 C -24 -18 -36 -6 -54 -10 Z", fill: "#c24e2a" }, g);
+    el("ellipse", { cx: -22, cy: -42, rx: 16, ry: 6, fill: "#fff", opacity: .55 }, g); face();
+  } else if (kind === "saturn") {
+    el("path", { d: "M -100 6 A 100 26 -12 0 1 100 -6", fill: "none", stroke: "#c99a45", "stroke-width": 10 }, g);
+    el("circle", { r: 50, fill: "#f2c46d" }, g);
+    el("path", { d: "M -44 24 Q 0 34 44 24 L 40 32 Q 0 42 -40 32 Z", fill: "#e0a94e" }, g);
+    el("path", { d: "M -100 6 A 100 26 -12 0 0 100 -6", fill: "none", stroke: "#d9ad5c", "stroke-width": 10 }, g); face();
+  } else if (kind === "star") {
+    el("circle", { r: 70, fill: "#ffe680", opacity: .3 }, g);
+    r.spin = el("path", { d: starPath(62, 0.5), fill: "#ffd25a", stroke: "#f2b705", "stroke-width": 4, "stroke-linejoin": "round" }, g); face();
+  } else if (kind === "satellite") {
+    r.spin = el("g", {}, g);
+    el("rect", { x: -110, y: -16, width: 70, height: 32, fill: "#1a7fe2", stroke: "#cfe3f7", "stroke-width": 3 }, r.spin);
+    el("rect", { x: 40, y: -16, width: 70, height: 32, fill: "#1a7fe2", stroke: "#cfe3f7", "stroke-width": 3 }, r.spin);
+    el("rect", { x: -40, y: -4, width: 80, height: 8, fill: "#8a97a8" }, r.spin);
+    el("rect", { x: -26, y: -30, width: 52, height: 60, rx: 8, fill: "#d9dee6", stroke: "#8a97a8", "stroke-width": 3 }, r.spin);
+    el("circle", { cy: -44, r: 12, fill: "none", stroke: "#8a97a8", "stroke-width": 4 }, r.spin);
+    face();
+  } else if (kind === "bird") {
+    el("ellipse", { rx: 26, ry: 16, fill: "#56616f" }, g);
+    el("circle", { cx: -24, cy: -8, r: 11, fill: "#56616f" }, g);
+    el("path", { d: "M -34 -8 L -46 -4 L -34 -2 Z", fill: "#f2b705" }, g);
+    r.wing = el("path", { d: "M -6 -4 C 0 -40 24 -44 30 -34 C 18 -26 12 -14 6 -2 Z", fill: "#3b434e" }, g);
+  } else if (kind === "plane" || kind === "plane-far") {
+    if (kind === "plane-far") g.setAttribute("transform", `translate(${x} ${y}) scale(.6)`);
+    el("path", { d: "M -90 0 C -90 -14 -70 -18 -40 -18 L 70 -18 C 90 -18 100 -8 100 0 C 100 8 90 12 70 12 L -70 12 C -86 12 -90 8 -90 0 Z", fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3 }, g);
+    el("path", { d: "M -10 -2 L -40 40 L -20 40 L 30 -2 Z", fill: "#1a7fe2" }, g);
+    el("path", { d: "M -84 -10 L -100 -46 L -80 -46 L -60 -14 Z", fill: "#ff6f59" }, g);
+    for (let i = 0; i < 5; i++) el("circle", { cx: -30 + i * 20, cy: -6, r: 5, fill: "#8fd3ff" }, g);
+  } else if (kind === "cloud" || kind === "cloud-high") {
+    const c = el("g", { opacity: kind === "cloud" ? .95 : .55, transform: kind === "cloud" ? "scale(1.3)" : "scale(1.5 .7)" }, g);
+    [[-50, 8, 34], [-10, -10, 44], [40, 6, 34], [0, 18, 36]].forEach(([cx, cy, rr]) => el("circle", { cx, cy, r: rr, fill: "#fff" }, c));
+  } else if (kind === "astronaut") {
+    r.spin = el("g", {}, g);
+    el("rect", { x: -26, y: -10, width: 52, height: 60, rx: 18, fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3 }, r.spin);
+    el("rect", { x: -44, y: -2, width: 20, height: 40, rx: 10, fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3, transform: "rotate(30 -34 0)" }, r.spin);
+    el("rect", { x: 24, y: -2, width: 20, height: 40, rx: 10, fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3, transform: "rotate(-40 34 0)" }, r.spin);
+    el("circle", { cy: -34, r: 30, fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3 }, r.spin);
+    el("ellipse", { cy: -34, rx: 20, ry: 15, fill: "#3b434e" }, r.spin);
+    el("ellipse", { cx: -7, cy: -39, rx: 6, ry: 4, fill: "#fff", opacity: .6 }, r.spin);
+  } else if (kind === "meteor" || kind === "comet") {
+    const big = kind === "comet";
+    el("path", { d: big ? "M 0 -24 L 170 -60 L 190 -40 L 0 24 Z" : "M 0 -8 L 110 -40 L 116 -30 L 0 8 Z", fill: big ? "#8fd3ff" : "#fff1a8", opacity: .55 }, g);
+    el("circle", { r: big ? 26 : 12, fill: big ? "#cfe9ff" : "#ffd25a" }, g);
+  } else if (kind === "asteroid") {
+    el("path", { d: "M -40 -10 L -20 -38 L 18 -34 L 42 -6 L 30 30 L -8 38 L -38 20 Z", fill: "#8a7f74" }, g);
+    el("circle", { cx: -8, cy: -6, r: 8, fill: "#6f655c" }, g);
+    el("circle", { cx: 16, cy: 14, r: 6, fill: "#6f655c" }, g);
+  } else if (kind === "ufo") {
+    el("ellipse", { cy: -16, rx: 34, ry: 30, fill: "#cfe9ff", opacity: .9 }, g);
+    el("circle", { cy: -18, r: 14, fill: "#7ed957" }, g);
+    el("circle", { cx: -5, cy: -21, r: 3, fill: "#15181d" }, g);
+    el("circle", { cx: 5, cy: -21, r: 3, fill: "#15181d" }, g);
+    el("ellipse", { rx: 80, ry: 22, fill: "#9aa6b6" }, g);
+    [-50, -16, 18, 52].forEach(cx => el("circle", { cx, cy: 2, r: 6, fill: "#f2b705" }, g));
+  }
+  return r;
 }
 
-function pitchToY(cents) {
-  const span = state.level === 3 ? 350 : 1200;          // level 3 shows a 5th; level 2 an octave
-  const t = Math.max(-1, Math.min(1, cents / span));
-  return (TOP + BOTTOM) / 2 - t * ((BOTTOM - TOP) / 2);
+function setPhase(ph) { state.phase = ph; state.phaseT = 0; }
+
+function update(dt) {
+  const s = state, goal = LEVELS[s.level - 1];
+  s.phaseT += dt;
+  s.quietT = s.soundOn ? 0 : s.quietT + dt;
+  if (s.phase === "idle") { if (s.soundOn) setPhase("play"); }
+  else if (s.phase === "play") {
+    if (!s.soundOn) setPhase("rest");
+    else {
+      s.a = Math.min(goal, s.a + dt);
+      // Passing a place: a small cheer on the way, a big one at the level's end.
+      for (const c of scene.checks) if (!c.passed && s.a >= c.t) {
+        c.passed = true;
+        s.flightBest = Math.max(s.flightBest, c.t);
+        s.turnBest = Math.max(s.turnBest, c.t);
+        if (c.t === goal) { setPhase("won"); chime(4); [0, 350, 700].forEach((ms, i) => setTimeout(() => burst(c.x + [0, -140, 140][i], CRUISE_Y - NOSE + [0, 60, 60][i]), ms)); }
+        else { chime(2); burst(c.x, c.y + camera()); }
+      }
+    }
+  } else if (s.phase === "rest" || s.phase === "home") {
+    if (s.phase === "rest" && s.soundOn) setPhase("play");
+    else if (s.phase === "home" || s.phaseT > PAUSE_S) {
+      s.a = Math.max(0, s.a - dt * Math.max(s.phase === "home" ? 4 : 2.5, s.a * 0.7));
+      if (s.a === 0) { setPhase("idle"); s.flightBest = 0; scene.checks.forEach(c => { c.passed = false; }); }
+    }
+  } else if (s.phase === "won") {
+    if (s.phaseT >= WON_MIN_S && s.quietT >= 1) setPhase("home");
+  }
 }
 
 function draw(dt) {
-  const I = INSTRUMENTS[state.inst];
   state.smoothRms += (state.rms - state.smoothRms) * Math.min(1, dt * 12);
-  const loud = Math.min(1, state.smoothRms / 0.08);
+  const s = state, t = performance.now() / 1000, goal = LEVELS[s.level - 1];
+  const loud = s.soundOn && s.phase !== "home" ? Math.max(0.01, Math.min(1, s.smoothRms / 0.08)) : 0;
+  const flying = s.phase === "play";
 
-  if (state.level === 1) {
-    if (state.soundOn) state.level1Held += dt; else state.level1Held = Math.max(0, state.level1Held - dt * 1.2);
-    const goal = GOAL_SECONDS[GOAL_SECONDS.length - 1];
-    const p = Math.min(1, state.level1Held / goal);
-    const y = BOTTOM - (BOTTOM - TOP) * p;
-    const s = 0.55 + 0.75 * p;
-    scene.balloon.setAttribute("transform", `translate(${VW / 2} ${y}) scale(${s.toFixed(3)})`);
-    scene.balloon.setAttribute("opacity", 0.55 + 0.45 * Math.min(1, loud + (state.soundOn ? 0.4 : 0)));
-    scene.goalMarks.forEach(m => m.g.setAttribute("opacity", y <= m.y + 6 ? 1 : .45));
-    if (state.level1Held >= goal) { state.level1Held = 0; burst(VW / 2, TOP); }
-    return;
+  // The sky darkens slowly with height: day, deeper blue, dusk, night.
+  const night = (s.a - 2) / 4;
+  [2, 3, 4].forEach(n => { $("sky" + n).style.opacity = clamp01(night - (n - 2)).toFixed(2); });
+
+  const cam = camera();
+  scene.world.setAttribute("transform", `translate(0 ${cam.toFixed(1)})`);
+  // Far stars come out after dusk and drift down slower than the world, wrapping round.
+  const glow = clamp01((s.a - 7) / 4);
+  [...scene.sky.children].forEach((c, i) => {
+    c.setAttribute("cy", (((SKY[i].y + cam * 0.2) % 640) - 10).toFixed(1));
+    c.setAttribute("opacity", (glow * 0.85).toFixed(2));
+  });
+
+  const y = Math.max(CRUISE_Y, PAD_Y - s.a * SPEED), shake = loud > 0 && flying ? Math.sin(t * 60) * 1.5 : 0;
+  const tilt = s.phase === "won" ? Math.sin(t * 5) * 4 : 0;                     // a little happy wiggle
+  scene.rocket.setAttribute("transform", `translate(${(RX + shake).toFixed(1)} ${y.toFixed(1)}) rotate(${tilt.toFixed(2)}) scale(.8)`);
+  const k = loud > 0 ? 0.55 + 0.7 * Math.min(1, loud * 1.5) + Math.sin(t * 40) * 0.08 : 0;
+  scene.flame.setAttribute("transform", `scale(1 ${k.toFixed(3)})`);
+  scene.flame.setAttribute("opacity", k > 0 ? 1 : 0);
+  scene.chute.setAttribute("opacity", (s.phase === "rest" || s.phase === "home") && s.a > 0.1 ? 1 : 0);
+
+  // Smoke puffs while the engine runs; once flying they stream away down the screen.
+  if (loud > 0 && t - scene.lastPuff > 0.09) {
+    scene.lastPuff = t;
+    scene.puffs.push({ n: el("circle", { r: 10, fill: "#fff", opacity: .8 }, scene.puffLayer), x: RX + (Math.random() - .5) * 20, y: y + 30, vx: (Math.random() - .5) * 60, vy: cam > 0 && flying ? 40 + SPEED : 40, born: t });
+  }
+  scene.puffs = scene.puffs.filter(f => {
+    const a = t - f.born;
+    if (a > 1.2) { f.n.remove(); return false; }
+    f.n.setAttribute("cx", (f.x + f.vx * a).toFixed(1));
+    f.n.setAttribute("cy", (f.y + f.vy * a).toFixed(1));
+    f.n.setAttribute("r", (10 + 26 * a).toFixed(1));
+    f.n.setAttribute("opacity", (0.8 * (1 - a / 1.2)).toFixed(2));
+    return true;
+  });
+
+  // Sights and places come alive only while on screen.
+  for (const o of scene.things.concat(scene.checks)) {
+    const sy = o.y + cam;
+    if (sy < -250 || sy > 900) continue;
+    if (o.mouth) o.mouth.setAttribute("d", o.passed ? "M -20 12 Q 0 34 20 12" : "M -12 18 L 12 18");
+    if (o.wing) o.wing.setAttribute("transform", `rotate(${(Math.sin(t * 9 + o.x) * 25).toFixed(1)})`);
+    if (o.spin) o.spin.setAttribute("transform", `rotate(${((o.kind === "satellite" || o.kind === "astronaut" ? Math.sin(t * .8) * 14 : t * (o.passed ? 40 : 8)) % 360).toFixed(1)})`);
+    if (o.kind === "plane" || o.kind === "ufo") o.g.setAttribute("transform", `translate(${(o.x + Math.sin(t * .5) * 40).toFixed(1)} ${(o.y + Math.sin(t * 1.3) * 6).toFixed(1)})`);
   }
 
-  if (state.level === 3) return drawStaffLevel(dt);
+  // Seconds stars: lit up to where the rocket is.
+  scene.lamps.forEach((lamp, i) => {
+    const lit = s.a >= i + 1 - 1e-6;
+    lamp.setAttribute("fill", lit ? "#f2b705" : "none");
+    lamp.setAttribute("stroke", lit ? "#e09b00" : s.a > 8 ? "#c7cfe8" : "#8aa0b8");
+  });
 
-  // Level 2: the bird follows the pitch. With no sound it simply waits where it is.
-  const heard = state.cents !== null && state.clarity > 0.5;
-  if (heard) state.smoothCents += (state.cents - state.smoothCents) * Math.min(1, dt * 9);
-  const y = heard ? pitchToY(state.smoothCents) : pitchToY(state.level === 3 ? 0 : state.smoothCents);
-  const x = VW / 2;
-  scene.bird.setAttribute("transform", `translate(${x} ${y.toFixed(1)})`);
-  scene.wing.setAttribute("transform", heard ? "rotate(0)" : `rotate(${Math.sin(performance.now() / 260) * 12})`);
-
-  state.trail.push({ x, y });
-  if (state.trail.length > 90) state.trail.shift();
-  scene.trail.setAttribute("d", state.trail.map((p, i) => `${i ? "L" : "M"} ${(VW / 2 - (state.trail.length - i) * 4).toFixed(0)} ${p.y.toFixed(0)}`).join(" "));
-
+  // Endless: the places this child reached this turn stay in the top corner until the next turn.
+  if (goal === Infinity && scene.trophyCount !== s.turnBest) {
+    scene.trophyCount = s.turnBest;
+    scene.trophies.textContent = "";
+    const got = CHECKS.filter(c => c.t <= s.turnBest).slice(0, 14);
+    got.forEach((c, i) => {
+      const tr = thing(scene.trophies, c.kind, 44 + i * 64, 44, 0.42);
+      if (tr.mouth) tr.mouth.setAttribute("d", "M -20 12 Q 0 34 20 12");
+    });
+  }
 }
 
-// Level 3: the target note and the note actually being played, on one staff.
-function drawStaffLevel(dt) {
-  const I = INSTRUMENTS[state.inst];
-  const heard = state.freq > 0 && state.clarity > 0.6 && state.soundOn && performance.now() > state.muteUntil;
-
-  if (heard) {
-    const writtenMidi = 69 + 12 * Math.log2(state.freq / 440) + I.toWritten;
-    const sp = spell(writtenMidi);
-    const offset = writtenMidi - Math.round(writtenMidi);          // sharp or flat within the note
-    const y = staffY(diatonicOf(sp)) - offset * S * 0.45;          // rides a little high or low
-    scene.playedG.setAttribute("opacity", 1);
-    scene.played.setAttribute("x", 400);
-    scene.played.setAttribute("y", y.toFixed(1));
-    scene.playedAcc.setAttribute("x", 400 - 1.4 * S);
-    scene.playedAcc.setAttribute("y", staffY(diatonicOf(sp)).toFixed(1));
-    scene.playedAcc.textContent = sp.alter === -1 ? GLYPH.flat : sp.alter === 1 ? GLYPH.sharp : "";
-    scene.playedName.setAttribute("x", 400 + 0.95 * S);
-    scene.playedName.setAttribute("y", STAFF_TOP + 4 * S + 2.6 * S);
-    scene.playedName.textContent = SOLFEGE[sp.step] + " (" + LETTERS[sp.step] + ")";
-    ledgers(scene.playedLedger, 400, diatonicOf(sp));
-
-    // An arrow only while they are on the wrong note, pointing the way to go.
-    const tY = staffY(diatonicOf(spell(I.written)));
-    const far = Math.abs(y - tY) > S * 0.5;
-    scene.arrow.setAttribute("opacity", far ? 1 : 0);
-    if (far) {
-      const up = y > tY, ax = 560, ay = (y + tY) / 2;
-      scene.arrow.setAttribute("d", up
-        ? `M ${ax} ${ay - 60} L ${ax + 42} ${ay + 20} L ${ax + 14} ${ay + 20} L ${ax + 14} ${ay + 70} L ${ax - 14} ${ay + 70} L ${ax - 14} ${ay + 20} L ${ax - 42} ${ay + 20} Z`
-        : `M ${ax} ${ay + 60} L ${ax + 42} ${ay - 20} L ${ax + 14} ${ay - 20} L ${ax + 14} ${ay - 70} L ${ax - 14} ${ay - 70} L ${ax - 14} ${ay - 20} L ${ax - 42} ${ay - 20} Z`);
-    }
-  } else {
-    scene.playedG.setAttribute("opacity", 0);
-    scene.arrow.setAttribute("opacity", 0);
-  }
-
-  const cents = heard ? 1200 * Math.log2(state.freq / I.target) : null;
-  const limit = state.inBand ? OUT_CENTS : IN_CENTS;
-  state.inBand = cents !== null && Math.abs(cents) < limit;
-  state.holdProgress = state.inBand
-    ? Math.min(1, state.holdProgress + dt / HOLD_SECONDS)
-    : Math.max(0, state.holdProgress - dt / (HOLD_SECONDS * 2));    // drains, never snaps
-  const circ = 2 * Math.PI * 1.9 * S;
-  scene.ring.setAttribute("opacity", state.holdProgress > 0.02 ? 1 : 0);
-  scene.ring.setAttribute("stroke-dashoffset", circ * (1 - state.holdProgress));
-  scene.target.setAttribute("fill", state.inBand ? "#1b8f58" : "#15181d");
-
-  if (state.holdProgress >= 1) {
-    state.holdProgress = 0;
-    state.inBand = false;
-    const tY = staffY(diatonicOf(spell(I.written)));
-    burst(716, tY);
-    scene.star.setAttribute("opacity", 1);
-    setTimeout(() => scene.star.setAttribute("opacity", 0), 1800);
-  }
+// A short rising chord for a place passed (2 notes) or the level's end (4). The detector is muted meanwhile.
+function chime(notes) {
+  const c = ensureCtx(), t0 = c.currentTime + 0.03;
+  [523.25, 659.25, 783.99, 1046.5].slice(4 - notes).forEach((hz, i) => {
+    const o = c.createOscillator(), g = c.createGain(), t = t0 + i * 0.11;
+    o.type = "triangle"; o.frequency.value = hz;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + 0.75);
+  });
+  state.muteUntil = performance.now() + 500 + notes * 220;
 }
 
 function burst(x, y) {
@@ -612,25 +696,11 @@ function bump() {
 
 /* ---------- Screen ---------- */
 
-function updateHeader() {
-  const I = INSTRUMENTS[state.inst];
-  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
-  [1, 2].forEach(n => $("lv" + n).setAttribute("aria-pressed", String(n === state.level)));
-  $("targetName").innerHTML = state.level === 3 ? `${I.name} <bdi lang="en">(${I.latin})</bdi>` : "";
-  $("tone").hidden = state.level !== 3;
-}
-
 function setLevel(n) {
   state.level = n;
-  state.level1Held = 0; state.holdProgress = 0; state.inBand = false; state.trail = [];
-  updateHeader();
-  buildScene();
-}
-
-function setInstrument(k) {
-  state.inst = k;
-  try { localStorage.setItem("brass-inst", k); } catch (_) {}
-  updateHeader();
+  state.a = 0; state.flightBest = 0; state.turnBest = 0; setPhase("idle");
+  LEVELS.forEach((_, i) => $("lv" + (i + 1)).setAttribute("aria-pressed", String(i + 1 === n)));
+  try { localStorage.setItem("sound-game", JSON.stringify({ level: n })); } catch (_) {}
   buildScene();
 }
 
@@ -642,7 +712,8 @@ function setTurns(n) {
 
 function nextTurn() {
   state.turn = (state.turn + 1) % state.turns;
-  state.holdProgress = 0; state.trail = [];
+  state.a = 0; state.flightBest = 0; state.turnBest = 0; setPhase("idle");
+  buildScene();
   setTurns(state.turns);
 }
 
@@ -661,58 +732,51 @@ function frame(now) {
   const dt = Math.min(0.05, (now - (last || now)) / 1000);
   last = now;
   if (now - state.lastAnalyse > ANALYSE_MS) { state.lastAnalyse = now; analyse(); }
-  if (scene.bird || scene.balloon || scene.target) draw(dt);
+  update(dt);
+  draw(dt);
   if (!$("diag").hidden) {
     const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
     const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
     $("diag").textContent = audioLine() + `בדיקת מיקרופון (D)\n` +
       `עוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\n` +
       `צליל   ${state.freq ? state.freq.toFixed(0) + " Hz" : "—"}\n` +
-      `דיוק   ${state.cents === null ? "—" : (state.cents > 0 ? "+" : "") + state.cents.toFixed(0)}\n` +
-      `v8`;
+      `רצפה   ${(20 * Math.log10(Math.max(state.noiseFloor, 1e-7))).toFixed(0)} dB · ${state.soundOn ? "צליל" : "שקט"} · ${state.phase}\n` +
+      `v10`;
   }
   requestAnimationFrame(frame);
 }
 
 /* ---------- Wiring ---------- */
 
-for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
-[1, 2].forEach(n => $("lv" + n).addEventListener("click", () => setLevel(n)));
+LEVELS.forEach((_, i) => $("lv" + (i + 1)).addEventListener("click", () => setLevel(i + 1)));
 $("startBtn").addEventListener("click", startMic);
 $("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });  // the whole start screen is the button
-$("tone").addEventListener("click", playReference);
 $("fullscreen").addEventListener("click", toggleFullscreen);
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
 
 document.addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const t = e.target;
-  if (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT") return;
+  if (t.tagName === "BUTTON" || t.tagName === "INPUT") return;
   const c = e.code;
   if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight") { e.preventDefault(); nextTurn(); }
-  else if (c === "Digit1") setLevel(1);
-  else if (c === "Digit2") setLevel(2);
-  else if (c === "Digit3") location.href = "right-note.html";
-  else if (c === "KeyT") playReference();
+  else if (/^Digit[1-5]$/.test(c)) setLevel(+c.slice(5));
   else if (c === "KeyR") { state.noiseFloor = 0.002; }
   else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
   else if (c === "KeyF") toggleFullscreen();
 });
 
 const params = new URLSearchParams(location.search);
-let saved = null;
-try { saved = localStorage.getItem("brass-inst"); } catch (_) {}
-if (INSTRUMENTS[params.get("inst")]) state.inst = params.get("inst");
-else if (INSTRUMENTS[saved]) state.inst = saved;
-if (/^[12]$/.test(params.get("level") || "")) state.level = +params.get("level");
+let level = 1;
+try { const saved = JSON.parse(localStorage.getItem("sound-game") || "{}"); if (LEVELS[saved.level - 1] !== undefined) level = saved.level; } catch (_) {}
+if (/^[1-5]$/.test(params.get("level") || "")) level = +params.get("level");
 if (params.get("diag") === "1") $("diag").hidden = false;
 
 if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
 if (location.protocol === "file:") fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 
-updateHeader();
-buildScene();
+setLevel(level);
 setTurns(state.turns);
 requestAnimationFrame(frame);
 </script>
