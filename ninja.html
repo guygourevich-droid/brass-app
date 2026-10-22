@@ -203,7 +203,9 @@ const audioLine = () => {
 /* ---------- Note Ninja ----------
    One child, one round: notes fly in one at a time on the staff. Play the note and hold it briefly,
    and the ninja leaps and slices it. If the time runs out the note simply drifts away and the round goes on.
-   The round ends with a celebration that grows with the notes sliced; no score ever reaches the screen. */
+   The round ends with a celebration that grows with the notes sliced. The teacher asked to see the round:
+   the dots on top become ⭐ (sliced) or a grey ✕ (missed), a 🔥 streak counts notes in a row, and a round
+   with every note sliced is "perfect" (an agreed exception to "no individual score"). Nothing turns red. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -596,6 +598,7 @@ function buildScene() {
   g.noteLayer = el("g", {}, svg);
   g.fx = el("g", {}, svg);
   buildNinja(svg);
+  g.streak = el("text", { x: 0, y: 64, "text-anchor": "middle", "font-size": 44, "font-weight": 900, fill: "#e0750b", style: "font-family: var(--display)", opacity: 0 }, svg);
   g.banner = el("text", { x: 560, y: 120, "text-anchor": "middle", "font-size": 92, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)", direction: "rtl", opacity: 0 }, svg);
   drawDots();
 }
@@ -637,15 +640,36 @@ function placePlayed(written) {
   for (let q = 10; q <= pos; q += 2) line(q);
 }
 
+// The round so far: ⭐ sliced, grey ✕ missed, the current note ringed, the rest still to come.
+const STAR = "M 0 -17 L 5 -6 L 17 -5 L 8 3 L 11 15 L 0 9 L -11 15 L -8 3 L -17 -5 L -5 -6 Z";
 function drawDots() {
   g.dots.textContent = "";
   const n = state.round.length;
-  if (!n || state.phase === "card" || state.phase === "idle") return;
+  if (!n || state.phase === "card" || state.phase === "idle") { g.streak.setAttribute("opacity", 0); return; }
   const gap = 46, x0 = 560 - (n - 1) * gap / 2;
   for (let i = 0; i < n; i++) {
-    const done = i < state.index || state.phase === "end", now = i === state.index && state.phase !== "end";
-    el("circle", { cx: x0 + i * gap, cy: 48, r: now ? 15 : 13, fill: done ? "#7a5cf0" : "#fff", stroke: "#7a5cf0", "stroke-width": now ? 6 : 4 }, g.dots);
+    const x = x0 + i * gap, r = state.results[i], now = i === state.index && state.phase !== "end";
+    if (r === true) el("path", { d: STAR, transform: `translate(${x} 48)`, fill: "#f2b705", stroke: "#c98a00", "stroke-width": 2.5, "stroke-linejoin": "round" }, g.dots);
+    else if (r === false) {
+      el("circle", { cx: x, cy: 48, r: 12, fill: "#e6ebf1", stroke: "#94a3b8", "stroke-width": 3 }, g.dots);
+      el("path", { d: `M ${x - 5} 43 L ${x + 5} 53 M ${x + 5} 43 L ${x - 5} 53`, stroke: "#94a3b8", "stroke-width": 3, "stroke-linecap": "round" }, g.dots);
+    } else el("circle", { cx: x, cy: 48, r: now ? 15 : 13, fill: "#fff", stroke: "#7a5cf0", "stroke-width": now ? 6 : 4 }, g.dots);
   }
+  g.streak.setAttribute("x", x0 + (n - 1) * gap + 70);
+}
+
+// 🔥 n beside the dots from two in a row; it pops when it grows.
+function showStreak() {
+  const s = state.streak;
+  g.streak.textContent = s >= 2 ? "🔥 " + s : "";
+  g.streak.setAttribute("opacity", s >= 2 ? 1 : 0);
+  if (s < 2) return;
+  const x = +g.streak.getAttribute("x"), t0 = performance.now();
+  (function pop(now) {
+    const p = Math.min(1, (now - t0) / 350), k = 1 + 0.35 * Math.sin(p * Math.PI);
+    g.streak.setAttribute("transform", `translate(${x} 50) scale(${k.toFixed(3)}) translate(${-x} -50)`);
+    if (p < 1) requestAnimationFrame(pop);
+  })(t0);
 }
 
 /* ---------- Ninja ----------
@@ -736,9 +760,13 @@ function startRound() {
   }
   state.index = 0;
   state.hits = 0;
+  state.results = [];
+  state.streak = 0;
   state.roundId++;
   $("card").hidden = true;
   g.banner.setAttribute("opacity", 0);
+  g.banner.setAttribute("y", 120);
+  g.staff.setAttribute("opacity", state.show !== "name" ? 1 : 0);
   nextNote();
 }
 
@@ -764,8 +792,14 @@ function hideRings() { g.ring.setAttribute("opacity", 0); g.holdRing.setAttribut
 function slice() {
   state.phase = "slice";
   state.hits++;
+  state.results[state.index] = true;
+  state.streak++;
+  drawDots();
+  showStreak();
   hideRings();
   playSwoosh();
+  // A little chime that climbs with the streak.
+  if (state.streak >= 2) playNotes([783.99 * Math.pow(2, Math.min(state.streak - 2, 7) * 2 / 12)], 0, 0.35, 0.09);
   animateNinja("slice", { x: current.cx - 150, y: current.cy + 130 });
   const { group, cx, cy } = current, id = state.roundId;
   setTimeout(() => {
@@ -798,13 +832,22 @@ function slice() {
   }, 250);
 }
 
+// Time is up: the note turns grey, gives a small shake and a soft low bloop, then drifts away.
 function drift() {
   state.phase = "drift";
+  state.results[state.index] = false;
+  state.streak = 0;
+  drawDots();
+  showStreak();
   hideRings();
+  playNotes([392, 293.66], 0.13, 0.3, 0.07);
   const group = current.group, t0 = performance.now(), id = state.roundId;
+  group.querySelectorAll("[fill]").forEach(e => e.setAttribute("fill", "#94a3b8"));
+  group.querySelectorAll("line").forEach(e => e.setAttribute("stroke", "#94a3b8"));
   (function go(now) {
-    const p = Math.min(1, (now - t0) / 1100);
-    group.setAttribute("transform", `translate(${160 * p} ${-120 * p})`);
+    const shake = Math.min(1, (now - t0) / 450), p = Math.max(0, Math.min(1, (now - t0 - 450) / 1100));
+    const dx = shake < 1 ? Math.sin(shake * Math.PI * 6) * 10 * (1 - shake) : 0;
+    group.setAttribute("transform", `translate(${dx + 160 * p} ${-120 * p})`);
     group.setAttribute("opacity", 1 - p);
     if (p < 1) requestAnimationFrame(go);
     else { group.remove(); if (state.roundId === id) { state.index++; nextNote(); } }
@@ -816,8 +859,12 @@ function endRound() {
   state.phase = "end";
   drawDots();
   const all = state.hits === state.round.length, some = state.hits > 0;
-  g.banner.textContent = all ? "נינג'ה אמיתי!" : some ? "יפה מאוד!" : "כל הכבוד!";
+  g.banner.textContent = all ? "מושלם! ⭐" : some ? "יפה מאוד!" : "כל הכבוד!";
+  // The end word sits mid-screen over a faded staff, leaving the row of stars on top as the round's record.
+  g.banner.setAttribute("y", 300);
   g.banner.setAttribute("opacity", 1);
+  g.staff.setAttribute("opacity", 0.2);
+  g.streak.setAttribute("opacity", 0);
   if (all) {
     playNotes([523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5], 0.12, 0.5, 0.2);
     animateNinja("flip", 150); ninja.anim.until = 2600;
