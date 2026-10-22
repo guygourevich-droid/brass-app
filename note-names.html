@@ -120,11 +120,6 @@
 <div class="app">
   <header class="console" data-t-aria="controls">
     <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool" data-t="tool"></span></a>
-    <div class="seg" role="group" data-t-aria="instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true" data-t="trumpet"></button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false" data-t="horn"></button>
-    </div>
     <div class="seg" role="group" data-t-aria="mode">
       <button id="mLearn" class="seg-btn" aria-pressed="true" data-t="learn"></button>
       <button id="mQuiz" class="seg-btn" aria-pressed="false" data-t="quiz"></button>
@@ -509,7 +504,6 @@ function updateHeader() {
   $("info").textContent = T("info")[state.inst];
   $("namesSeg").hidden = LANG === "en";      // English names notes by letter only
   document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i + 1 === state.level)));
-  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
   $("mLearn").setAttribute("aria-pressed", String(state.mode === "learn"));
   $("mQuiz").setAttribute("aria-pressed", String(state.mode === "quiz"));
   $("nSolfege").setAttribute("aria-pressed", String(state.names === "solfege"));
@@ -527,10 +521,6 @@ function render({ newNote = false } = {}) {
   else renderQuiz();
 }
 
-function setInstrument(k) {
-  state.inst = k;
-  try { localStorage.setItem("brass-inst", k); } catch (_) {}
-  state.current = null; state.last = -1; state.streak = 0; render(); }
 function setLevel(n) { state.level = n; state.current = null; state.last = -1; state.streak = 0; render(); }
 function setMode(m) { state.mode = m; render({ newNote: m === "quiz" }); }
 function setNames(sys) { state.names = sys; render(); }
@@ -590,7 +580,6 @@ for (let n = 1; n <= LEVEL_COUNT; n++) {
   $("levels").appendChild(b);
 }
 
-for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 $("mLearn").addEventListener("click", () => setMode("learn"));
 $("mQuiz").addEventListener("click", () => setMode("quiz"));
 $("nSolfege").addEventListener("click", () => setNames("solfege"));

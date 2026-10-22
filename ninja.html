@@ -95,11 +95,6 @@
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
-    <div class="seg" role="group" data-t-aria="instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true" data-t="trumpet"></button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false" data-t="horn"></button>
-    </div>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText" data-t="mic"></span></span>
     <button id="tone" class="icon-btn" data-t-title="hear">🔊</button>
@@ -1085,7 +1080,6 @@ function buildSheet() {
   segButtons($("timeSeg"), TIMES.map(t => [t, String(t)]), t => state.time === t, t => { state.time = t; });
   segButtons($("showSeg"), SHOWS, s => state.show === s, s => { state.show = s; });
   segButtons($("refSeg"), [[true, T("yes")], [false, T("no")]], r => state.ref === r, r => { state.ref = r; });
-  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
 }
 
 // Changing anything mid-round starts over at the "next ninja" card.
@@ -1094,16 +1088,6 @@ function toggleSheet(show) {
   $("sheet").hidden = !open;
   if (open) { buildSheet(); $("card").hidden = true; }
   else { buildScene(); showCard(); }
-}
-
-function setInstrument(k) {
-  state.inst = k;
-  load();
-  save();
-  buildSheet();
-  buildScene();
-  if (ctx) loadSamples(k);
-  showCard();
 }
 
 function stopRound() {
@@ -1120,7 +1104,6 @@ function toggleFullscreen() {
 
 /* ---------- Wiring ---------- */
 
-for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 $("startBtn").addEventListener("click", startMic);
 $("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });
 $("goBtn").addEventListener("click", startRound);

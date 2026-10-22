@@ -77,11 +77,6 @@
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
-    <div class="seg" role="group" data-t-aria="instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true" data-t="trumpet"></button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false" data-t="horn"></button>
-    </div>
     <div class="seg" role="group" data-t-aria="step">
       <button id="st1" class="seg-btn" aria-pressed="true" data-t-title="st1">1 🐝</button>
       <button id="st2" class="seg-btn" aria-pressed="false" data-t-title="st2">2 🌸</button>
@@ -908,13 +903,6 @@ function setStep(n) {
   enterStep();
 }
 
-function setInstrument(k) {
-  state.inst = k;
-  for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === k));
-  try { localStorage.setItem("brass-inst", k); } catch (_) {}
-  enterStep();
-}
-
 function setHold(n) {
   state.hold = n;
   $("hold4").setAttribute("aria-pressed", String(n === 4));
@@ -975,7 +963,6 @@ function frame(now) {
 
 /* ---------- Wiring ---------- */
 
-for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 for (let i = 1; i <= 4; i++) $("st" + i).addEventListener("click", () => setStep(i));
 $("hold4").addEventListener("click", () => setHold(4));
 $("hold8").addEventListener("click", () => setHold(8));
@@ -1021,7 +1008,6 @@ if (location.protocol === "file:") fail(T("onlyOnline"));
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 
 $("tip").textContent = TIPS[0];
-for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === state.inst));
 setHold(state.hold);
 setSiren(state.siren);
 setStep(state.step);

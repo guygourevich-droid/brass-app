@@ -112,11 +112,6 @@
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
-    <div class="seg" role="group" data-t-aria="instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true" data-t="trumpet"></button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false" data-t="horn"></button>
-    </div>
     <button id="listBtn" class="icon-btn" data-t-title="listTip" data-t="songsBtn"></button>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText" data-t="mic"></span></span>
@@ -1251,7 +1246,6 @@ function buildPanels() {
   $("styleSeg").hidden = LANG === "en";       // English names notes by letter only
   segButtons($("repeatSeg"), [["attack", T("newTongue")], ["hold", T("justHold")]], v => state.repeat === v, v => { state.repeat = v; });
   segButtons($("tempoSeg"), TEMPOS.map(t => [t, "♩=" + t]), v => state.tempo === v, v => { state.tempo = v; });
-  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
   updateButtons();
 }
 
@@ -1286,15 +1280,6 @@ function toggleSheet(show) {
   }
 }
 
-function setInstrument(k) {
-  state.inst = k;
-  load(); save();
-  if (ctx) loadSamples(k);
-  buildPanels();
-  if (state.song && playable(state.song)) resetPlay();
-  else { state.song = null; showList(); }
-}
-
 function toggleFullscreen() {
   const d = document, root = d.documentElement;
   try {
@@ -1305,7 +1290,6 @@ function toggleFullscreen() {
 
 /* ---------- Wiring ---------- */
 
-for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 $("startBtn").addEventListener("click", startMic);
 $("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });
 $("listBtn").addEventListener("click", showList);

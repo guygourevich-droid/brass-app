@@ -90,11 +90,6 @@
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
-    <div class="seg" role="group" data-t-aria="instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="false" data-t="trumpet"></button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
-      <button id="inHorn" class="seg-btn" aria-pressed="true" data-t="horn"></button>
-    </div>
     <div class="seg" role="group" data-t-aria="kind">
       <button id="kindScale" class="seg-btn" aria-pressed="false" data-t-title="kindScaleTip" data-t="kindScale"></button>
       <button id="kindOpen" class="seg-btn" aria-pressed="true" data-t-title="kindOpenTip" data-t="kindOpen"></button>
@@ -1132,19 +1127,6 @@ function setKind(k) {
   loadSamples();
 }
 
-function setInstrument(k) {
-  if (!INSTRUMENTS[k]) return;
-  useInstrument(k);
-  try { localStorage.setItem("brass-inst", k); } catch (_) {}
-  for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === k));
-  load();
-  state.rung = null; state.heardN = null; state.holdProgress = 0;
-  fixTargets();
-  state.target = state.targets[0];
-  rebuild();
-  loadSamples();
-}
-
 function toggleSheet(show) {
   const open = show === undefined ? $("sheet").hidden : show;
   $("sheet").hidden = !open;
@@ -1169,7 +1151,6 @@ $("settings").addEventListener("click", () => toggleSheet());
 $("sheetDone").addEventListener("click", () => toggleSheet(false));
 $("fullscreen").addEventListener("click", toggleFullscreen);
 $("modeExplore").addEventListener("click", () => setMode("explore"));
-for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 $("kindScale").addEventListener("click", () => setKind("scale"));
 $("kindOpen").addEventListener("click", () => setKind("open"));
 $("modeAim").addEventListener("click", () => setMode("aim"));
@@ -1212,7 +1193,6 @@ let startInst = "horn";
 try { const saved = localStorage.getItem("brass-inst"); if (INSTRUMENTS[saved]) startInst = saved; } catch (_) {}
 if (INSTRUMENTS[params.get("inst")]) startInst = params.get("inst");
 useInstrument(startInst);
-for (const i in INSTRUMENTS) $("in" + i[0].toUpperCase() + i.slice(1)).setAttribute("aria-pressed", String(i === inst));
 load();
 fixTargets();
 state.target = state.targets[0];

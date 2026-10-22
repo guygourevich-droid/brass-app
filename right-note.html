@@ -89,11 +89,6 @@
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
-    <div class="seg" role="group" data-t-aria="instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true" data-t="trumpet"></button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false" data-t="horn"></button>
-    </div>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText" data-t="mic"></span></span>
     <button id="tone" class="icon-btn" data-t-title="hear">🔊</button>
@@ -763,15 +758,6 @@ function pressed() {
   $("ordSeq").setAttribute("aria-pressed", String(state.order === "sequence"));
   $("refOn").setAttribute("aria-pressed", String(state.ref));
   $("refOff").setAttribute("aria-pressed", String(!state.ref));
-  for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
-}
-
-function setInstrument(k) {
-  state.inst = k;
-  load();
-  buildStaff();
-  buildSheet();
-  save();
 }
 
 function toggleSheet(show) {
@@ -790,7 +776,6 @@ function toggleFullscreen() {
 
 /* ---------- Wiring ---------- */
 
-for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => setInstrument(k));
 $("startBtn").addEventListener("click", startMic);
 $("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });  // the whole start screen is the button
 $("tone").addEventListener("click", playReference);
