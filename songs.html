@@ -156,6 +156,10 @@
       <button id="modeTime" class="seg-btn" aria-pressed="false">בקצב</button>
     </div>
     <div class="seg" role="group" aria-label="קצב" id="tempoSeg"></div>
+    <div class="seg" role="group" aria-label="ליווי">
+      <button id="bandBtn" class="seg-btn" aria-pressed="true" title="תופים, בס ואקורדים">🥁 להקה</button>
+      <button id="guideBtn" class="seg-btn" aria-pressed="false" title="המנגינה מתנגנת יחד עם הילד (בקצב)">🎺 עם המנגינה</button>
+    </div>
     <span class="bars">תיבות <select id="fromBar" aria-label="מתיבה"></select> – <select id="toBar" aria-label="עד תיבה"></select></span>
     <span class="spacer"></span>
     <span class="keys"><kbd>Space</kbd> ניגון · <kbd>H</kbd> להקשיב · <kbd>M</kbd> מצב · <kbd>Esc</kbd> השהיה</span>
@@ -225,8 +229,10 @@ const audioLine = () => {
 
 
 /* ---------- Songs ----------
-   One child plays a song. Follow mode waits on each note until it is played; "in time" moves at a tempo
-   after a one-bar count-in. Played notes turn green; a missed note simply stays black. No score, ever.
+   One child plays a song. Follow mode waits on each note until it is played, and catches up if the child is
+   already on the next note; "in time" moves at a tempo after a one-bar count-in, with a band (drums and bass,
+   and the melody too if wanted). Listening plays the melody with the whole band. Played notes turn green; a
+   missed note simply stays black. No score, ever. Titles are Hebrew (`en` kept for an English version).
    Songs are written as steps of the scale and placed on each instrument's own first notes (right-note's
    note list): step 1 = trumpet/horn written C, trombone B♭. */
 
@@ -256,18 +262,18 @@ const SAMPLES = {
 
 // Melodies as "step:beats", bars split by "|". All public domain or written for this app (`own`); all in 4/4.
 const SONGS = [
-  { id: "steps", title: "מדרגות", own: true, music: "1 2 3:2 | 3 2 1:2 | 1 2 3 2 | 1:4 | 3 2 1:2 | 1 2 3:2 | 3 2 1 2 | 1:4" },
-  { id: "hotcross", title: "Hot Cross Buns", music: "3 2 1:2 | 3 2 1:2 | 1 1 1 1 | 2 2 2 2 | 3 2 1:2" },
-  { id: "auclair", title: "Au Clair de la Lune", music: "1 1 1 2 | 3:2 2:2 | 1 3 2 2 | 1:4 | 1 1 1 2 | 3:2 2:2 | 1 3 2 2 | 1:4" },
-  { id: "walk", title: "טיול", own: true, music: "1 2 3 4 | 4:2 3:2 | 3 2 1 2 | 3:4 | 4 3 2 3 | 4:2 3:2 | 2 3 2 2 | 1:4" },
-  { id: "mary", title: "Mary Had a Little Lamb", music: "3 2 1 2 | 3 3 3:2 | 2 2 2:2 | 3 5 5:2 | 3 2 1 2 | 3 3 3 3 | 2 2 3 2 | 1:4" },
-  { id: "rhody", title: "Go Tell Aunt Rhody", music: "3:2 3 2 | 1:2 1:2 | 2 2 4 3 | 2:2 1:2 | 5:2 5 4 | 3:2 3:2 | 2 1 2 3 | 1:4" },
-  { id: "echo", title: "הד", own: true, music: "1 3 5:2 | 5 3 1:2 | 1 2 3 4 | 5:4 | 5 4 3 2 | 1 3 5:2 | 5 3 2 2 | 1:4" },
-  { id: "yonatan", title: "יונתן הקטן", music: "5 3 3:2 | 4 2 2:2 | 1 2 3 4 | 5 5 5:2 | 5 3 3:2 | 4 2 2:2 | 1 3 5 5 | 1:4 | 2 2 2 2 | 2 3 4:2 | 3 3 3 3 | 3 4 5:2 | 5 3 3:2 | 4 2 2:2 | 1 3 5 5 | 1:4" },
-  { id: "ode", title: "Ode to Joy · האודה לשמחה", music: "3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 3:1.5 2:0.5 2:2 | 3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 2:1.5 1:0.5 1:2" },
-  { id: "jingle", title: "Jingle Bells", music: "3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4:1.5 4:0.5 | 4 3 3 3:0.5 3:0.5 | 3 2 2 3 | 2:2 5:2 | 3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4 4 | 4 3 3 3:0.5 3:0.5 | 5 5 4 2 | 1:4" },
-  { id: "twinkle", title: "Twinkle Twinkle · כוכב קטן", music: "1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2 | 5 5 4 4 | 3 3 2:2 | 5 5 4 4 | 3 3 2:2 | 1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2" },
-  { id: "london", title: "London Bridge", music: "5:1.5 6:0.5 5 4 | 3 4 5:2 | 2 3 4:2 | 3 4 5:2 | 5:1.5 6:0.5 5 4 | 3 4 5:2 | 2:2 5:2 | 3:2 1:2" }
+  { id: "steps", title: "מדרגות", en: "Steps", own: true, music: "1 2 3:2 | 3 2 1:2 | 1 2 3 2 | 1:4 | 3 2 1:2 | 1 2 3:2 | 3 2 1 2 | 1:4" },
+  { id: "hotcross", title: "לחמניות חמות", en: "Hot Cross Buns", music: "3 2 1:2 | 3 2 1:2 | 1 1 1 1 | 2 2 2 2 | 3 2 1:2" },
+  { id: "auclair", title: "באור הירח", en: "Au Clair de la Lune", music: "1 1 1 2 | 3:2 2:2 | 1 3 2 2 | 1:4 | 1 1 1 2 | 3:2 2:2 | 1 3 2 2 | 1:4" },
+  { id: "walk", title: "טיול", en: "A Walk", own: true, music: "1 2 3 4 | 4:2 3:2 | 3 2 1 2 | 3:4 | 4 3 2 3 | 4:2 3:2 | 2 3 2 2 | 1:4" },
+  { id: "mary", title: "למרי היה כבש קטן", en: "Mary Had a Little Lamb", music: "3 2 1 2 | 3 3 3:2 | 2 2 2:2 | 3 5 5:2 | 3 2 1 2 | 3 3 3 3 | 2 2 3 2 | 1:4" },
+  { id: "rhody", title: "דודה רודי", en: "Go Tell Aunt Rhody", music: "3:2 3 2 | 1:2 1:2 | 2 2 4 3 | 2:2 1:2 | 5:2 5 4 | 3:2 3:2 | 2 1 2 3 | 1:4" },
+  { id: "echo", title: "הד", en: "Echo", own: true, music: "1 3 5:2 | 5 3 1:2 | 1 2 3 4 | 5:4 | 5 4 3 2 | 1 3 5:2 | 5 3 2 2 | 1:4" },
+  { id: "yonatan", title: "יונתן הקטן", en: "Little Jonathan", music: "5 3 3:2 | 4 2 2:2 | 1 2 3 4 | 5 5 5:2 | 5 3 3:2 | 4 2 2:2 | 1 3 5 5 | 1:4 | 2 2 2 2 | 2 3 4:2 | 3 3 3 3 | 3 4 5:2 | 5 3 3:2 | 4 2 2:2 | 1 3 5 5 | 1:4" },
+  { id: "ode", title: "האודה לשמחה", en: "Ode to Joy", music: "3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 3:1.5 2:0.5 2:2 | 3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 2:1.5 1:0.5 1:2" },
+  { id: "jingle", title: "פעמוני חג", en: "Jingle Bells", music: "3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4:1.5 4:0.5 | 4 3 3 3:0.5 3:0.5 | 3 2 2 3 | 2:2 5:2 | 3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4 4 | 4 3 3 3:0.5 3:0.5 | 5 5 4 2 | 1:4" },
+  { id: "twinkle", title: "כוכב קטן", en: "Twinkle Twinkle Little Star", music: "1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2 | 5 5 4 4 | 3 3 2:2 | 5 5 4 4 | 3 3 2:2 | 1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2" },
+  { id: "london", title: "גשר לונדון", en: "London Bridge", music: "5:1.5 6:0.5 5 4 | 3 4 5:2 | 2 3 4:2 | 3 4 5:2 | 5:1.5 6:0.5 5 4 | 3 4 5:2 | 2:2 5:2 | 3:2 1:2" }
 ];
 const BEATS = 4;
 
@@ -292,10 +298,10 @@ const TEMPOS = [50, 60, 72, 90];
 const BARS_PER_LINE = 4;
 
 const state = {
-  inst: "trumpet", chosen: [], mode: "follow", tempo: 60, names: true, style: "sol", repeat: "attack",
+  inst: "trumpet", chosen: [], mode: "follow", tempo: 60, names: true, style: "sol", repeat: "attack", band: true, guide: false, judge: true,
   song: null, from: 0, to: 0,
   phase: "list",        // list → ready → follow | count | time | listen → end → ready
-  cursor: 0, done: new Set(), matched: {}, line: -1, t0: 0, lastAccepted: -1, inBandSince: null, lastInBand: 0,
+  cursor: 0, done: new Set(), skipped: new Set(), aheadIdx: null, aheadSince: 0, matched: {}, line: -1, t0: 0, lastAccepted: -1, inBandSince: null, lastInBand: 0,
   listening: false, rms: 0, freq: 0, clarity: 0, heard: false, noiseFloor: 0.002,
   soundOn: false, soundSince: 0, muteUntil: 0, lastAnalyse: 0,
   env: 0, envPeak: 0, dipped: false, onsetAt: 0
@@ -333,13 +339,15 @@ function load() {
     state.names = own.names !== false;
     state.style = own.style === "abc" ? "abc" : "sol";
     state.repeat = own.repeat === "hold" ? "hold" : "attack";
+    state.band = own.band !== false;
+    state.guide = own.guide === true;
   }
 }
 
 function save() {
   try {
     localStorage.setItem("brass-inst", state.inst);
-    localStorage.setItem("songs", JSON.stringify({ mode: state.mode, tempo: state.tempo, names: state.names, style: state.style, repeat: state.repeat }));
+    localStorage.setItem("songs", JSON.stringify({ mode: state.mode, tempo: state.tempo, names: state.names, style: state.style, repeat: state.repeat, band: state.band, guide: state.guide }));
     let shared = null;
     try { shared = JSON.parse(localStorage.getItem("right-note-" + state.inst) || "null"); } catch (_) {}
     localStorage.setItem("right-note-" + state.inst, JSON.stringify(Object.assign(shared || {}, { chosen: state.chosen })));
@@ -518,6 +526,101 @@ function click(at, strong) {
   voices.push(o);
 }
 
+/* ---------- The band ----------
+   Chords worked out from the melody, per half bar: the chord among I, IV, V and vi that holds the most of the
+   melody (notes on beats 1 and 3 count more; fa counts half for V, as its seventh); first and last bars are I. Drums and a bass always;
+   chords only when nobody is being listened to, because they hold the melody's own notes and the microphone
+   could take them for the child. The bass sits below the instrument's range, so it can never be taken for it. */
+
+const CHORDS = { I: [0, 4, 7], IV: [5, 9, 0], V: [7, 11, 2], vi: [9, 0, 4] };
+function harmony(song) {
+  const tonic = writtenOf(1), out = [];
+  for (let h = 0; h < song.bars * 2; h++) {
+    const from = h * 2, to = from + 2, score = { I: 0, IV: 0, V: 0, vi: 0 };
+    song.events.forEach(e => {
+      const a = Math.max(e.start, from), b = Math.min(e.start + e.dur, to), w = writtenOf(e.step);
+      if (b <= a || w === undefined) return;
+      const pc = ((w - tonic) % 12 + 12) % 12, weight = (b - a) * (e.start === from ? 1.5 : 1);
+      for (const k in CHORDS) if (CHORDS[k].includes(pc)) score[k] += weight;
+      if (pc === 5) score.V += weight * 0.5;                            // fa fits V as its seventh, a little
+    });
+    let best = "I";
+    for (const k of ["V", "IV", "vi"]) if (score[k] > score[best] + 1e-9) best = k;
+    out.push(best);
+  }
+  out[0] = out[1] = out[out.length - 2] = out[out.length - 1] = "I";
+  return out;
+}
+
+let noiseBuf = null;
+function noise(c) {
+  if (!noiseBuf || noiseBuf.sampleRate !== c.sampleRate) {
+    noiseBuf = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const n = c.createBufferSource();
+  n.buffer = noiseBuf;
+  return n;
+}
+
+// Beats `first`…`last` of the song, starting at audio time `at`.
+function playBand(at, first, last, withChords) {
+  const c = ensureCtx(), beat = 60 / state.tempo, harm = harmony(state.song);
+  const tonic = writtenOf(1) - INSTRUMENTS[state.inst].toWritten;      // concert
+  const out = c.createGain();
+  out.gain.value = 0.5;
+  out.connect(c.destination);
+  voices.push({ stop: () => out.disconnect() });
+  const env = (node, t, peak, dur) => {
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    node.connect(g); g.connect(out);
+    return g;
+  };
+  for (let k = first; k < last; k++) {
+    const t = at + (k - first) * beat, pos = k % BEATS;
+    if (pos === 0 || pos === 2) {                                       // kick
+      const o = c.createOscillator();
+      o.frequency.setValueAtTime(140, t);
+      o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+      env(o, t, 0.9, 0.18); o.start(t); o.stop(t + 0.2);
+    } else {                                                            // snare
+      const n = noise(c), f = c.createBiquadFilter();
+      f.type = "bandpass"; f.frequency.value = 1800; f.Q.value = 0.8;
+      n.connect(f); env(f, t, 0.35, 0.13); n.start(t); n.stop(t + 0.15);
+    }
+    [0, 0.5].forEach((off, j) => {                                      // hi-hat on the eighths
+      const n = noise(c), f = c.createBiquadFilter(), th = t + off * beat;
+      f.type = "highpass"; f.frequency.value = 7000;
+      n.connect(f); env(f, th, j ? 0.05 : 0.08, 0.035); n.start(th); n.stop(th + 0.05);
+    });
+    if (pos % 2) continue;
+    const chord = CHORDS[harm[Math.floor(k / 2)]], len = 2 * beat * 0.95;
+    let root = tonic - 12 + chord[0];                                   // bass: under the instrument's range
+    if (root > tonic - 6) root -= 12;
+    const b = c.createOscillator(), bf = c.createBiquadFilter();
+    b.type = "triangle"; b.frequency.value = 440 * Math.pow(2, (root - 69) / 12);
+    bf.type = "lowpass"; bf.frequency.value = 500;
+    b.connect(bf);
+    const bg = c.createGain();
+    bg.gain.setValueAtTime(0.0001, t); bg.gain.exponentialRampToValueAtTime(0.45, t + 0.02); bg.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    bf.connect(bg); bg.connect(out); b.start(t); b.stop(t + len + 0.02);
+    voices.push(b);
+    if (!withChords) continue;
+    chord.forEach(pc => {                                               // chords: a soft piano-like hit, above the tune
+      const o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+      o.type = "triangle"; o.frequency.value = 440 * Math.pow(2, (tonic + 12 + pc - 69) / 12);
+      f.type = "lowpass"; f.frequency.value = 2200;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.015); g.gain.exponentialRampToValueAtTime(0.02, t + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + len + 0.02);
+      voices.push(o);
+    });
+  }
+}
+
 function silenceVoices() { voices.forEach(v => { try { v.stop(); } catch (_) {} }); voices = []; }
 
 function playNotes(freqs, gap, length, level) {
@@ -561,7 +664,7 @@ function analyse() {
     else if (performance.now() - state.zeroSince > 3000) $("micText").textContent = "אין קול מהמיקרופון";
   } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = "מקשיב"; }
   if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
-  else if (!state.heard) state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
+  else if (!state.heard && state.phase !== "time") state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
   const gate = Math.max(state.noiseFloor * Math.pow(10, 12 / 20), 0.0015);
   const sounding = state.rms > gate && performance.now() > state.muteUntil;
   if (sounding && !state.soundOn) { state.soundOn = true; state.soundSince = performance.now(); state.onsetAt = performance.now(); }
@@ -618,7 +721,7 @@ const el = (tag, attrs, parent) => {
   return n;
 };
 
-const S = 34, STAFF_X0 = 30, STAFF_X1 = 1280, STAFF_TOP = 200, BARS_X0 = 250;
+const S = 34, STAFF_X0 = 30, STAFF_X1 = 1280, STAFF_TOP = 170, BARS_X0 = 250;
 const BAR_W = (STAFF_X1 - BARS_X0) / BARS_PER_LINE;
 const bottomLine = () => INSTRUMENTS[state.inst].clef === "treble" ? 30 : 18;     // E4 / G2
 const staffY = d => STAFF_TOP + 4 * S - (d - bottomLine()) * S / 2;
@@ -630,22 +733,54 @@ function buildScene() {
   g = { title: el("text", { x: 650, y: 70, "text-anchor": "middle", "font-size": 46, "font-weight": 800, fill: "#15181d", style: "font-family: var(--display)" }, svg) };
   g.line = el("g", {}, svg);
   g.arrow = el("path", { fill: "#1a7fe2", opacity: 0 }, svg);
-  g.count = el("text", { x: 650, y: 540, "text-anchor": "middle", "font-size": 90, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)" }, svg);
+  g.count = el("text", { x: 650, y: 100, "text-anchor": "middle", "font-size": 80, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)" }, svg);
   g.banner = el("text", { x: 650, y: 150, "text-anchor": "middle", "font-size": 84, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)", direction: "rtl", opacity: 0 }, svg);
   g.title.textContent = state.song ? state.song.title : "";
+  g.cur = g.next = null;
   state.line = -1;
   if (state.song) drawLine(lineOf(state.cursor), false);
 }
 
 const lineOf = i => Math.floor(state.song.events[Math.min(i, state.song.events.length - 1)].bar / BARS_PER_LINE);
 
-// Draw one line of four bars. Notes are spaced by duration but never closer than a note head allows.
+// One line of four bars at a time, and the next line waiting below it, small and faded. When the song
+// reaches it, it slides up into place and comes to full strength while the finished line drifts away above.
+const PREVIEW = { x: 325, y: 383, s: 0.5 };          // where the next line waits: half size, centred, below
+const previewAt = k => `translate(${PREVIEW.x * k} ${PREVIEW.y * k}) scale(${1 - (1 - PREVIEW.s) * k})`;
 function drawLine(line, slide) {
   if (line === state.line) return;
   state.line = line;
-  const song = state.song, I = INSTRUMENTS[state.inst], grp = g.line;
-  grp.textContent = "";
-  noteEls = [];
+  const song = state.song, lines = Math.ceil(song.bars / BARS_PER_LINE), old = g.cur, waiting = g.next;
+  let cur;
+  if (slide && waiting && waiting.line === line) cur = waiting;          // the line that was waiting below
+  else { cur = { line, grp: el("g", {}, g.line) }; cur.els = renderLine(cur.grp, line); }
+  noteEls = cur.els;
+  g.cur = cur;
+  g.next = null;
+  if (line + 1 < lines) { g.next = { line: line + 1, grp: el("g", { transform: previewAt(1), opacity: 0 }, g.line) }; g.next.els = renderLine(g.next.grp, line + 1); }
+  const next = g.next;
+  if (!slide) {
+    [...g.line.children].forEach(c => { if (c !== cur.grp && (!next || c !== next.grp)) c.remove(); });
+    cur.grp.removeAttribute("transform"); cur.grp.setAttribute("opacity", 1);
+    if (next) next.grp.setAttribute("opacity", 0.3);
+  } else {
+    const from = cur === waiting ? 1 : 0, t0 = performance.now();
+    (function go(now) {
+      const p = Math.min(1, (now - t0) / 550), e = 1 - Math.pow(1 - p, 3);
+      cur.grp.setAttribute("transform", previewAt(from * (1 - e)));
+      cur.grp.setAttribute("opacity", (from ? 0.3 + 0.7 * e : e).toFixed(3));
+      if (old && old !== cur) { old.grp.setAttribute("transform", `translate(0 ${(-120 * e).toFixed(1)})`); old.grp.setAttribute("opacity", Math.max(0, 1 - 2 * e).toFixed(3)); }
+      if (next) next.grp.setAttribute("opacity", (0.3 * e).toFixed(3));
+      if (p < 1) requestAnimationFrame(go);
+      else if (old && old !== cur) old.grp.remove();
+    })(t0);
+  }
+  paintNotes();
+}
+
+// Draw one line of four bars into `grp`. Notes are spaced by duration but never closer than a note head allows.
+function renderLine(grp, line) {
+  const song = state.song, I = INSTRUMENTS[state.inst], els = [];
   const treble = I.clef === "treble";
   for (let i = 0; i < 5; i++) el("line", { x1: STAFF_X0, x2: STAFF_X1, y1: STAFF_TOP + i * S, y2: STAFF_TOP + i * S, stroke: "#15181d", "stroke-width": 3 }, grp);
   el("text", { x: STAFF_X0 + 12, y: treble ? STAFF_TOP + 3 * S : STAFF_TOP + S, "font-size": 4 * S, fill: "#15181d", style: MUSIC_FONT }, grp).textContent = treble ? GLYPH.gClef : GLYPH.fClef;
@@ -665,24 +800,15 @@ function drawLine(line, slide) {
     evs.forEach((e, k) => {
       const x = bx + 18 + (acc / total) * (BAR_W - 40);
       acc += weights[k];
-      noteEls[song.events.indexOf(e)] = drawNote(grp, e, x);
+      els[song.events.indexOf(e)] = drawNote(grp, e, x);
     });
   }
   // Names fit the tightest spacing on the line.
-  const xs = noteEls.filter(Boolean).map(n => n.x).sort((a, b) => a - b);
+  const xs = els.filter(Boolean).map(n => n.x).sort((a, b) => a - b);
   const gap = Math.min(80, ...xs.slice(1).map((x, i) => x - xs[i]));
   const size = Math.max(18, Math.min(34, gap * 0.85));
-  noteEls.forEach(n => { if (n && n.name) n.name.setAttribute("font-size", size); });
-  if (slide) {
-    const t0 = performance.now();
-    (function go(now) {
-      const p = Math.min(1, (now - t0) / 350), e = 1 - Math.pow(1 - p, 3);
-      grp.setAttribute("transform", `translate(${(1 - e) * 300} 0)`);
-      grp.setAttribute("opacity", e);
-      if (p < 1) requestAnimationFrame(go);
-    })(t0);
-  } else { grp.removeAttribute("transform"); grp.setAttribute("opacity", 1); }
-  paintNotes();
+  els.forEach(n => { if (n && n.name) n.name.setAttribute("font-size", size); });
+  return els;
 }
 
 function drawNote(grp, e, x) {
@@ -722,7 +848,7 @@ function paintNotes() {
     const now = i === state.cursor && ["follow", "time", "listen", "ready", "count"].includes(state.phase);
     n.wrap.setAttribute("opacity", inSection ? 1 : 0.3);
     n.hl.setAttribute("opacity", now ? 0.14 : 0);
-    const colour = state.done.has(i) ? "#1b8f58" : now && state.phase !== "ready" ? "#1a7fe2" : "#15181d";
+    const colour = state.done.has(i) ? "#1b8f58" : state.skipped.has(i) ? "#8fcfa9" : now && state.phase !== "ready" ? "#1a7fe2" : "#15181d";
     n.parts.forEach(p => p.setAttribute("fill", p === n.name && colour === "#15181d" ? "#3b434e" : colour));
   });
 }
@@ -744,6 +870,9 @@ function resetPlay() {
   silenceVoices();
   state.phase = state.song ? "ready" : "list";
   state.done = new Set();
+  state.skipped = new Set();
+  state.aheadIdx = null;
+  state.lastPitch = null;
   state.matched = {};
   state.cursor = state.song ? sectionEvents()[0] : 0;
   state.lastAccepted = -1;
@@ -759,11 +888,18 @@ function start() {
   ensureCtx();
   if (state.mode === "follow") { state.phase = "follow"; }
   else {
-    // One bar of count-in clicks, then the music clock starts. No sound while the child plays.
+    // One bar of count-in clicks, then the band (drums and bass) and, if chosen, the melody to play along with.
+    // With the melody playing, notes are only marked where the mic cancels the device's own sound (iPad voice
+    // mode); a laptop's raw mic would hear the speakers and mark notes the child never played.
     state.phase = "count";
-    const c = ensureCtx(), at = c.currentTime + 0.15, beat = 60 / state.tempo;
+    loadSamples(state.inst);
+    const c = ensureCtx(), at = c.currentTime + 0.15, beat = 60 / state.tempo, first = sectionStartBeat();
     for (let i = 0; i < BEATS; i++) click(at + i * beat, i === 0);
-    state.t0 = performance.now() + 150 + BEATS * beatMs() - sectionStartBeat() * beatMs();
+    const go = at + BEATS * beat, last = (state.to + 1) * BEATS;
+    if (state.band) playBand(go, first, last, false);
+    if (state.guide) sectionEvents().forEach(i => { const e = state.song.events[i]; playNote(writtenOf(e.step), go + (e.start - first) * beat, e.dur * beat); });
+    state.judge = !state.guide || MIC_OPTIONS === true;
+    state.t0 = performance.now() + 150 + BEATS * beatMs() - first * beatMs();
     state.muteUntil = performance.now() + 150 + BEATS * beatMs() - 100;
   }
   updateButtons();
@@ -772,7 +908,7 @@ function start() {
 
 const sectionStartBeat = () => state.song.events[sectionEvents()[0]].start;
 
-// Listen first: the song on the real instrument at the chosen tempo, the marker moving along.
+// Listen first: a bar of count-in, then the song on the real instrument with the whole band, the marker moving along.
 function listen() {
   if (!state.song || !$("sheet").hidden || !$("list").hidden) return;
   if (state.phase === "listen") return stopPlaying();
@@ -780,16 +916,18 @@ function listen() {
   const c = ensureCtx();
   loadSamples(state.inst).then(() => {
     if (state.phase !== "ready") return;
-    const beat = 60 / state.tempo, at = c.currentTime + 0.2, first = sectionStartBeat();
+    const beat = 60 / state.tempo, count = c.currentTime + 0.2, at = count + BEATS * beat, first = sectionStartBeat();
+    for (let i = 0; i < BEATS; i++) click(count + i * beat, i === 0);
     let last = 0;
     sectionEvents().forEach(i => {
       const e = state.song.events[i];
       playNote(writtenOf(e.step), at + (e.start - first) * beat, e.dur * beat);
       last = Math.max(last, (e.start - first + e.dur) * beat);
     });
+    if (state.band) playBand(at, first, (state.to + 1) * BEATS, true);
     state.phase = "listen";
-    state.t0 = performance.now() + 200 - first * beatMs();
-    state.muteUntil = performance.now() + 200 + last * 1000 + 400;
+    state.t0 = performance.now() + 200 + BEATS * beatMs() - first * beatMs();
+    state.muteUntil = performance.now() + 200 + BEATS * beatMs() + last * 1000 + 400;
     updateButtons();
   });
 }
@@ -803,7 +941,7 @@ function stopPlaying() {
 function finish() {
   state.phase = "end";
   const evs = sectionEvents(), got = evs.filter(i => state.done.has(i)).length;
-  const words = state.mode === "follow" ? "כל הכבוד!" : got === evs.length ? "מושלם!" : got >= evs.length / 2 ? "יפה מאוד!" : "כל הכבוד!";
+  const words = state.mode === "follow" || !state.judge ? "כל הכבוד!" : got === evs.length ? "מושלם!" : got >= evs.length / 2 ? "יפה מאוד!" : "כל הכבוד!";
   g.banner.textContent = words;
   g.banner.setAttribute("opacity", 1);
   playNotes([523.25, 659.25, 783.99, 1046.5], 0.1, 0.5, 0.2);
@@ -839,9 +977,34 @@ function follow(now) {
   if (ok) { state.lastInBand = now; if (state.inBandSince === null) state.inBandSince = now; }
   else if (state.inBandSince !== null && now - state.lastInBand > 120) state.inBandSince = null;
   showArrow(w, now);
+  // Catching up: if the child is already holding one of the next two notes (another pitch), the app missed
+  // the note it was waiting on. It jumps there rather than make the child go back; the skipped note goes light green.
+  if (!ok) {
+    const at = evs.indexOf(i), hit = [evs[at + 1], evs[at + 2]].find(j => {
+      if (j === undefined) return false;
+      const wj = writtenOf(state.song.events[j].step);
+      return wj !== w && wj !== state.lastPitch && onNote(wj);     // not the tail of the note just played
+    });
+    if (hit === undefined) state.aheadIdx = null;
+    else if (state.aheadIdx !== hit) { state.aheadIdx = hit; state.aheadSince = now; }
+    else if (now - state.aheadSince >= FOLLOW_HOLD_MS) {
+      for (let k = at; evs[k] !== hit; k++) state.skipped.add(evs[k]);
+      state.done.add(hit);
+      state.lastAccepted = now;
+      state.lastPitch = writtenOf(state.song.events[hit].step);
+      state.aheadIdx = null; state.inBandSince = null;
+      const next = evs[evs.indexOf(hit) + 1];
+      if (next === undefined) { g.arrow.setAttribute("opacity", 0); paintNotes(); return finish(); }
+      state.cursor = next;
+      if (lineOf(next) !== state.line) drawLine(lineOf(next), true);
+      paintNotes();
+      return;
+    }
+  }
   if (state.inBandSince !== null && now - state.inBandSince >= FOLLOW_HOLD_MS) {
     state.done.add(i);
     state.lastAccepted = now;
+    state.lastPitch = w;
     state.inBandSince = null;
     const next = evs[evs.indexOf(i) + 1];
     if (next === undefined) { g.arrow.setAttribute("opacity", 0); return finish(); }
@@ -871,11 +1034,15 @@ function showArrow(w, now) {
 function inTime(now) {
   const beat = (now - state.t0) / beatMs(), evs = sectionEvents();
   const first = state.song.events[evs[0]], last = state.song.events[evs[evs.length - 1]];
-  if (state.phase === "count") {
+  if (beat >= first.start && g.count.textContent) { g.count.textContent = ""; g.title.setAttribute("opacity", 1); }
+  if (state.phase === "count" || (state.phase === "listen" && beat < first.start)) {
     const left = Math.ceil(first.start - beat);
     g.count.textContent = left > 0 && left <= BEATS ? String(left) : "";
-    if (beat >= first.start) { state.phase = "time"; g.count.textContent = ""; }
-    else return;
+    g.title.setAttribute("opacity", g.count.textContent ? 0 : 1);
+    if (beat < first.start) return;
+    g.count.textContent = "";
+    g.title.setAttribute("opacity", 1);
+    if (state.phase === "count") state.phase = "time";
   }
   if (beat >= last.start + last.dur + DETECT_LAG_MS / beatMs()) { g.count.textContent = ""; return state.phase === "listen" ? resetPlay() : finish(); }
   const cur = evs.find(i => { const e = state.song.events[i]; return beat >= e.start && beat < e.start + e.dur; });
@@ -884,7 +1051,7 @@ function inTime(now) {
     if (lineOf(cur) !== state.line) drawLine(lineOf(cur), true);
     paintNotes();
   }
-  if (state.phase !== "time") return;
+  if (state.phase !== "time" || !state.judge) return;
   // Judge by when the sound was made: the detector hears ~0.1 s late (its window is ~0.19 s).
   // A note counts from a little before its start until it ends; a repeat of the same pitch
   // also needs its own attack, so the tail of the previous note cannot earn it.
@@ -1009,6 +1176,9 @@ function buildPanels() {
 function updateButtons() {
   $("modeFollow").setAttribute("aria-pressed", String(state.mode === "follow"));
   $("modeTime").setAttribute("aria-pressed", String(state.mode === "time"));
+  $("bandBtn").setAttribute("aria-pressed", String(state.band));
+  $("guideBtn").setAttribute("aria-pressed", String(state.guide));
+  $("guideBtn").hidden = state.mode !== "time";
   const busy = ["follow", "count", "time"].includes(state.phase);
   $("playBtn").textContent = busy ? "■ עצירה" : "▶ מנגנים";
   $("playBtn").classList.toggle("stop", busy);
@@ -1065,6 +1235,8 @@ $("modeTime").addEventListener("click", () => setMode("time"));
 $("playBtn").addEventListener("click", playOrStop);
 $("emptyBtn").addEventListener("click", () => toggleSheet(true));
 $("listenBtn").addEventListener("click", listen);
+$("bandBtn").addEventListener("click", () => { state.band = !state.band; save(); stopPlaying(); updateButtons(); });
+$("guideBtn").addEventListener("click", () => { state.guide = !state.guide; save(); stopPlaying(); updateButtons(); });
 $("fromBar").addEventListener("change", () => { state.from = +$("fromBar").value; if (state.to < state.from) { state.to = state.from; $("toBar").value = String(state.to); } resetPlay(); });
 $("toBar").addEventListener("change", () => { state.to = +$("toBar").value; if (state.from > state.to) { state.from = state.to; $("fromBar").value = String(state.from); } resetPlay(); });
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
