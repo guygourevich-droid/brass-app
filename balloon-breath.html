@@ -27,10 +27,6 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; font-family: var(--display); color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e8f4ff 55%, #fff4e3 100%) fixed; overflow: hidden; }
-  /* Evening falls as the village lights up. */
-  .sky { position: fixed; inset: 0; opacity: 0; transition: opacity 2s; }
-  #dusk { background: linear-gradient(180deg, #6f7fc9 0%, #b79bd0 55%, #f6c3a0 100%); }
-  #night { background: linear-gradient(180deg, #0c1638 0%, #1d2b5e 60%, #3b3f7a 100%); }
   button { font: inherit; color: inherit; }
   :focus-visible { outline: none; box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--accent); border-radius: 12px; }
 
@@ -68,7 +64,6 @@
 </style>
 </head>
 <body>
-<div class="sky" id="dusk"></div><div class="sky" id="night"></div>
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
@@ -79,6 +74,10 @@
       <button id="lv3" class="seg-btn" aria-pressed="false" title="נושפים 12">12</button>
       <button id="lv4" class="seg-btn" aria-pressed="false" title="נושפים 16">16</button>
     </div>
+    <div class="seg" role="group" aria-label="עולם">
+      <button id="wBubble" class="seg-btn" aria-pressed="true" title="בועת סבון">🫧</button>
+      <button id="wDandelion" class="seg-btn" aria-pressed="false" title="שן הארי">🌼</button>
+    </div>
     <span class="spacer"></span>
     <span class="mic" id="mic" hidden><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
     <button id="soundBtn" class="icon-btn" title="צלילים (M)" aria-pressed="true">🔔</button>
@@ -86,7 +85,7 @@
   </header>
 
   <main class="stage" id="stage">
-    <svg class="scene" id="scene" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="בלון, טחנת רוח וכפר"></svg>
+    <svg class="scene" id="scene" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="בועת סבון ענקית"></svg>
     <div class="cue" aria-live="polite"><div class="cue-box"><span class="cue-word" id="cueWord"></span><span class="cue-count" id="cueCount"></span></div></div>
     <div class="diag" id="diag" hidden></div>
   </main>
@@ -94,7 +93,7 @@
   <footer class="transport">
     <span class="tip" id="tip"></span>
     <span class="spacer"></span>
-    <span><kbd>Space</kbd> נשימה · <kbd>Esc</kbd> עצירה · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>N</kbd> ערב חדש</span>
+    <span><kbd>Space</kbd> נשימה · <kbd>Esc</kbd> עצירה · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>N</kbd> מתחילים מחדש</span>
   </footer>
 </div>
 <script>
@@ -141,31 +140,25 @@ const audioLine = () => {
 
 
 /* ---------- Breathing ----------
-   One press = one breath, and nothing starts by itself.
-   Breathe in (4 counts): the balloon fills. Blow out (4, 8, 12 or 16 counts): the balloon empties at a steady
-   rate, its air turns the windmill, and the windmill's power creeps along the cable to the next dark house,
-   arriving exactly as the breath ends: that house lights up. Six houses, one per breath; when all are lit,
-   night falls. No breath hold anywhere.
-   The microphone is only a bonus: if it hears blowing, the windmill turns a little faster and the air
-   sparkles. Silence never stops or slows anything. */
+   One press = one breath, and nothing starts by itself. Breathe in 4 counts, blow out 4, 8, 12 or 16, no hold.
+   Two worlds, same breath: a giant soap bubble (grows while blowing, then floats up to join the others) or a
+   dandelion (opens while breathing in; the breeze takes its seeds one by one; each breath grows a flower).
+   The microphone is only a bonus: if it hears blowing, the breeze turns golden and things move a little
+   faster. Silence never stops or slows anything. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
 
 const LEVELS = [4, 8, 12, 16];      // seconds of blowing out
 const IN_S = 4;                     // breathing in is always a calm 4
-const LIT_S = 1.6;                  // the house lights up, then everything waits for the next press
-const HOUSES = 6;
-const TIPS = ["יושבים זקוף, כתפיים רגועות", "לא עוצרים את האוויר: שואפים ומיד נושפים", "אוויר יציב, מההתחלה ועד הסוף", "מסחרר? עוצרים ונושמים רגיל"];
-// Four sails: keep the spin under ~0.5 turns a second (2 sails a second), or it flickers on a projector.
-const REDUCED_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const SPIN = REDUCED_MOTION ? 0 : 1.9, SPIN_BONUS = REDUCED_MOTION ? 0 : 2.9;   // radians per second
+const FLOAT_S = 1.6;                // the bubble lets go, then everything waits for the next press
+const TIPS = ["יושבים זקוף, כתפיים רגועות", "לא עוצרים את האוויר: שואפים ומיד נושפים", "אוויר איטי ויציב עושה בועה ענקית", "מסחרר? עוצרים ונושמים רגיל"];
 const BLOW_DB = 10;                 // the mic hears blowing at this many decibels over the room
 const ANALYSE_MS = 50;
 
 const state = {
-  level: 1, phase: "idle", phaseT: 0, lit: 0, tip: 0, sound: true,
-  angle: 0, spin: 0, blowing: false, blowSince: 0,
+  level: 1, world: "bubble", phase: "idle", phaseT: 0, tip: 0, sound: true, made: 0,
+  blowing: false, blowSince: 0,
   listening: false, rms: 0, noiseFloor: 0.002, muteUntil: 0, lastAnalyse: 0
 };
 
@@ -289,79 +282,230 @@ const el = (tag, attrs, parent) => {
 };
 const clamp01 = v => Math.max(0, Math.min(1, v));
 const lerp = (a, b, t) => a + (b - a) * t;
+const ease = p => p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
 
-const GROUND = 560, BX = 1340, BY = 300, MILL_X = 860, HUB_Y = 250, CABLE_Y = 574;
-const HOUSE_X = [670, 562, 454, 346, 238, 130];      // nearest the windmill first
-const B_EMPTY = 0.42, B_FULL = 0.8;
-let scene = {};
+const GROUND = 560, RX = 1080, RY = 300;     // where the wand's ring / the dandelion's head is: the child's side
+let scene = {}, seed = 5;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
 function buildScene() {
   const svg = $("scene");
   svg.textContent = "";
   scene = {};
+  // The park: a hill and a tree. Quiet, so the breath's picture stands out.
+  el("path", { d: `M -400 ${GROUND} C 300 ${GROUND - 16} 900 ${GROUND + 8} 2000 ${GROUND - 10} L 2000 900 L -400 900 Z`, fill: "#7cc77a" }, svg);
+  el("rect", { x: 140, y: GROUND - 150, width: 24, height: 156, rx: 8, fill: "#8a5a2b" }, svg);
+  [[152, GROUND - 200, 80, "#3f9e4d"], [100, GROUND - 160, 56, "#4fb35c"], [206, GROUND - 158, 58, "#4fb35c"]].forEach(([cx, cy, r, f]) => el("circle", { cx, cy, r, fill: f }, svg));
+  scene.back = el("g", {}, svg);          // the world's collection: floating bubbles, or the meadow's flowers
+  // The breeze, shared by both worlds: soft curls of air from the child's side (the right).
+  scene.breeze = el("g", { fill: "none", "stroke-linecap": "round", opacity: 0 }, svg);
+  scene.wisps = [0, 1, 2, 3, 4].map(() => el("path", { d: "M 0 0 C -26 -16 -52 16 -80 0 C -96 -9 -100 -26 -86 -32", stroke: "#ffffff", "stroke-width": 8 }, scene.breeze));
+  WORLDS[state.world].build(svg);
+}
 
-  scene.stars = el("g", { opacity: 0 }, svg);
-  let seed = 11;
-  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 46; i++) el("circle", { cx: (rnd() * 1600).toFixed(0), cy: (10 + rnd() * 330).toFixed(0), r: 1.5 + (i % 3), fill: "#fff6d0" }, scene.stars);
-  scene.moon = el("g", { transform: "translate(1440 90)", opacity: 0 }, svg);
-  el("circle", { r: 40, fill: "#ffe9a8" }, scene.moon);
-
-  scene.ground = el("path", { d: `M -400 ${GROUND} C 300 ${GROUND - 14} 900 ${GROUND + 6} 2000 ${GROUND - 8} L 2000 900 L -400 900 Z`, fill: "#7cc77a" }, svg);
-
-  // The cable: dark in the grass, glowing as far as the power has reached.
-  el("line", { x1: MILL_X - 20, x2: HOUSE_X[HOUSES - 1], y1: CABLE_Y, y2: CABLE_Y, stroke: "#4f7d4a", "stroke-width": 6, "stroke-linecap": "round" }, svg);
-  scene.cableLit = el("line", { x1: MILL_X - 20, x2: MILL_X - 20, y1: CABLE_Y, y2: CABLE_Y, stroke: "#ffd25a", "stroke-width": 8, "stroke-linecap": "round" }, svg);
-  scene.spark = el("circle", { cx: MILL_X - 20, cy: CABLE_Y, r: 12, fill: "#fff3b0", opacity: 0 }, svg);
-
-  // Houses: dark until their breath lights them.
-  scene.houses = HOUSE_X.map((x, i) => {
-    const g = el("g", { transform: `translate(${x} ${GROUND + 4}) scale(1.25)` }, svg);
-    const halo = el("circle", { cy: -44, r: 62, fill: "#ffcf4a", opacity: 0 }, g);
-    el("rect", { x: -36, y: -56, width: 72, height: 56, fill: ["#fff1dc", "#ffe1e1", "#e1f0ff", "#fff1dc", "#e8ffe1", "#f3e6ff"][i] }, g);
-    el("path", { d: "M -46 -54 L 0 -96 L 46 -54 Z", fill: ["#e2643a", "#7a5cf0", "#1a7fe2", "#2fa36b", "#e2643a", "#c24e7a"][i] }, g);
-    el("rect", { x: -8, y: -30, width: 16, height: 30, fill: "#a0663b" }, g);
-    const wins = [el("rect", { x: -29, y: -47, width: 17, height: 17, rx: 2, fill: "#3b434e" }, g),
-                  el("rect", { x: 12, y: -47, width: 17, height: 17, rx: 2, fill: "#3b434e" }, g)];
-    return { halo, wins };
+function drawBreeze(t, on) {
+  scene.breeze.setAttribute("opacity", on ? 1 : 0);
+  if (!on) return;
+  scene.wisps.forEach((w, i) => {
+    const run = (t * (state.blowing ? 300 : 190) + i * 86) % 430, x = 1580 - run, y = RY + [-50, -18, 14, 44, -34][i] + Math.sin(t * 2 + i) * 6;
+    w.setAttribute("transform", `translate(${x.toFixed(0)} ${y.toFixed(0)})`);
+    w.setAttribute("opacity", Math.sin(Math.PI * run / 430).toFixed(2));
+    w.setAttribute("stroke", state.blowing ? "#fff3b0" : "#ffffff");
   });
+}
 
-  // The windmill.
-  const m = el("g", {}, svg);
-  el("path", { d: `M ${MILL_X - 46} ${GROUND + 2} L ${MILL_X - 26} ${HUB_Y + 10} L ${MILL_X + 26} ${HUB_Y + 10} L ${MILL_X + 46} ${GROUND + 2} Z`, fill: "#f4e6cf", stroke: "#c9b48f", "stroke-width": 3 }, m);
-  el("path", { d: `M ${MILL_X - 34} ${HUB_Y + 14} Q ${MILL_X} ${HUB_Y - 40} ${MILL_X + 34} ${HUB_Y + 14} Z`, fill: "#c9632f" }, m);
-  el("rect", { x: MILL_X - 14, y: GROUND - 50, width: 28, height: 52, rx: 14, fill: "#a0663b" }, m);
-  el("circle", { cx: MILL_X, cy: HUB_Y + 90, r: 12, fill: "#8fd3ff", stroke: "#c9b48f", "stroke-width": 3 }, m);
-  scene.sails = el("g", {}, m);
-  for (let i = 0; i < 4; i++) {
-    const s = el("g", { transform: `rotate(${i * 90})` }, scene.sails);
-    el("rect", { x: -4, y: -170, width: 8, height: 170, fill: "#8a5a2b" }, s);
-    el("rect", { x: 4, y: -160, width: 40, height: 120, fill: "#fff", stroke: "#8a5a2b", "stroke-width": 3 }, s);
-    for (let k = 1; k < 4; k++) el("line", { x1: 4, x2: 44, y1: -160 + k * 30, y2: -160 + k * 30, stroke: "#c9b48f", "stroke-width": 2 }, s);
+/* ---------- World 1: a giant soap bubble ----------
+   In: the wand dips into the bowl and comes up with a film. Out: the bubble grows from the ring at a steady
+   rate (bigger for longer levels). End: it lets go and floats up to its own place in the sky. */
+
+const RING = 64, BOWL_X = 1290, BOWL_Y = 548;
+const SIZES = [125, 160, 195, 230];                    // radius at the end of each level: longer breath, bigger bubble
+const SLOTS = [[230, 150], [470, 120], [700, 175], [360, 300], [600, 320], [830, 290], [880, 120]];
+let bubbles = [], leaving = [];
+
+function bubble(parent) {                              // drawn at radius 100, placed and scaled by its owner
+  const g = el("g", { opacity: 0 }, parent);
+  el("circle", { r: 100, fill: "url(#bubFill)" }, g);
+  el("circle", { r: 97, fill: "none", stroke: "url(#bubRim)", "stroke-width": 7, opacity: .95 }, g);
+  el("ellipse", { cx: -46, cy: -50, rx: 24, ry: 12, transform: "rotate(-40 -46 -50)", fill: "#fff", opacity: .95 }, g);
+  el("circle", { cx: -18, cy: -68, r: 6, fill: "#fff", opacity: .9 }, g);
+  el("path", { d: "M 52 50 Q 66 32 70 12", fill: "none", stroke: "#fff", "stroke-width": 6, "stroke-linecap": "round", opacity: .7 }, g);
+  return g;
+}
+
+function popAt(x, y, r) {                              // a few droplets, nothing more
+  const svg = $("scene");
+  for (let i = 0; i < 10; i++) {
+    const a = Math.PI * 2 * i / 10, c = el("circle", { r: 5, fill: "#dff1ff", stroke: "#8fd3ff", "stroke-width": 2 }, svg), t0 = performance.now();
+    (function fly(now) {
+      const p = (now - t0) / 500;
+      if (p >= 1) { c.remove(); return; }
+      c.setAttribute("cx", x + Math.cos(a) * (r * 0.8 + 40 * p));
+      c.setAttribute("cy", y + Math.sin(a) * (r * 0.8 + 40 * p) + 30 * p * p);
+      c.setAttribute("opacity", 1 - p);
+      requestAnimationFrame(fly);
+    })(t0);
   }
-  el("circle", { cx: 0, cy: 0, r: 14, fill: "#8a5a2b" }, scene.sails);
-
-  // The air from the balloon to the sails.
-  scene.air = el("g", { opacity: 0, fill: "none", "stroke-linecap": "round" }, svg);
-  scene.airLines = [-26, 0, 26].map(dy => el("path", { stroke: "#ffffff", "stroke-width": 9, "stroke-dasharray": "16 28" }, scene.air));
-
-  // The balloon, its neck pointing at the windmill. Its size is the breath.
-  scene.balloon = el("g", {}, svg);
-  scene.target = el("path", { d: balloonPath(), transform: `translate(${BX} ${BY}) rotate(90) scale(${B_FULL})`, fill: "none", stroke: "#ff6f59", "stroke-width": 4 / B_FULL, "stroke-dasharray": "12 12", opacity: 0 }, svg);
-  scene.bScale = el("g", {}, scene.balloon);
-  const defs = el("defs", {}, svg);
-  const grad = el("radialGradient", { id: "bfill", cx: "36%", cy: "30%", r: "78%" }, defs);
-  el("stop", { offset: "0", "stop-color": "#ffa08c" }, grad);
-  el("stop", { offset: ".55", "stop-color": "#ff6f59" }, grad);
-  el("stop", { offset: "1", "stop-color": "#d63f2d" }, grad);
-  el("path", { d: balloonPath(), fill: "url(#bfill)" }, scene.bScale);
-  el("ellipse", { cx: -78, cy: -112, rx: 30, ry: 64, transform: "rotate(-24 -78 -112)", fill: "#fff", opacity: .45 }, scene.bScale);
-  el("path", { d: "M -13 220 L 13 220 L 6 239 L -6 239 Z", fill: "#c9392a" }, scene.bScale);
 }
 
-function balloonPath() {
-  return "M 0 -205 C 115 -205 195 -113 195 0 C 195 113 95 200 10 223 L -10 223 C -95 200 -195 113 -195 0 C -195 -113 -115 -205 0 -205 Z";
+const BUBBLE = {
+  build(svg) {
+    const defs = el("defs", {}, svg);
+    const fill = el("radialGradient", { id: "bubFill" }, defs);
+    [[0, "#ffffff", 0.05], [.7, "#d6ecff", .22], [.9, "#c9a8ff", .45], [1, "#5aa7e8", .75]].forEach(([o, c, a]) => el("stop", { offset: o, "stop-color": c, "stop-opacity": a }, fill));
+    scene.rimGrad = el("linearGradient", { id: "bubRim" }, defs);
+    ["#ff6f9a", "#ffc23a", "#3fbf7a", "#3a8fe0", "#9a5ce8", "#ff6f9a"].forEach((c, i) => el("stop", { offset: i / 5, "stop-color": c }, scene.rimGrad));
+    [[420, "#ff8fb1"], [520, "#ffd25a"], [640, "#b07ae8"], [760, "#ff8fb1"]].forEach(([x, c]) => {
+      el("line", { x1: x, x2: x, y1: GROUND + 4, y2: GROUND - 26, stroke: "#2f9e66", "stroke-width": 4 }, svg);
+      el("circle", { cx: x, cy: GROUND - 30, r: 9, fill: c }, svg);
+      el("circle", { cx: x, cy: GROUND - 30, r: 3.5, fill: "#fff6d0" }, svg);
+    });
+    bubbles.forEach(b => { b.node = bubble(scene.back); });
+    el("path", { d: `M ${BOWL_X - 100} ${BOWL_Y - 20} Q ${BOWL_X - 92} ${BOWL_Y + 40} ${BOWL_X} ${BOWL_Y + 42} Q ${BOWL_X + 92} ${BOWL_Y + 40} ${BOWL_X + 100} ${BOWL_Y - 20} Z`, fill: "#5aa7e8" }, svg);
+    el("ellipse", { cx: BOWL_X, cy: BOWL_Y - 20, rx: 100, ry: 18, fill: "#dff1ff" }, svg);
+    [[-50, -24, 10], [-20, -28, 13], [16, -26, 9], [48, -22, 11]].forEach(([dx, dy, r]) => el("circle", { cx: BOWL_X + dx, cy: BOWL_Y + dy, r, fill: "#fff", opacity: .9 }, svg));
+    scene.grow = bubble(svg);
+    scene.wand = el("g", {}, svg);
+    el("line", { x1: RX + 30, y1: RY + RING - 4, x2: RX + 150, y2: RY + 360, stroke: "#7a5cf0", "stroke-width": 16, "stroke-linecap": "round" }, scene.wand);
+    scene.film = el("circle", { cx: RX, cy: RY, r: RING - 6, fill: "url(#bubFill)", opacity: 0 }, scene.wand);
+    el("circle", { cx: RX, cy: RY, r: RING, fill: "none", stroke: "#7a5cf0", "stroke-width": 13 }, scene.wand);
+    el("circle", { cx: RX, cy: RY, r: RING, fill: "none", stroke: "#a48cf5", "stroke-width": 4 }, scene.wand);
+  },
+  draw(t, dt) {
+    const s = state, out = LEVELS[s.level - 1], R = SIZES[s.level - 1];
+    let dip = 0, film = s.phase === "out";
+    if (s.phase === "in") {
+      const p = s.phaseT / IN_S;
+      dip = p < 0.4 ? ease(p / 0.4) : p < 0.6 ? 1 : 1 - ease((p - 0.6) / 0.4);
+      film = p > 0.6;
+    }
+    const wx = (BOWL_X - RX) * dip, wy = (BOWL_Y - 10 - RY) * dip + (dip > 0.98 ? Math.sin(t * 9) * 4 : 0);
+    scene.wand.setAttribute("transform", `translate(${wx.toFixed(1)} ${wy.toFixed(1)}) rotate(${(-22 * dip).toFixed(1)} ${RX} ${RY})`);
+    scene.film.setAttribute("opacity", film ? 0.9 : 0);
+    if (s.phase === "out") {
+      const q = clamp01(s.phaseT / out), r = lerp(RING * 0.9, R, q), wob = 1 + Math.sin(t * 5) * 0.025;
+      scene.growR = r; scene.growX = RX - (r - RING * 0.9) * 0.98; scene.growY = RY - (r - RING) * 0.12;
+      scene.grow.setAttribute("opacity", 1);
+      scene.grow.setAttribute("transform", `translate(${scene.growX.toFixed(1)} ${scene.growY.toFixed(1)}) scale(${(r / 100 * wob).toFixed(3)} ${(r / 100 / wob).toFixed(3)})`);
+    } else scene.grow.setAttribute("opacity", 0);
+    scene.rimGrad.setAttribute("gradientTransform", `rotate(${((t * (s.blowing ? 120 : 40)) % 360).toFixed(1)} .5 .5)`);
+    for (const b of bubbles) {
+      const e = ease(clamp01((t - b.born) / 2.5));
+      const x = lerp(b.x, b.tx, e) + Math.sin(t * 0.7 + b.ph) * 10, y = lerp(b.y, b.ty, e) + Math.sin(t * 0.9 + b.ph) * 8, r = lerp(b.r, b.r1, e);
+      b.node.setAttribute("opacity", 1);
+      b.node.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(r / 100).toFixed(3)})`);
+      b.cx = x; b.cy = y; b.cr = r;
+    }
+    leaving = leaving.filter(b => {               // the oldest drifts up and away
+      b.cy -= dt * 120;
+      b.node.setAttribute("transform", `translate(${b.cx.toFixed(1)} ${b.cy.toFixed(1)}) scale(${(b.cr / 100).toFixed(3)})`);
+      if (b.cy < -300) { b.node.remove(); return false; }
+      return true;
+    });
+  },
+  release() {
+    const slot = SLOTS[state.made % SLOTS.length];
+    bubbles.push({ node: bubble(scene.back), x: scene.growX, y: scene.growY, r: scene.growR, r1: SIZES[state.level - 1] * 0.5,
+      tx: slot[0], ty: slot[1], born: performance.now() / 1000, ph: rnd() * 6 });
+    while (bubbles.length > SLOTS.length - 1) leaving.push(bubbles.shift());
+  },
+  stop() { if (state.phase === "out") popAt(scene.growX, scene.growY, scene.growR); },
+  clear() { bubbles.forEach(b => popAt(b.cx, b.cy, b.cr)); bubbles = []; scene.back.textContent = ""; }
+};
+
+/* ---------- World 2: a dandelion ----------
+   In: the flower opens into a fluffy ball. Out: the breeze takes its seeds one by one at a steady rate; the
+   last seed leaves exactly as the breath ends. End: a new yellow flower grows in the meadow. */
+
+const BALL = 1.8;                     // the seed ball's size: big enough for the back of the room
+const SEEDS = 30, FLOWER_SPOTS = [[330, 586], [470, 600], [600, 582], [740, 604], [880, 588], [400, 622], [540, 628], [680, 624], [820, 628], [270, 616], [950, 612], [620, 606]];
+let flowers = [], flying = [];
+
+function seedShape(parent, flyingOne) {               // stalk along -y, the fluffy pappus at its tip
+  const g = el("g", {}, parent);
+  el("line", { x1: 0, y1: flyingOne ? 0 : -10, x2: 0, y2: -58, stroke: "#e9e3cf", "stroke-width": 2.5 }, g);
+  el("ellipse", { cx: 0, cy: flyingOne ? 4 : -8, rx: 2.5, ry: 6, fill: "#a88a4a" }, g);
+  for (let k = -3; k <= 3; k++) el("line", { x1: 0, y1: -58, x2: Math.sin(k * 0.42) * 17, y2: -58 - Math.cos(k * 0.42) * 17, stroke: "#ffffff", "stroke-width": 2.2, "stroke-linecap": "round" }, g);
+  return g;
 }
+
+function yellowFlower(parent, x, y) {
+  const g = el("g", { transform: `translate(${x} ${y}) scale(0)` }, parent);
+  el("path", { d: "M 0 0 C -3 -14 3 -26 0 -40", fill: "none", stroke: "#2f9e66", "stroke-width": 4 }, g);
+  el("path", { d: "M 0 -6 C -16 -10 -22 -20 -24 -26 C -12 -22 -4 -16 0 -10 Z", fill: "#3fae5c" }, g);
+  for (let i = 0; i < 12; i++) el("ellipse", { cx: 0, cy: -54, rx: 4, ry: 12, transform: `rotate(${i * 30} 0 -42)`, fill: "#ffc81a" }, g);
+  el("circle", { cy: -42, r: 7, fill: "#f2a900" }, g);
+  return g;
+}
+
+const DANDELION = {
+  build(svg) {
+    flowers.forEach(f => { f.node = yellowFlower(scene.back, f.x, f.y); f.node.setAttribute("transform", `translate(${f.x} ${f.y}) scale(1.4)`); });
+    el("path", { d: `M ${RX + 40} ${GROUND + 6} C ${RX + 50} ${GROUND - 90} ${RX - 10} ${RY + 140} ${RX} ${RY + 8}`, fill: "none", stroke: "#3f9e4d", "stroke-width": 9, "stroke-linecap": "round" }, svg);
+    el("path", { d: `M ${RX + 40} ${GROUND} C ${RX - 10} ${GROUND - 20} ${RX - 40} ${GROUND - 50} ${RX - 60} ${GROUND - 70} C ${RX - 20} ${GROUND - 50} ${RX + 10} ${GROUND - 30} ${RX + 40} ${GROUND - 4} Z`, fill: "#4fb35c" }, svg);
+    el("path", { d: `M ${RX + 44} ${GROUND} C ${RX + 80} ${GROUND - 20} ${RX + 110} ${GROUND - 44} ${RX + 130} ${GROUND - 60} C ${RX + 100} ${GROUND - 36} ${RX + 80} ${GROUND - 16} ${RX + 46} ${GROUND - 2} Z`, fill: "#3fae5c" }, svg);
+    scene.bud = el("path", { d: `M ${RX} ${RY + 20} C ${RX - 36} ${RY} ${RX - 26} ${RY - 56} ${RX} ${RY - 76} C ${RX + 26} ${RY - 56} ${RX + 36} ${RY} ${RX} ${RY + 20} Z`, fill: "#5cbf6a", stroke: "#3f9e4d", "stroke-width": 3 }, svg);
+    scene.ball = el("g", {}, svg);
+    scene.fluff = el("circle", { r: 78, fill: "#ffffff", opacity: .28 }, scene.ball);
+    scene.seeds = [];
+    for (let i = 0; i < SEEDS; i++) {
+      const a = i * 360 / SEEDS + (i % 2) * 6, holder = el("g", { transform: `rotate(${a})` }, scene.ball);
+      seedShape(holder, false);
+      scene.seeds.push({ holder, a, order: 0 });
+    }
+    // The order they leave in: shuffled, so the ball thins evenly, not in a sweep.
+    const order = scene.seeds.map((_, i) => i).sort(() => rnd() - .5);
+    order.forEach((idx, k) => { scene.seeds[idx].order = k; });
+    el("circle", { cx: RX, cy: RY, r: 16, fill: "#c9a35a" }, svg);
+    scene.flyLayer = el("g", {}, svg);
+    scene.gone = 0;
+  },
+  draw(t, dt) {
+    const s = state, out = LEVELS[s.level - 1];
+    // In: the bud gives way to the fluffy ball. Out: seeds leave one by one. After: a bare head until the next press.
+    let open = 0;
+    if (s.phase === "in") open = ease(clamp01(s.phaseT / (IN_S * 0.85)));
+    else if (s.phase === "out") open = 1;
+    const sway = s.phase === "out" ? Math.sin(t * 3) * 4 - 6 : 0;
+    scene.ball.setAttribute("transform", `translate(${RX} ${RY}) rotate(${sway.toFixed(1)}) scale(${((0.25 + 0.75 * open) * BALL).toFixed(3)})`);
+    scene.bud.setAttribute("opacity", s.phase === "idle" ? clamp01(s.phaseT) : s.phase === "in" ? 1 - clamp01(s.phaseT * 2) : 0);
+    const leftNow = s.phase === "out" ? Math.floor(clamp01(s.phaseT / out) * SEEDS + 1e-6) : s.phase === "float" || s.phase === "idle" ? SEEDS : 0;
+    const shown = s.phase === "in" || s.phase === "out";
+    scene.fluff.setAttribute("opacity", shown ? (0.28 * (1 - leftNow / SEEDS)).toFixed(2) : 0);
+    for (const sd of scene.seeds) {
+      const away = sd.order < leftNow;
+      sd.holder.setAttribute("opacity", shown && !away ? 1 : 0);
+      if (s.phase === "out" && away && !sd.flown) {      // this one just left: it flies off on the breeze
+        sd.flown = true;
+        const rad = (sd.a + sway) * Math.PI / 180, d = 58 * BALL;
+        const node = seedShape(scene.flyLayer, true);
+        flying.push({ node, x: RX + Math.sin(rad) * d, y: RY - Math.cos(rad) * d, v: 150 + rnd() * 90, ph: rnd() * 6, born: t });
+      }
+    }
+    if (s.phase === "in") scene.seeds.forEach(sd => { sd.flown = false; });
+    flying = flying.filter(f => {
+      const age = t - f.born;
+      f.x -= dt * f.v * (s.blowing ? 1.4 : 1);
+      f.y += dt * (-18 + Math.sin(age * 2 + f.ph) * 40);
+      f.node.setAttribute("transform", `translate(${f.x.toFixed(1)} ${f.y.toFixed(1)}) rotate(${(Math.sin(age * 2.4 + f.ph) * 22 - 70).toFixed(1)}) scale(1.3)`);
+      if (f.x < -80) { f.node.remove(); return false; }
+      return true;
+    });
+    for (const f of flowers) {
+      const g = clamp01((t - f.born) / 0.9);
+      f.node.setAttribute("transform", `translate(${f.x} ${f.y}) scale(${(ease(g) * 1.4).toFixed(3)})`);
+    }
+  },
+  release() {
+    const spot = FLOWER_SPOTS[state.made % FLOWER_SPOTS.length];
+    if (flowers.length >= FLOWER_SPOTS.length) { const old = flowers.shift(); old.node.remove(); }
+    flowers.push({ node: yellowFlower(scene.back, spot[0], spot[1]), x: spot[0], y: spot[1], born: performance.now() / 1000 + 0.6 });
+  },
+  stop() {},
+  clear() { flowers = []; scene.back.textContent = ""; }
+};
+
+const WORLDS = { bubble: BUBBLE, dandelion: DANDELION };
 
 /* ---------- One breath ---------- */
 
@@ -370,20 +514,20 @@ function setPhase(p) { state.phase = p; state.phaseT = 0; }
 function press() {
   if (state.phase !== "idle") return;               // a breath in progress is never restarted by a tap
   startMic();
-  if (state.lit >= HOUSES) newEvening();
   state.tip++;
   $("tip").textContent = TIPS[state.tip % TIPS.length];
   setPhase("in");
   notes([392, 523.25]);
 }
 
-function stopBreath() {
+function stopBreath() {                              // Esc: the teacher stops a breath
+  WORLDS[state.world].stop();
   if (state.phase === "in" || state.phase === "out") setPhase("idle");
 }
 
-function newEvening() {
-  state.lit = 0;
-  if (state.phase === "lit") setPhase("idle");
+function clearAll() {
+  WORLDS[state.world].clear();
+  state.made = 0;
 }
 
 function update(dt) {
@@ -391,73 +535,21 @@ function update(dt) {
   s.phaseT += dt;
   if (s.phase === "in" && s.phaseT >= IN_S) { setPhase("out"); notes([523.25, 392]); }
   else if (s.phase === "out" && s.phaseT >= out) {
-    s.lit = Math.min(HOUSES, s.lit + 1);
-    setPhase("lit");
-    if (s.lit === HOUSES) notes([523.25, 659.25, 783.99, 1046.5], 0.14, 0.1);
-    else notes([783.99, 1046.5], 0.1);
-  } else if (s.phase === "lit" && s.phaseT >= LIT_S) setPhase("idle");
+    WORLDS[s.world].release();
+    s.made++;
+    setPhase("float");
+    notes([587.33, 880], 0.08, 0.08);
+  } else if (s.phase === "float" && s.phaseT >= FLOAT_S) setPhase("idle");
 }
 
 function draw(dt) {
   const s = state, t = performance.now() / 1000, out = LEVELS[s.level - 1];
-
-  // Balloon: eases full while breathing in; empties at a constant rate while blowing (steady air).
-  let b = B_EMPTY;
-  if (s.phase === "in") { const p = clamp01(s.phaseT / IN_S); b = lerp(B_EMPTY, B_FULL, 1 - Math.pow(1 - p, 2)); }
-  else if (s.phase === "out") b = lerp(B_FULL, B_EMPTY, clamp01(s.phaseT / out));
-  const bob = Math.sin(t * 1.4) * 5;
-  scene.bScale.setAttribute("transform", `translate(${BX} ${(BY + bob).toFixed(1)}) rotate(90) scale(${b.toFixed(3)})`);
-  scene.target.setAttribute("opacity", s.phase === "in" ? 0.6 : 0);
-
-  // The air stream from the neck to the sails, only while blowing.
-  const blowing = s.phase === "out";
-  const neck = BX - 239 * b;
-  scene.air.setAttribute("opacity", blowing ? 1 : 0);
-  if (blowing) {
-    const bonus = s.blowing;
-    scene.airLines.forEach((ln, i) => {
-      const dy = [-26, 0, 26][i];
-      ln.setAttribute("d", `M ${neck.toFixed(0)} ${BY + bob + dy * 0.4} C ${neck - 120} ${BY + dy} ${MILL_X + 220} ${HUB_Y + 30 + dy} ${MILL_X + 60} ${HUB_Y + dy}`);
-      ln.setAttribute("stroke-dashoffset", ((t * (bonus ? 260 : 170)) % 44).toFixed(1));
-      ln.setAttribute("stroke", bonus ? "#fff3b0" : "#ffffff");
-    });
-  }
-
-  // Sails turn steadily while blowing (a little faster if the mic hears it), and coast to a stop after.
-  const want = blowing ? (s.blowing ? SPIN_BONUS : SPIN) : 0;
-  s.spin += (want - s.spin) * Math.min(1, dt * (want > s.spin ? 3 : 1.2));
-  s.angle = (s.angle + s.spin * dt) % (Math.PI * 2);
-  scene.sails.setAttribute("transform", `translate(${MILL_X} ${HUB_Y}) rotate(${(s.angle * 180 / Math.PI).toFixed(1)})`);
-
-  // The power: it reaches the next house exactly when the breath ends.
-  const nextX = HOUSE_X[Math.min(s.lit, HOUSES - 1)], lastLitX = s.lit ? HOUSE_X[s.lit - 1] : MILL_X - 20;
-  let headX = lastLitX;
-  if (s.phase === "out") headX = lerp(lastLitX, nextX, clamp01(s.phaseT / out));
-  scene.cableLit.setAttribute("x2", headX.toFixed(1));
-  scene.spark.setAttribute("cx", headX.toFixed(1));
-  scene.spark.setAttribute("opacity", s.phase === "out" ? 0.9 : 0);
-  scene.spark.setAttribute("r", (10 + Math.sin(t * 12) * 3).toFixed(1));
-
-  scene.houses.forEach((h, i) => {
-    const on = i < s.lit, fresh = s.phase === "lit" && i === s.lit - 1;
-    h.wins.forEach(w => w.setAttribute("fill", on ? "#ffd25a" : "#3b434e"));
-    h.halo.setAttribute("opacity", on ? (fresh ? 0.3 + 0.25 * Math.sin(clamp01(s.phaseT / LIT_S) * Math.PI) : 0.3) : 0);
-  });
-
-  // Evening falls with each lit house; night (stars, moon) when the whole village is lit.
-  $("dusk").style.opacity = clamp01(s.lit / HOUSES * 1.2).toFixed(2);
-  const night = s.lit >= HOUSES ? 1 : 0;
-  $("night").style.opacity = night;
-  scene.stars.setAttribute("opacity", night * 0.9);
-  scene.moon.setAttribute("opacity", night);
-  scene.ground.setAttribute("fill", night ? "#3f7350" : "#7cc77a");
-
-  // The cue at the top.
+  drawBreeze(t, s.phase === "out");
+  WORLDS[s.world].draw(t, dt);
   const word = $("cueWord"), count = $("cueCount");
   if (s.phase === "in") { set(word, "שואפים"); set(count, Math.min(IN_S, Math.floor(s.phaseT) + 1)); word.classList.remove("small"); }
-  else if (s.phase === "out") { set(word, "נושפים"); set(count, Math.min(out, Math.floor(s.phaseT) + 1)); word.classList.remove("small"); }
-  else if (s.lit >= HOUSES) { set(word, "כל הכפר מואר ✨"); set(count, ""); word.classList.remove("small"); }
-  else { set(word, s.phase === "lit" ? "יופי!" : "לוחצים כשמוכנים"); set(count, ""); word.classList.toggle("small", s.phase !== "lit"); }
+  else if (s.phase === "out") { set(word, "נושפים לאט"); set(count, Math.min(out, Math.floor(s.phaseT) + 1)); word.classList.remove("small"); }
+  else { set(word, s.phase === "float" ? "יופי!" : "לוחצים כשמוכנים"); set(count, ""); word.classList.toggle("small", s.phase !== "float"); }
 }
 
 function set(node, v) { const text = String(v); if (node.textContent !== text) node.textContent = text; }
@@ -472,7 +564,17 @@ function setLevel(n) {
 }
 
 function save() {
-  try { localStorage.setItem("breath", JSON.stringify({ level: state.level, sound: state.sound })); } catch (_) {}
+  try { localStorage.setItem("breath", JSON.stringify({ level: state.level, sound: state.sound, world: state.world })); } catch (_) {}
+}
+
+function setWorld(w) {
+  if (state.phase !== "idle") setPhase("idle");
+  state.world = w;
+  state.made = 0;
+  $("wBubble").setAttribute("aria-pressed", String(w === "bubble"));
+  $("wDandelion").setAttribute("aria-pressed", String(w === "dandelion"));
+  save();
+  buildScene();
 }
 
 function toggleSound() {
@@ -514,6 +616,8 @@ function frame(now) {
 
 LEVELS.forEach((_, i) => $("lv" + (i + 1)).addEventListener("click", () => setLevel(i + 1)));
 $("soundBtn").addEventListener("click", toggleSound);
+$("wBubble").addEventListener("click", () => setWorld("bubble"));
+$("wDandelion").addEventListener("click", () => setWorld("dandelion"));
 $("fullscreen").addEventListener("click", toggleFullscreen);
 $("stage").addEventListener("click", press);                     // the whole picture is the button
 document.addEventListener("click", e => { const b = e.target.closest("button"); if (b && e.detail) b.blur(); });
@@ -526,7 +630,7 @@ document.addEventListener("keydown", e => {
   if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight" || c === "ArrowLeft" || c === "PageUp") { e.preventDefault(); press(); }
   else if (c === "Escape") stopBreath();
   else if (/^Digit[1-4]$/.test(c)) setLevel(+c.slice(5));
-  else if (c === "KeyN") newEvening();
+  else if (c === "KeyN") clearAll();
   else if (c === "KeyM") toggleSound();
   else if (c === "KeyD") $("diag").hidden = !$("diag").hidden;
   else if (c === "KeyF") toggleFullscreen();
@@ -537,14 +641,16 @@ try {
   const saved = JSON.parse(localStorage.getItem("breath") || "{}");
   if (LEVELS[saved.level - 1]) level = saved.level;
   if (saved.sound === false) toggleSound();
+  if (saved.world === "dandelion") state.world = "dandelion";
 } catch (_) {}
 const params = new URLSearchParams(location.search);
 if (/^[1-4]$/.test(params.get("level") || "")) level = +params.get("level");
+if (params.get("world") === "dandelion" || params.get("world") === "bubble") state.world = params.get("world");
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
 
 $("tip").textContent = TIPS[0];
-buildScene();
+setWorld(state.world);
 setLevel(level);
 requestAnimationFrame(frame);
 </script>
