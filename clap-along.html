@@ -154,6 +154,13 @@
   @media (prefers-reduced-motion: reduce) {
     .cue.pop .cue-glyph, .qrow.wrong { animation: none; }
   }
+  /* Pause: the whole screen freezes behind one big symbol. */
+  .pause { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: rgba(255, 255, 255, .8); cursor: pointer; }
+  .pause[hidden] { display: none; }
+  .pause-box { text-align: center; }
+  .pause-icon { font-size: clamp(80px, 22vh, 220px); line-height: 1; color: #1a7fe2; }
+  .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
+  .pause-stop { display: block; margin: 2.5vh auto 0; background: none; border: 0; font: inherit; font-size: clamp(16px, 2.6vh, 24px); color: #56616f; text-decoration: underline; cursor: pointer; min-height: 44px; }
 </style>
 </head>
 <body>
@@ -169,6 +176,7 @@
     <label class="ctl" for="tempo"><span class="ctl-k note">♩ =</span><input id="tempo" type="range" min="50" max="120" step="1" value="80"><output id="tempoOut" for="tempo">80</output></label>
     <label class="ctl" for="clickVol"><span class="ctl-k">Click</span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
     <label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span>Counts</span></label>
+    <button id="pauseBtn" class="icon-btn" title="Pause (Esc)">⏸</button>
     <button id="fullscreen" class="icon-btn" title="Full screen (F)" aria-label="Full screen">⛶ Full screen</button>
   </header>
 
@@ -202,8 +210,26 @@
   </footer>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
+<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn">▶ Continue</button><button class="pause-stop" id="pauseStop">■ Stop</button></div></div>
 <script>
 "use strict";
+
+/* ---------- Pause ----------
+   Esc or ⏸ freezes the game: the page's clock (performance.now and animation frames) stands still and the
+   audio engine is suspended, so timers, counts and scheduled sounds all wait. Esc, Space or a tap resumes. */
+let paused = false, pausedAt = 0, pausedFor = 0;
+const realNow = performance.now.bind(performance), realRAF = window.requestAnimationFrame.bind(window);
+performance.now = () => (paused ? pausedAt : realNow()) - pausedFor;
+window.requestAnimationFrame = cb => realRAF(() => cb(performance.now()));
+function setPaused(p) {
+  if (p === paused) return;
+  if (p) pausedAt = realNow(); else pausedFor += realNow() - pausedAt;
+  paused = p;
+  document.getElementById("pauseBox").hidden = !p;
+  const a = pauseAudio();
+  if (a) { if (p) a.suspend(); else a.resume(); }
+}
+const pauseAudio = () => Sound.audio();
 
 /* ---------- Rhythm model ----------
    Time is counted in semiquaver units: crotchet = 4, bar of 4/4 = 16, bar of 3/4 = 12.
@@ -598,7 +624,7 @@ const Sound = (() => {
     return ctx ? ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0) : 0;
   }
 
-  return { ensure, schedule, stop, now };
+  return { ensure, schedule, stop, now, audio: () => ctx };
 })();
 
 /* ---------- Game ---------- */
@@ -872,6 +898,7 @@ document.addEventListener("click", e => {
 document.addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const t = e.target, k = e.key;
+  if (paused) { if (k === "Escape" || k === " " || k === "Enter") { e.preventDefault(); setPaused(false); } return; }
   const nativeActivate = (k === " " || k === "Enter") && (t.tagName === "BUTTON" || t.type === "checkbox");
   if (nativeActivate) return;
   const onRange = t.type === "range";
@@ -879,7 +906,7 @@ document.addEventListener("keydown", e => {
   else if (e.code === "KeyR" || k === "PageUp" || (k === "ArrowLeft" && !onRange)) { e.preventDefault(); again(); }
   else if (state.mode === "quiz" && /^Digit[1-3]$/.test(e.code)) answer(+e.code.slice(5) - 1);
   else if (e.code === "KeyF") toggleFullscreen();
-  else if (k === "Escape" && state.round) { stopRound(); setPhase("done"); setCue("⏸", "Stopped. Again, or Next?"); }
+  else if (k === "Escape") setPaused(true);
 });
 
 // Already full screen when opened from the iPad home screen, and some browsers can't do it at all.
@@ -893,6 +920,9 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.ser
 updateHeader();
 newContent();
 setPhase("ready");
+document.getElementById("pauseBtn").addEventListener("click", () => setPaused(true));
+document.getElementById("pauseBox").addEventListener("click", e => { if (e.target.id !== "pauseStop") setPaused(false); });
+document.getElementById("pauseStop").addEventListener("click", e => { e.stopPropagation(); setPaused(false); stopRound(); setPhase("done"); setCue("⏸", "Stopped. Again, or Next?"); });
 </script>
 </body>
 </html>
