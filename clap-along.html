@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,11 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>Clap-Along · Brass App</title>
+<title>קצב · Brass App</title>
+<script>
+  // English pages lay out left to right from the first paint (the language block fills in the words).
+  try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
+</script>
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
   :root {
@@ -33,6 +37,7 @@
     --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
     color-scheme: light;
   }
+  html[lang="he"] { --display: "Rubik", "Arial Hebrew", "Segoe UI", system-ui, sans-serif; --body: "Rubik", "Arial Hebrew", "Segoe UI", system-ui, sans-serif; }
   * { box-sizing: border-box; }
   html, body { background: var(--paper); color: var(--ink); }
   body { margin: 0; font-family: var(--body); font-size: 15px; }
@@ -50,7 +55,7 @@
     display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px;
     padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--muted);
   }
-  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); letter-spacing: -0.01em; margin-right: auto; text-decoration: none; }
+  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); letter-spacing: -0.01em; margin-inline-end: auto; text-decoration: none; }
   .brand:hover { color: var(--blue); }
   .brand-tool { font-weight: 500; color: var(--muted); }
   @media (hover: none) and (pointer: coarse) { .hint { display: none; } }
@@ -61,7 +66,7 @@
   }
   .seg-btn[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(21,24,29,.12); }
   .levels { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-  .levels-k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-right: 4px; }
+  .levels-k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-inline-end: 4px; }
   .lvl {
     width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper);
     font-family: var(--display); font-weight: 500; cursor: pointer; color: var(--ink-2);
@@ -88,10 +93,11 @@
   .stage { display: flex; flex-direction: column; justify-content: center; gap: clamp(8px, 2vh, 24px); padding-block: clamp(12px, 3vh, 36px); min-width: 0; }
   .stage-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
   .level-title { font-family: var(--display); font-size: clamp(18px, 2.4vh, 26px); color: var(--ink-2); text-wrap: balance; }
-  .level-title b { font-weight: 700; color: var(--ink); margin-right: .35em; }
+  .level-title b { font-weight: 700; color: var(--ink); margin-inline-end: .35em; }
   .tempo-mark { font-family: var(--display); font-size: clamp(16px, 2.2vh, 24px); color: var(--muted); font-variant-numeric: tabular-nums; }
   .tempo-mark .q { font-size: 1.3em; color: var(--ink-2); }
 
+  .score, .qscore, .tempo-mark { direction: ltr; }
   .score svg { display: block; width: 100%; height: auto; max-height: 52vh; }
   .hide-counts .cnt { display: none; }
 
@@ -105,7 +111,7 @@
   .quiz-rows { display: grid; gap: clamp(6px, 1.4vh, 14px); }
   .qrow {
     display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(8px, 1.5vw, 20px);
-    width: 100%; text-align: left; background: var(--paper); cursor: pointer;
+    width: 100%; text-align: start; background: var(--paper); cursor: pointer;
     border: 2px solid var(--line); border-radius: 16px; padding: 4px clamp(8px, 1.4vw, 18px);
     transition: border-color .15s, background-color .15s;
   }
@@ -131,7 +137,7 @@
   .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
   .hint { color: var(--muted); font-size: 13px; }
   .hint kbd { font-family: var(--display); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: var(--console); color: var(--ink-2); }
-  .transport-btns { display: flex; gap: 12px; margin-left: auto; }
+  .transport-btns { display: flex; gap: 12px; margin-inline-start: auto; }
   .btn {
     font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.4vh, 24px);
     border-radius: 999px; padding: .6em 1.4em; cursor: pointer; border: 2px solid transparent;
@@ -166,53 +172,137 @@
 <body>
 
 <div class="app" id="app">
-  <header class="console" aria-label="Teacher controls">
-    <a class="brand" href="index.html" title="Back to Brass App"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool">/ Clap-Along</span></a>
-    <div class="seg" role="group" aria-label="Mode">
-      <button id="modeEcho" class="seg-btn" aria-pressed="true">Echo</button>
-      <button id="modeQuiz" class="seg-btn" aria-pressed="false">Ear quiz</button>
+  <header class="console" data-t-aria="controls">
+    <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool" data-t="tool"></span></a>
+    <div class="seg" role="group" data-t-aria="mode">
+      <button id="modeEcho" class="seg-btn" aria-pressed="true" data-t="echo"></button>
+      <button id="modeQuiz" class="seg-btn" aria-pressed="false" data-t="quiz"></button>
     </div>
-    <div class="levels" role="group" aria-label="Level"><span class="levels-k">Level</span><span id="levels" class="levels"></span></div>
+    <div class="levels" role="group" data-t-aria="level"><span class="levels-k" data-t="level"></span><span id="levels" class="levels"></span></div>
     <label class="ctl" for="tempo"><span class="ctl-k note">♩ =</span><input id="tempo" type="range" min="50" max="120" step="1" value="80"><output id="tempoOut" for="tempo">80</output></label>
-    <label class="ctl" for="clickVol"><span class="ctl-k">Click</span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
-    <label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span>Counts</span></label>
-    <button id="pauseBtn" class="icon-btn" title="Pause (Esc)">⏸</button>
-    <button id="fullscreen" class="icon-btn" title="Full screen (F)" aria-label="Full screen">⛶ Full screen</button>
+    <label class="ctl" for="clickVol"><span class="ctl-k" data-t="click"></span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
+    <label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span data-t="counts"></span></label>
+    <button id="pauseBtn" class="icon-btn" data-t-title="pause">⏸</button>
+    <button id="fullscreen" class="icon-btn" data-t-title="fullscreen" data-t="fullBtn"></button>
   </header>
 
   <main class="stage" id="stage">
     <div class="stage-head">
-      <div class="level-title"><b id="levelNum">Level 1</b><span id="levelName"></span></div>
+      <div class="level-title"><b id="levelNum"></b><span id="levelName"></span></div>
       <div class="tempo-mark" id="tempoMark"></div>
     </div>
 
-    <section id="echoView" class="echo" aria-label="Echo">
+    <section id="echoView" class="echo" data-t-aria="echo">
       <div class="score" id="echoScore"></div>
     </section>
 
-    <section id="quizView" class="quiz" aria-label="Ear quiz" hidden>
+    <section id="quizView" class="quiz" data-t-aria="quiz" hidden>
       <div class="quiz-rows" id="quizRows">
-        <button class="qrow" id="qrow0" data-i="0" aria-label="Answer A"><span class="qletter">A</span><span class="qscore"></span></button>
-        <button class="qrow" id="qrow1" data-i="1" aria-label="Answer B"><span class="qletter">B</span><span class="qscore"></span></button>
-        <button class="qrow" id="qrow2" data-i="2" aria-label="Answer C"><span class="qletter">C</span><span class="qscore"></span></button>
+        <button class="qrow" id="qrow0" data-i="0"><span class="qletter"></span><span class="qscore"></span></button>
+        <button class="qrow" id="qrow1" data-i="1"><span class="qletter"></span><span class="qscore"></span></button>
+        <button class="qrow" id="qrow2" data-i="2"><span class="qletter"></span><span class="qscore"></span></button>
       </div>
     </section>
 
-    <div class="cue" id="cue" aria-live="polite"><span class="cue-glyph" id="cueGlyph">▶</span><span class="cue-word" id="cueWord">Press Play</span></div>
+    <div class="cue" id="cue" aria-live="polite"><span class="cue-glyph" id="cueGlyph">▶</span><span class="cue-word" id="cueWord"></span></div>
   </main>
 
   <footer class="transport">
-    <div class="hint" id="hint"><kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen</div>
+    <div class="hint" id="hint" data-t-html="keys"></div>
     <div class="transport-btns">
-      <button id="againBtn" class="btn ghost">↻ Again</button>
-      <button id="nextBtn" class="btn primary">▶ Play</button>
+      <button id="againBtn" class="btn ghost"></button>
+      <button id="nextBtn" class="btn primary"></button>
     </div>
   </footer>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
-<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn">▶ Continue</button><button class="pause-stop" id="pauseStop">■ Stop</button></div></div>
+<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button><button class="pause-stop" id="pauseStop" data-t="stop"></button></div></div>
 <script>
 "use strict";
+
+/* ---------- Language ----------
+   Hebrew or English, chosen on the home screen (`brass-lang`; ?lang=en|he for a link). Never mixed: every
+   word on screen comes from TEXT (elements carry data-t / data-t-html / data-t-title / data-t-aria), and
+   English names notes by letter (C D E, B♭). COMMON holds what every page says (microphone, pause, buttons). */
+const LANG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "he") return q;
+    return localStorage.getItem("brass-lang") === "en" ? "en" : "he";
+  } catch (_) { return "he"; }
+})();
+const COMMON = {
+  he: {
+    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
+    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
+    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
+    diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+  },
+  en: {
+    listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
+    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
+    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
+    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
+    diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+  }
+};
+const T = (key, ...args) => {
+  const v = (TEXT[LANG] && TEXT[LANG][key]) ?? COMMON[LANG][key] ?? (TEXT.he && TEXT.he[key]) ?? COMMON.he[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+};
+function applyText() {
+  const root = document.documentElement;
+  root.lang = LANG;
+  root.dir = LANG === "he" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(n => { n.textContent = T(n.dataset.t); });
+  document.querySelectorAll("[data-t-html]").forEach(n => { n.innerHTML = T(n.dataset.tHtml); });
+  document.querySelectorAll("[data-t-title]").forEach(n => { n.title = T(n.dataset.tTitle); });
+  document.querySelectorAll("[data-t-aria]").forEach(n => { n.setAttribute("aria-label", T(n.dataset.tAria)); });
+  if (TEXT[LANG] && TEXT[LANG].pageTitle) document.title = T("pageTitle");
+}
+const TEXT = {
+  he: {
+    pageTitle: "קצב · Brass App", tool: "/ קצב", back: "חזרה ל-Brass App", controls: "שליטה למורה",
+    mode: "מצב", echo: "הד", quiz: "חידון שמיעה", level: "שלב", click: "מטרונום", counts: "ספירה", fullBtn: "⛶ מסך מלא",
+    keys: "<kbd>Space</kbd> ניגון / הבא &nbsp; <kbd>R</kbd> שוב &nbsp; <kbd>F</kbd> מסך מלא &nbsp; <kbd>Esc</kbd> השהיה",
+    levelN: n => `שלב ${n}`,
+    levels: ["רבעים והפסקות רבע", "חצאים, חצאים עם נקודה ושלמים", "שמיניות", "שמינית בודדת והפסקת שמינית",
+      "רבע עם נקודה ושמינית", "סינקופה", "משקל 3/4", "3/4 עם רבע עם נקודה וסינקופה", "שש־עשריות (בונוס)"],
+    letters: ["א", "ב", "ג"], answer: l => `תשובה ${l}`,
+    // Counting under the notes: beat numbers, "ו" between beats (1 ו 2 ו); semiquaver steps get a quiet dot.
+    and: "ו", e: "·", a: "·",
+    play: "▶ ניגון", next: "הבא ◀", again: "↻ שוב", replay: "↻ שוב לשמוע",
+    pressPlay: "לוחצים על ניגון", pressPlayQuiz: "לוחצים על ניגון, ואז בוחרים א, ב או ג",
+    getReady: "מתכוננים…", listen: "מקשיבים", clapBack: "מוחאים בחזרה!", nice: "יפה! שוב, או הבא?",
+    whichOne: "איזה קצב שמעתם? א, ב או ג", yes: l => `כן! זה היה ${l}.`, itWas: l => `זה היה ${l}. לוחצים ↻ כדי לשמוע שוב.`,
+    stopped: "עצרנו. שוב, או הבא?", rhythm: (bars, beats) => `קצב, ${bars === 1 ? "תיבה אחת" : bars + " תיבות"} ב-${beats}/4`
+  },
+  en: {
+    pageTitle: "Clap-Along · Brass App", tool: "/ Clap-Along", back: "Back to Brass App", controls: "Teacher controls",
+    mode: "Mode", echo: "Echo", quiz: "Ear quiz", level: "Level", click: "Click", counts: "Counts", fullBtn: "⛶ Full screen",
+    keys: "<kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen &nbsp; <kbd>Esc</kbd> Pause",
+    levelN: n => `Level ${n}`,
+    levels: ["Crotchets & crotchet rests", "Minims, dotted minims & semibreves", "Quavers", "Single quavers & quaver rests",
+      "Dotted crotchet + quaver", "Syncopation", "3/4 time", "3/4 with dotted crotchets & syncopation", "Semiquavers (bonus)"],
+    letters: ["A", "B", "C"], answer: l => `Answer ${l}`,
+    and: "&", e: "e", a: "a",
+    play: "▶ Play", next: "Next ▶", again: "↻ Again", replay: "↻ Replay",
+    pressPlay: "Press Play", pressPlayQuiz: "Press Play, then pick A, B or C",
+    getReady: "Get ready…", listen: "Listen", clapBack: "Clap it back!", nice: "Nice! Again, or Next?",
+    whichOne: "Which rhythm was it? A, B or C", yes: l => `Yes! It was ${l}.`, itWas: l => `It was ${l}. Press Replay to hear it again.`,
+    stopped: "Stopped. Again, or Next?", rhythm: (bars, beats) => `Rhythm, ${bars} bar${bars > 1 ? "s" : ""} of ${beats}/4`
+  }
+};
+applyText();
 
 /* ---------- Pause ----------
    Esc or ⏸ freezes the game: the page's clock (performance.now and animation frames) stands still and the
@@ -411,7 +501,7 @@ function makeDistractors(answer, rng = Math.random) {
 
 function countLabel(tb) {
   const s = tb % 4;
-  return s === 0 ? String(tb / 4 + 1) : s === 2 ? "&" : s === 1 ? "e" : "a";
+  return s === 0 ? String(tb / 4 + 1) : T(s === 2 ? "and" : s === 1 ? "e" : "a");
 }
 
 /* ---------- Notation (single-line rhythm staff, time-proportional spacing like the video) ---------- */
@@ -466,7 +556,7 @@ function renderScore(container, phrase, compact = false) {
   const fs = Math.max(24, Math.min(compact ? 44 : 58, U * gap * 0.8));
 
   container.textContent = "";
-  const svg = svgEl("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": `Rhythm, ${L.bars} bar${L.bars > 1 ? "s" : ""} of ${L.beats}/4` }, container);
+  const svg = svgEl("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": T("rhythm", L.bars, L.beats) }, container);
   const bandTop = countsY - fs - 10, bandBottom = lineY + (compact ? 58 : 76);
   const band = svgEl("rect", { x: 0, y: bandTop, width: 0, height: bandBottom - bandTop, rx: 8, fill: "#ddebfa", opacity: 0 }, svg);
 
@@ -630,7 +720,6 @@ const Sound = (() => {
 /* ---------- Game ---------- */
 
 const $ = id => document.getElementById(id);
-const LETTERS = ["A", "B", "C"];
 const state = {
   mode: "echo",
   li: 0,
@@ -653,16 +742,16 @@ function setCue(glyph, word, pop = false) {
 
 function setPhase(p) {
   state.phase = p;
-  $("nextBtn").textContent = p === "ready" ? "▶ Play" : "Next ▶";
-  $("againBtn").textContent = state.mode === "echo" ? "↻ Again" : "↻ Replay";
+  $("nextBtn").textContent = T(p === "ready" ? "play" : "next");
+  $("againBtn").textContent = T(state.mode === "echo" ? "again" : "replay");
   $("againBtn").disabled = p === "ready";
-  if (p === "ready") setCue("▶", state.mode === "echo" ? "Press Play" : "Press Play, then pick A, B or C");
+  if (p === "ready") setCue("▶", T(state.mode === "echo" ? "pressPlay" : "pressPlayQuiz"));
 }
 
 function updateHeader() {
   const L = LEVELS[state.li];
-  $("levelNum").textContent = `Level ${state.li + 1}`;
-  $("levelName").textContent = L.name;
+  $("levelNum").textContent = T("levelN", state.li + 1);
+  $("levelName").textContent = T("levels")[state.li];
   $("tempoMark").innerHTML = `<span class="q">♩</span> = ${state.bpm}`;
   $("tempo").value = state.bpm;
   $("tempoOut").textContent = state.bpm;
@@ -783,12 +872,12 @@ function tick() {
   if (el < r.countIn) {
     const n = el < 0 ? 0 : Math.floor(el / r.beat) + 1;
     const key = "c" + n;
-    if (key !== r.key) { r.key = key; clearHighlight(); r.idx = -2; setCue(n ? String(n) : "…", "Get ready…", n > 0); }
+    if (key !== r.key) { r.key = key; clearHighlight(); r.idx = -2; setCue(n ? String(n) : "…", T("getReady"), n > 0); }
   } else if (el < r.countIn + r.phrase) {
-    if (r.key !== "listen") { r.key = "listen"; setCue("👂", "Listen", true); }
+    if (r.key !== "listen") { r.key = "listen"; setCue("👂", T("listen"), true); }
     highlight((el - r.countIn) / r.unit);
   } else if (echo && el < r.total) {
-    if (r.key !== "clap") { r.key = "clap"; r.idx = -2; setCue("👏", "Clap it back!", true); }
+    if (r.key !== "clap") { r.key = "clap"; r.idx = -2; setCue("👏", T("clapBack"), true); }
     highlight((el - r.countIn - r.phrase) / r.unit);
   } else {
     finishRound();
@@ -801,8 +890,8 @@ function finishRound() {
   state.round = null;
   clearHighlight();
   setPhase("done");
-  if (state.mode === "echo") setCue("👍", "Nice! Again, or Next?", true);
-  else if (state.quiz.picked === null) setCue("🤔", "Which rhythm was it? A, B or C", true);
+  if (state.mode === "echo") setCue("👍", T("nice"), true);
+  else if (state.quiz.picked === null) setCue("🤔", T("whichOne"), true);
   else setCue(...state.quiz.result, false);
 }
 
@@ -813,11 +902,11 @@ function answer(i) {
   q.options.forEach((_, j) => { $("qrow" + j).disabled = true; });
   $("qrow" + q.answer).classList.add("correct");
   if (i === q.answer) {
-    q.result = ["👍", `Yes! It was ${LETTERS[q.answer]}.`];
+    q.result = ["👍", T("yes", T("letters")[q.answer])];
     confetti();
   } else {
     $("qrow" + i).classList.add("wrong");
-    q.result = ["👂", `It was ${LETTERS[q.answer]}. Press Replay to hear it again.`];
+    q.result = ["👂", T("itWas", T("letters")[q.answer])];
   }
   if (state.round) state.round.idx = -2;
   setCue(...q.result, true);
@@ -869,7 +958,7 @@ LEVELS.forEach((L, i) => {
   b.className = "lvl" + (L.beats === 3 ? " meter3" : "");
   b.id = "lvl" + (i + 1);
   b.textContent = i + 1;
-  b.title = `Level ${i + 1}: ${L.name}`;
+  b.title = `${T("levelN", i + 1)}: ${T("levels")[i]}`;
   b.setAttribute("aria-label", b.title);
   b.addEventListener("click", () => setLevel(i));
   $("levels").appendChild(b);
@@ -879,7 +968,12 @@ $("modeEcho").addEventListener("click", () => setMode("echo"));
 $("modeQuiz").addEventListener("click", () => setMode("quiz"));
 $("nextBtn").addEventListener("click", primary);
 $("againBtn").addEventListener("click", again);
-[0, 1, 2].forEach(i => $("qrow" + i).addEventListener("click", () => answer(i)));
+[0, 1, 2].forEach(i => {
+  const row = $("qrow" + i), l = T("letters")[i];
+  row.querySelector(".qletter").textContent = l;
+  row.setAttribute("aria-label", T("answer", l));
+  row.addEventListener("click", () => answer(i));
+});
 $("fullscreen").addEventListener("click", toggleFullscreen);
 $("tempo").addEventListener("input", e => {
   state.bpm = +e.target.value;
@@ -922,7 +1016,7 @@ newContent();
 setPhase("ready");
 document.getElementById("pauseBtn").addEventListener("click", () => setPaused(true));
 document.getElementById("pauseBox").addEventListener("click", e => { if (e.target.id !== "pauseStop") setPaused(false); });
-document.getElementById("pauseStop").addEventListener("click", e => { e.stopPropagation(); setPaused(false); stopRound(); setPhase("done"); setCue("⏸", "Stopped. Again, or Next?"); });
+document.getElementById("pauseStop").addEventListener("click", e => { e.stopPropagation(); setPaused(false); stopRound(); setPhase("done"); setCue("⏸", T("stopped")); });
 </script>
 </body>
 </html>

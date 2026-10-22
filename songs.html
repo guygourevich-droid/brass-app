@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>שירים · Brass App</title>
+<title>Songs · Brass App</title>
 <meta name="theme-color" content="#bfe4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -12,6 +12,10 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="fonts/fonts.css">
+<script>
+  // English pages lay out left to right from the first paint (the language block fills in the words).
+  try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
+</script>
 <style>
   :root {
     --ink: #15181d;
@@ -101,75 +105,151 @@
   .pause-icon { font-size: clamp(80px, 22vh, 220px); line-height: 1; color: #1a7fe2; }
   .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
   .pause-stop { display: block; margin: 2.5vh auto 0; background: none; border: 0; font: inherit; font-size: clamp(16px, 2.6vh, 24px); color: #56616f; text-decoration: underline; cursor: pointer; min-height: 44px; }
+  .seg[hidden] { display: none; }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="console">
     <a href="index.html">‹ Brass App</a>
-    <div class="seg" role="group" aria-label="כלי">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true">חצוצרה</button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false">טרומבון</button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false">קרן</button>
+    <div class="seg" role="group" data-t-aria="instrument">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true" data-t="trumpet"></button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false" data-t="horn"></button>
     </div>
-    <button id="listBtn" class="icon-btn" title="רשימת השירים (L)">🎵 שירים</button>
+    <button id="listBtn" class="icon-btn" data-t-title="listTip" data-t="songsBtn"></button>
     <span class="spacer"></span>
-    <span><span class="mic-dot" id="micDot"></span> <span id="micText">מיקרופון</span></span>
-    <button id="settings" class="icon-btn" title="הגדרות (S)">⚙</button>
-    <button id="pauseBtn" class="icon-btn" title="השהיה (Esc)">⏸</button>
-    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
+    <span><span class="mic-dot" id="micDot"></span> <span id="micText" data-t="mic"></span></span>
+    <button id="settings" class="icon-btn" data-t-title="settings">⚙</button>
+    <button id="pauseBtn" class="icon-btn" data-t-title="pause">⏸</button>
+    <button id="fullscreen" class="icon-btn" data-t-title="fullscreen">⛶</button>
   </header>
 
   <main class="stage" id="stage">
-    <svg class="scene" id="scene" viewBox="0 0 1300 600" preserveAspectRatio="xMidYMid meet" role="img" aria-label="שיר"></svg>
+    <svg class="scene" id="scene" viewBox="0 0 1300 600" preserveAspectRatio="xMidYMid meet" role="img" data-t-aria="scene"></svg>
 
-    <section class="list" id="list" aria-label="שירים">
-      <h2>איזה שיר?</h2>
-      <div class="empty" id="empty" hidden><p>כדי לנגן שיר צריך עוד צלילים</p><button id="emptyBtn">⚙ לבחור צלילים</button></div>
+    <section class="list" id="list" data-t-aria="songs">
+      <h2 data-t="whichSong"></h2>
+      <div class="empty" id="empty" hidden><p data-t="needNotes"></p><button id="emptyBtn" data-t="chooseNotes"></button></div>
       <div class="cards" id="cards"></div>
       <p class="more" id="more"></p>
     </section>
 
     <div class="overlay" id="overlay" hidden>
       <div>
-        <p id="overlayText">נלחץ ונתחיל להקשיב</p>
-        <button class="big-btn" id="startBtn">התחלה</button>
+        <p id="overlayText" data-t="startPrompt"></p>
+        <button class="big-btn" id="startBtn" data-t="start"></button>
       </div>
     </div>
 
-    <section class="sheet" id="sheet" hidden aria-label="הגדרות">
-      <h2>אילו צלילים?</h2>
-      <p class="hint">אותה בחירה כמו בצליל נכון ובנינג'ה. מוצגים רק שירים שמשתמשים בצלילים האלה.</p>
+    <section class="sheet" id="sheet" hidden data-t-aria="settingsLabel">
+      <h2 data-t="whichNotes"></h2>
+      <p class="hint" data-t="sameAs"></p>
       <div class="notes" id="noteChips"></div>
-      <h2>הגדרות</h2>
-      <div class="row"><span>שם הצליל</span><div class="seg" role="group" id="namesSeg"></div><div class="seg" role="group" id="styleSeg"></div></div>
-      <div class="row"><span>צליל חוזר</span><div class="seg" role="group" id="repeatSeg"></div></div>
-      <button class="done-btn" id="sheetDone">סגירה</button>
+      <h2 data-t="settingsLabel"></h2>
+      <div class="row"><span data-t="noteName"></span><div class="seg" role="group" id="namesSeg"></div><div class="seg" role="group" id="styleSeg"></div></div>
+      <div class="row"><span data-t="repeated"></span><div class="seg" role="group" id="repeatSeg"></div></div>
+      <button class="done-btn" id="sheetDone" data-t="close"></button>
     </section>
 
     <div class="diag" id="diag" hidden></div>
   </main>
 
   <footer class="transport" id="transport">
-    <div class="seg" role="group" aria-label="מצב">
-      <button id="modeFollow" class="seg-btn" aria-pressed="true">לומדים</button>
-      <button id="modeTime" class="seg-btn" aria-pressed="false">בקצב</button>
+    <div class="seg" role="group" data-t-aria="mode">
+      <button id="modeFollow" class="seg-btn" aria-pressed="true" data-t="follow"></button>
+      <button id="modeTime" class="seg-btn" aria-pressed="false" data-t="inTime"></button>
     </div>
-    <div class="seg" role="group" aria-label="קצב" id="tempoSeg"></div>
-    <div class="seg" role="group" aria-label="ליווי">
-      <button id="bandBtn" class="seg-btn" aria-pressed="true" title="תופים, בס ואקורדים">🥁 להקה</button>
-      <button id="guideBtn" class="seg-btn" aria-pressed="false" title="המנגינה מתנגנת יחד עם הילד (בקצב)">🎺 עם המנגינה</button>
+    <div class="seg" role="group" data-t-aria="tempo" id="tempoSeg"></div>
+    <div class="seg" role="group" data-t-aria="backing">
+      <button id="bandBtn" class="seg-btn" aria-pressed="true" data-t-title="bandTip" data-t="band"></button>
+      <button id="guideBtn" class="seg-btn" aria-pressed="false" data-t-title="guideTip" data-t="guide"></button>
     </div>
-    <span class="bars">תיבות <select id="fromBar" aria-label="מתיבה"></select> – <select id="toBar" aria-label="עד תיבה"></select></span>
+    <span class="bars"><span data-t="bars"></span> <select id="fromBar" data-t-aria="fromBar"></select> – <select id="toBar" data-t-aria="toBar"></select></span>
     <span class="spacer"></span>
-    <span class="keys"><kbd>Space</kbd> ניגון · <kbd>H</kbd> להקשיב · <kbd>M</kbd> מצב · <kbd>Esc</kbd> השהיה</span>
-    <button id="listenBtn" class="icon-btn" title="להקשיב לשיר (H)">🎧 להקשיב</button>
-    <button id="playBtn" class="play-btn">▶ מנגנים</button>
+    <span class="keys" data-t-html="keys"></span>
+    <button id="listenBtn" class="icon-btn" data-t-title="listenTip"></button>
+    <button id="playBtn" class="play-btn"></button>
   </footer>
 </div>
-<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn">▶ ממשיכים</button><button class="pause-stop" id="pauseStop">■ עצירה</button></div></div>
+<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button><button class="pause-stop" id="pauseStop" data-t="stop"></button></div></div>
 <script>
 "use strict";
+
+/* ---------- Language ----------
+   Hebrew or English, chosen on the home screen (`brass-lang`; ?lang=en|he for a link). Never mixed: every
+   word on screen comes from TEXT (elements carry data-t / data-t-html / data-t-title / data-t-aria), and
+   English names notes by letter (C D E, B♭). COMMON holds what every page says (microphone, pause, buttons). */
+const LANG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "he") return q;
+    return localStorage.getItem("brass-lang") === "en" ? "en" : "he";
+  } catch (_) { return "he"; }
+})();
+const COMMON = {
+  he: {
+    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
+    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
+    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
+    diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+  },
+  en: {
+    listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
+    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
+    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
+    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
+    diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+  }
+};
+const T = (key, ...args) => {
+  const v = (TEXT[LANG] && TEXT[LANG][key]) ?? COMMON[LANG][key] ?? (TEXT.he && TEXT.he[key]) ?? COMMON.he[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+};
+function applyText() {
+  const root = document.documentElement;
+  root.lang = LANG;
+  root.dir = LANG === "he" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(n => { n.textContent = T(n.dataset.t); });
+  document.querySelectorAll("[data-t-html]").forEach(n => { n.innerHTML = T(n.dataset.tHtml); });
+  document.querySelectorAll("[data-t-title]").forEach(n => { n.title = T(n.dataset.tTitle); });
+  document.querySelectorAll("[data-t-aria]").forEach(n => { n.setAttribute("aria-label", T(n.dataset.tAria)); });
+  if (TEXT[LANG] && TEXT[LANG].pageTitle) document.title = T("pageTitle");
+}
+const TEXT = {
+  he: {
+    pageTitle: "שירים · Brass App", songsBtn: "🎵 שירים", listTip: "רשימת השירים (L)", settings: "הגדרות (S)", scene: "שיר", songs: "שירים",
+    whichSong: "איזה שיר?", needNotes: "כדי לנגן שיר צריך עוד צלילים", chooseNotes: "⚙ לבחור צלילים", settingsLabel: "הגדרות",
+    whichNotes: "אילו צלילים?", sameAs: "אותה בחירה כמו בצליל נכון ובנינג'ה. מוצגים רק שירים שמשתמשים בצלילים האלה.",
+    noteName: "שם הצליל", repeated: "צליל חוזר", close: "סגירה", mode: "מצב", follow: "לומדים", inTime: "בקצב", tempo: "קצב",
+    backing: "ליווי", band: "🥁 להקה", bandTip: "תופים, בס ואקורדים", guide: "🎺 עם המנגינה", guideTip: "המנגינה מתנגנת יחד עם הילד (בקצב)",
+    bars: "תיבות", fromBar: "מתיבה", toBar: "עד תיבה", listenTip: "להקשיב לשיר (H)", listen: "🎧 להקשיב", play: "▶ מנגנים",
+    keys: "<kbd>Space</kbd> ניגון · <kbd>H</kbd> להקשיב · <kbd>M</kbd> מצב · <kbd>Esc</kbd> השהיה",
+    wellDone: "כל הכבוד!", perfect: "מושלם!", veryGood: "יפה מאוד!", lockedNote: "שירים עם 🔒 צריכים עוד צלילים: מסמנים אותם בהגדרות ⚙",
+    open: "בלי אצבעות", show: "מראים", hide: "מסתירים", newTongue: "צריך לשון חדשה", justHold: "מספיק להחזיק"
+  },
+  en: {
+    pageTitle: "Songs · Brass App", songsBtn: "🎵 Songs", listTip: "The song list (L)", settings: "Settings (S)", scene: "Song", songs: "Songs",
+    whichSong: "Which song?", needNotes: "To play a song you need a few more notes", chooseNotes: "⚙ Choose notes", settingsLabel: "Settings",
+    whichNotes: "Which notes?", sameAs: "The same choice as in Right Note and Note Ninja. Only songs that use these notes can be played.",
+    noteName: "Note name", repeated: "Repeated note", close: "Close", mode: "Mode", follow: "Note by note", inTime: "In time", tempo: "Tempo",
+    backing: "Backing", band: "🥁 Band", bandTip: "Drums, bass and chords", guide: "🎺 With the tune", guideTip: "The tune plays along with the child (in time)",
+    bars: "Bars", fromBar: "From bar", toBar: "To bar", listenTip: "Listen to the song (H)", listen: "🎧 Listen", play: "▶ Play",
+    keys: "<kbd>Space</kbd> play · <kbd>H</kbd> listen · <kbd>M</kbd> mode · <kbd>Esc</kbd> pause",
+    wellDone: "Well done!", perfect: "Perfect!", veryGood: "Very good!", lockedNote: "Songs with 🔒 need more notes: tick them in the settings ⚙",
+    open: "open", show: "Show", hide: "Hide", newTongue: "Needs a new tongue", justHold: "Holding is enough"
+  }
+};
+applyText();
 
 /* ---------- Pause ----------
    Esc or ⏸ freezes the game: the page's clock (performance.now and animation frames) stands still and the
@@ -216,15 +296,15 @@ const MIC_OPTIONS = (VOICE_PARAM === null ? IS_IOS : VOICE_PARAM !== "0") ? true
 // The check panel's first lines: is the engine moving, what the iPad says about the mic, the raw level in dB.
 let lastEngineTime = -1, engineMovedAt = 0;
 const audioLine = () => {
-  if (!ctx) return "אודיו   —\n";
+  if (!ctx) return T("diagAudio") + "   —\n";
   if (ctx.currentTime !== lastEngineTime) { lastEngineTime = ctx.currentTime; engineMovedAt = performance.now(); }
   const moving = performance.now() - engineMovedAt < 500;     // the clock advances in bursts, not every frame
   const tr = micStream && micStream.getAudioTracks()[0];
   const st = tr && tr.getSettings ? tr.getSettings() : {};
   const db = state.rms > 0 ? (20 * Math.log10(state.rms)).toFixed(0) + " dB" : "0";
-  return `אודיו   ${ctx.state} · ${ctx.sampleRate} · ${moving ? "זז" : "עומד"}\n` +
-    `מיקרופון ${tr ? tr.readyState + (tr.muted ? " muted" : "") + (tr.enabled ? "" : " off") : "—"} · ${st.sampleRate || "?"} · ${MIC_OPTIONS === true ? "voice" : "raw"} ec:${st.echoCancellation} agc:${st.autoGainControl}\n` +
-    `רמה    ${db}\n`;
+  return `${T("diagAudio")}   ${ctx.state} · ${ctx.sampleRate} · ${moving ? T("moving") : T("still")}\n` +
+    `${T("diagMic")} ${tr ? tr.readyState + (tr.muted ? " muted" : "") + (tr.enabled ? "" : " off") : "—"} · ${st.sampleRate || "?"} · ${MIC_OPTIONS === true ? "voice" : "raw"} ec:${st.echoCancellation} agc:${st.autoGainControl}\n` +
+    `${T("diagLevel")}    ${db}\n`;
 };
 
 
@@ -242,7 +322,8 @@ const SVGNS = "http://www.w3.org/2000/svg";
 const GLYPH = { gClef: "", fClef: "", flat: "", sharp: "", head: "", dot: "", time4: "",
   whole: "", halfUp: "", halfDown: "", quarterUp: "", quarterDown: "", eighthUp: "", eighthDown: "" };
 const MUSIC_FONT = "font-family: Bravura";
-const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];
+const SOLFEGE = ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"];      // Hebrew only: English always names notes by letter
+const titleOf = song => LANG === "en" ? song.en : song.title;
 const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
 const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
 const PC_NAME = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
@@ -318,7 +399,7 @@ function spell(midi) {
   return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
 }
 const diatonicOf = sp => sp.octave * 7 + sp.step;
-const nameOf = midi => { const sp = spell(midi); return (state.style === "abc" ? LETTERS : SOLFEGE)[sp.step] + (sp.alter === -1 ? "♭" : ""); };
+const nameOf = midi => { const sp = spell(midi); return (state.style === "abc" || LANG === "en" ? LETTERS : SOLFEGE)[sp.step] + (sp.alter === -1 ? "♭" : ""); };
 const concertHz = written => 440 * Math.pow(2, (written - INSTRUMENTS[state.inst].toWritten - 69) / 12);
 const writtenOf = step => INSTRUMENTS[state.inst].notes[step - 1];
 const stepsOf = song => [...new Set(song.events.map(e => e.step))].sort((a, b) => a - b);
@@ -363,7 +444,7 @@ let voices = [];
 function ensureCtx() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
-    ctx.onstatechange = () => { if (state.listening && micStream) $("micText").textContent = ctx.state === "running" ? "מקשיב" : "לגעת במסך"; };
+    ctx.onstatechange = () => { if (state.listening && micStream) $("micText").textContent = ctx.state === "running" ? T("listening") : T("tapScreen"); };
   }
   if (ctx.state === "suspended") ctx.resume();
   return ctx;
@@ -386,15 +467,15 @@ async function startMic() {
   ensureCtx();
   loadSamples(state.inst);
   if (params.get("test")) return startTestTone();
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail(T("onlyOnline"));
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_OPTIONS });
   } catch (err) {
     const n = err && err.name;
-    return fail(n === "NotAllowedError" ? "אין אישור למיקרופון"
-      : n === "NotFoundError" ? "לא נמצא מיקרופון"
-      : n === "NotReadableError" ? "המיקרופון תפוס בתוכנה אחרת"
-      : "לא הצלחנו לפתוח את המיקרופון");
+    return fail(n === "NotAllowedError" ? T("micDenied")
+      : n === "NotFoundError" ? T("micNotFound")
+      : n === "NotReadableError" ? T("micBusy")
+      : T("micFailed"));
   }
   // iPad switches the hardware to the microphone's rate; an audio engine made before that can stay deaf.
   const track = micStream.getAudioTracks()[0];
@@ -409,11 +490,11 @@ async function startMic() {
   pull.gain.value = 0;
   analyser.connect(pull);
   pull.connect(ctx.destination);
-  listening("מקשיב");
+  listening(T("listening"));
   micStream.getAudioTracks().forEach(t => {
-    t.addEventListener("ended", () => fail("המיקרופון נותק"));
-    t.addEventListener("mute", () => { $("micText").textContent = "מושתק"; });
-    t.addEventListener("unmute", () => { $("micText").textContent = "מקשיב"; });
+    t.addEventListener("ended", () => fail(T("micGone")));
+    t.addEventListener("mute", () => { $("micText").textContent = T("muted"); });
+    t.addEventListener("unmute", () => { $("micText").textContent = T("listening"); });
   });
 }
 
@@ -436,7 +517,7 @@ function listening(text) {
 function startTestTone() {
   makeAnalyser();
   state.noiseFloor = 0.00001;
-  listening("בדיקה");
+  listening(T("test"));
   testGain = ctx.createGain();
   testGain.gain.value = 0;
   testGain.connect(analyser);
@@ -463,14 +544,14 @@ function fail(message) {
   stopPlaying();
   $("overlay").hidden = false;
   $("overlayText").textContent = message;
-  $("startBtn").textContent = "לנסות שוב";
+  $("startBtn").textContent = T("tryAgain");
   $("micDot").classList.remove("on");
-  $("micText").textContent = "ללא מיקרופון";
+  $("micText").textContent = T("noMic");
 }
 
 function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
 addEventListener("pagehide", stopMic);
-document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) { stopMic(); fail("נלחץ ונמשיך להקשיב"); } });
+document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) { stopMic(); fail(T("keepListening")); } });
 
 function sampleFor(written) {
   const concert = written - INSTRUMENTS[state.inst].toWritten, table = SAMPLES[state.inst];
@@ -661,8 +742,8 @@ function analyse() {
   // A real microphone in a room is never exactly silent: say so instead of waiting forever.
   if (state.rms === 0 && micStream) {
     if (!state.zeroSince) state.zeroSince = performance.now();
-    else if (performance.now() - state.zeroSince > 3000) $("micText").textContent = "אין קול מהמיקרופון";
-  } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = "מקשיב"; }
+    else if (performance.now() - state.zeroSince > 3000) $("micText").textContent = T("noMicSound");
+  } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = T("listening"); }
   if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
   else if (!state.heard && state.phase !== "time") state.noiseFloor = state.noiseFloor * 0.999 + state.rms * 0.001;
   const gate = Math.max(state.noiseFloor * Math.pow(10, 12 / 20), 0.0015);
@@ -734,8 +815,8 @@ function buildScene() {
   g.line = el("g", {}, svg);
   g.arrow = el("path", { fill: "#1a7fe2", opacity: 0 }, svg);
   g.count = el("text", { x: 650, y: 100, "text-anchor": "middle", "font-size": 80, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)" }, svg);
-  g.banner = el("text", { x: 650, y: 150, "text-anchor": "middle", "font-size": 84, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)", direction: "rtl", opacity: 0 }, svg);
-  g.title.textContent = state.song ? state.song.title : "";
+  g.banner = el("text", { x: 650, y: 150, "text-anchor": "middle", "font-size": 84, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)", direction: LANG === "he" ? "rtl" : "ltr", opacity: 0 }, svg);
+  g.title.textContent = state.song ? titleOf(state.song) : "";
   g.cur = g.next = null;
   state.line = -1;
   if (state.song) drawLine(lineOf(state.cursor), false);
@@ -941,7 +1022,7 @@ function stopPlaying() {
 function finish() {
   state.phase = "end";
   const evs = sectionEvents(), got = evs.filter(i => state.done.has(i)).length;
-  const words = state.mode === "follow" || !state.judge ? "כל הכבוד!" : got === evs.length ? "מושלם!" : got >= evs.length / 2 ? "יפה מאוד!" : "כל הכבוד!";
+  const words = state.mode === "follow" || !state.judge ? T("wellDone") : got === evs.length ? T("perfect") : got >= evs.length / 2 ? T("veryGood") : T("wellDone");
   g.banner.textContent = words;
   g.banner.setAttribute("opacity", 1);
   playNotes([523.25, 659.25, 783.99, 1046.5], 0.1, 0.5, 0.2);
@@ -961,7 +1042,7 @@ function frame(now) {
     const db = 20 * Math.log10(Math.max(state.rms, 1e-7));
     const bars = Math.max(0, Math.min(10, Math.round((db + 60) / 4.5)));
     const target = state.song ? writtenOf(state.song.events[state.cursor].step) : null;
-    $("diag").textContent = audioLine() + `בדיקת מיקרופון (D)\nעוצמה  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\nצליל   ${state.heard ? state.freq.toFixed(0) + " Hz" : "—"}\nדיוק   ${state.heard && target ? Math.round(centsTo(target)) : "—"}`;
+    $("diag").textContent = audioLine() + `${T("diagTitle")}\n${T("diagVolume")}  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\n${T("diagPitch")}   ${state.heard ? state.freq.toFixed(0) + " Hz" : "—"}\n${T("diagCents")}   ${state.heard && target ? Math.round(centsTo(target)) : "—"}`;
   }
   requestAnimationFrame(frame);
 }
@@ -1102,7 +1183,7 @@ function buildList() {
     const b = document.createElement("button");
     b.className = "song-card" + (lock ? " locked" : "");
     const t = document.createElement("b");
-    t.textContent = song.title;
+    t.textContent = titleOf(song);
     b.appendChild(t);
     stepsOf(song).forEach(st => {
       const c = document.createElement("span"), w = writtenOf(st);
@@ -1114,7 +1195,7 @@ function buildList() {
     box.appendChild(b);
   });
   $("empty").hidden = open.length > 0;
-  $("more").textContent = locked.length && open.length ? "שירים עם 🔒 צריכים עוד צלילים: מסמנים אותם בהגדרות ⚙" : "";
+  $("more").textContent = locked.length && open.length ? T("lockedNote") : "";
 }
 
 function showList() {
@@ -1155,7 +1236,7 @@ function buildPanels() {
     const b = document.createElement("button");
     b.className = "note-chip";
     b.setAttribute("aria-pressed", String(state.chosen.includes(n)));
-    b.innerHTML = nameOf(n) + (I.open.includes(n) ? "<small>בלי אצבעות</small>" : "");
+    b.innerHTML = nameOf(n) + (I.open.includes(n) ? "<small>" + T("open") + "</small>" : "");
     b.addEventListener("click", () => {
       const i = state.chosen.indexOf(n);
       if (i >= 0) { if (state.chosen.length > 1) state.chosen.splice(i, 1); }
@@ -1165,9 +1246,10 @@ function buildPanels() {
     });
     box.appendChild(b);
   });
-  segButtons($("namesSeg"), [[true, "מראים"], [false, "מסתירים"]], v => state.names === v, v => { state.names = v; });
+  segButtons($("namesSeg"), [[true, T("show")], [false, T("hide")]], v => state.names === v, v => { state.names = v; });
   segButtons($("styleSeg"), [["sol", "דו רה מי"], ["abc", "C D E"]], v => state.style === v, v => { state.style = v; });
-  segButtons($("repeatSeg"), [["attack", "צריך לשון חדשה"], ["hold", "מספיק להחזיק"]], v => state.repeat === v, v => { state.repeat = v; });
+  $("styleSeg").hidden = LANG === "en";       // English names notes by letter only
+  segButtons($("repeatSeg"), [["attack", T("newTongue")], ["hold", T("justHold")]], v => state.repeat === v, v => { state.repeat = v; });
   segButtons($("tempoSeg"), TEMPOS.map(t => [t, "♩=" + t]), v => state.tempo === v, v => { state.tempo = v; });
   for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
   updateButtons();
@@ -1180,9 +1262,9 @@ function updateButtons() {
   $("guideBtn").setAttribute("aria-pressed", String(state.guide));
   $("guideBtn").hidden = state.mode !== "time";
   const busy = ["follow", "count", "time"].includes(state.phase);
-  $("playBtn").textContent = busy ? "■ עצירה" : "▶ מנגנים";
+  $("playBtn").textContent = busy ? T("stop") : T("play");
   $("playBtn").classList.toggle("stop", busy);
-  $("listenBtn").textContent = state.phase === "listen" ? "■ עצירה" : "🎧 להקשיב";
+  $("listenBtn").textContent = state.phase === "listen" ? T("stop") : T("listen");
   const songOpen = !!state.song && $("list").hidden;
   ["playBtn", "listenBtn"].forEach(id => $(id).disabled = !songOpen);
   $("transport").classList.toggle("hide", !songOpen);
@@ -1270,7 +1352,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.ser
 buildScene();
 buildPanels();
 buildList();
-if (location.protocol === "file:") fail("המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט");
+if (location.protocol === "file:") fail(T("onlyOnline"));
 requestAnimationFrame(frame);
 document.getElementById("pauseBtn").addEventListener("click", () => setPaused(true));
 document.getElementById("pauseBox").addEventListener("click", e => { if (e.target.id !== "pauseStop") setPaused(false); });

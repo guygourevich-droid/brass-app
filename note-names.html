@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,6 +12,10 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="fonts/fonts.css">
+<script>
+  // English pages lay out left to right from the first paint (the language block fills in the words).
+  try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
+</script>
 <style>
   :root {
     --ink: #15181d;
@@ -28,6 +32,7 @@
     --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
     color-scheme: light;
   }
+  html[lang="he"] { --display: "Rubik", "Arial Hebrew", system-ui, sans-serif; --body: "Rubik", "Arial Hebrew", system-ui, sans-serif; }
   * { box-sizing: border-box; }
   html { background: #cfeaff; color: var(--ink); }
   body { margin: 0; font-family: var(--body); font-size: 15px; color: var(--ink); background: linear-gradient(180deg, #bfe4ff 0%, #e2f2ff 55%, #fff4e3 100%) fixed; }
@@ -43,7 +48,7 @@
   .app { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; padding-inline: clamp(16px, 3vw, 48px); }
 
   .console { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 10px; border-bottom: 1px solid var(--line); color: var(--muted); }
-  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); margin-right: auto; text-decoration: none; }
+  .brand { font-family: var(--display); font-weight: 600; color: var(--ink-2); margin-inline-end: auto; text-decoration: none; }
   .brand:hover { color: var(--blue); }
   .brand-tool { font-weight: 500; color: var(--muted); }
   .seg { display: inline-flex; background: var(--panel); border-radius: 999px; padding: 3px; gap: 2px; }
@@ -60,7 +65,7 @@
 
   .stage { display: grid; grid-template-rows: auto auto auto auto; align-content: start; gap: clamp(8px, 1.8vh, 20px); padding-block: clamp(12px, 2.6vh, 32px); min-width: 0; }
   .stage-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px; font-family: var(--display); color: var(--ink-2); font-size: clamp(18px, 2.6vh, 28px); }
-  .stage-head b { color: var(--ink); font-weight: 700; margin-right: .45em; }
+  .stage-head b { color: var(--ink); font-weight: 700; margin-inline-end: .45em; }
   .score { font-variant-numeric: tabular-nums; color: var(--ink-2); }
   .score b { color: var(--mint); margin: 0; }
   .info { margin: 0; color: var(--muted); font-size: clamp(14px, 1.8vh, 17px); }
@@ -85,7 +90,7 @@
   .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
   .tip { color: var(--ink-2); font-size: clamp(14px, 1.9vh, 18px); max-width: 60ch; }
   .tip b { font-family: var(--display); color: var(--ink); }
-  .transport-btns { display: flex; gap: 12px; margin-left: auto; }
+  .transport-btns { display: flex; gap: 12px; margin-inline-start: auto; }
   .btn { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.4vh, 24px); border-radius: 999px; padding: .6em 1.4em; cursor: pointer; border: 2px solid transparent; }
   .btn.primary { background: var(--blue); color: #fff; min-width: 7.5em; }
   .btn.primary:hover { background: #0f63b8; }
@@ -102,6 +107,8 @@
   @media (prefers-reduced-motion: reduce) {
     .cloud, .answer.wrong { animation: none; }
   }
+  .seg[hidden] { display: none; }
+  .card { direction: ltr; }               /* music reads left to right in every language */
 </style>
 </head>
 <body>
@@ -111,24 +118,24 @@
 </div>
 
 <div class="app">
-  <header class="console" aria-label="Teacher controls">
-    <a class="brand" href="index.html" title="Back to Brass App"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool">/ Note Names</span></a>
-    <div class="seg" role="group" aria-label="Instrument">
-      <button id="inTrumpet" class="seg-btn" aria-pressed="true">Trumpet</button>
-      <button id="inTrombone" class="seg-btn" aria-pressed="false">Trombone</button>
-      <button id="inHorn" class="seg-btn" aria-pressed="false">Horn</button>
+  <header class="console" data-t-aria="controls">
+    <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool" data-t="tool"></span></a>
+    <div class="seg" role="group" data-t-aria="instrument">
+      <button id="inTrumpet" class="seg-btn" aria-pressed="true" data-t="trumpet"></button>
+      <button id="inTrombone" class="seg-btn" aria-pressed="false" data-t="trombone"></button>
+      <button id="inHorn" class="seg-btn" aria-pressed="false" data-t="horn"></button>
     </div>
-    <div class="seg" role="group" aria-label="Mode">
-      <button id="mLearn" class="seg-btn" aria-pressed="true">Meet the notes</button>
-      <button id="mQuiz" class="seg-btn" aria-pressed="false">Name it</button>
+    <div class="seg" role="group" data-t-aria="mode">
+      <button id="mLearn" class="seg-btn" aria-pressed="true" data-t="learn"></button>
+      <button id="mQuiz" class="seg-btn" aria-pressed="false" data-t="quiz"></button>
     </div>
-    <div class="levels" role="group" aria-label="Level"><span class="k">Level</span><span id="levels" class="levels"></span></div>
-    <div class="seg" role="group" aria-label="Note names">
-      <button id="nSolfege" class="seg-btn" aria-pressed="true">Do Re Mi</button>
+    <div class="levels" role="group" data-t-aria="level"><span class="k" data-t="level"></span><span id="levels" class="levels"></span></div>
+    <div class="seg" role="group" data-t-aria="noteNames" id="namesSeg">
+      <button id="nSolfege" class="seg-btn" aria-pressed="true">דו רה מי</button>
       <button id="nLetters" class="seg-btn" aria-pressed="false">C D E</button>
     </div>
-    <label class="toggle" for="sound"><input id="sound" type="checkbox" checked><span>Sound</span></label>
-    <button id="fullscreen" class="icon-btn" title="Full screen (F)">⛶ Full screen</button>
+    <label class="toggle" for="sound"><input id="sound" type="checkbox" checked><span data-t="sound"></span></label>
+    <button id="fullscreen" class="icon-btn" data-t-title="fullscreen" data-t="fullscreenBtn"></button>
   </header>
 
   <main class="stage" id="stage">
@@ -138,20 +145,95 @@
     </div>
     <p class="info" id="info"></p>
     <div class="card" id="card"></div>
-    <div class="answers" id="answers" role="group" aria-label="Answers"></div>
+    <div class="answers" id="answers" role="group" data-t-aria="answers"></div>
   </main>
 
   <footer class="transport">
     <div class="tip" id="tip"></div>
     <div class="transport-btns">
-      <button id="secondaryBtn" class="btn ghost">Name it ▶</button>
-      <button id="primaryBtn" class="btn primary">▶ Play them</button>
+      <button id="secondaryBtn" class="btn ghost"></button>
+      <button id="primaryBtn" class="btn primary"></button>
     </div>
   </footer>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 <script>
 "use strict";
+
+/* ---------- Language ----------
+   Hebrew or English, chosen on the home screen (`brass-lang`; ?lang=en|he for a link). Never mixed: every
+   word on screen comes from TEXT (elements carry data-t / data-t-html / data-t-title / data-t-aria), and
+   English names notes by letter (C D E, B♭). COMMON holds what every page says (microphone, pause, buttons). */
+const LANG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "he") return q;
+    return localStorage.getItem("brass-lang") === "en" ? "en" : "he";
+  } catch (_) { return "he"; }
+})();
+const COMMON = {
+  he: {
+    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
+    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
+    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
+    diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+  },
+  en: {
+    listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
+    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
+    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
+    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
+    diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+  }
+};
+const T = (key, ...args) => {
+  const v = (TEXT[LANG] && TEXT[LANG][key]) ?? COMMON[LANG][key] ?? (TEXT.he && TEXT.he[key]) ?? COMMON.he[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+};
+function applyText() {
+  const root = document.documentElement;
+  root.lang = LANG;
+  root.dir = LANG === "he" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(n => { n.textContent = T(n.dataset.t); });
+  document.querySelectorAll("[data-t-html]").forEach(n => { n.innerHTML = T(n.dataset.tHtml); });
+  document.querySelectorAll("[data-t-title]").forEach(n => { n.title = T(n.dataset.tTitle); });
+  document.querySelectorAll("[data-t-aria]").forEach(n => { n.setAttribute("aria-label", T(n.dataset.tAria)); });
+  if (TEXT[LANG] && TEXT[LANG].pageTitle) document.title = T("pageTitle");
+}
+const TEXT = {
+  he: {
+    pageTitle: "תווים · Brass App", controls: "פקדי המורה", back: "חזרה ל-Brass App", tool: "/ תווים", mode: "מצב",
+    learn: "מכירים את התווים", quiz: "איך קוראים לו?", level: "שלב", noteNames: "שמות התווים", sound: "צליל", fullscreenBtn: "⛶ מסך מלא",
+    answers: "תשובות", levelN: n => `שלב ${n}`, levelTip: n => `שלב ${n}: ${n + 1} תווים`, levelNotes: list => `התווים בשלב הזה: ${list}`,
+    playIt: name => `${name}: להשמיע`, isNew: "חדש", whichNote: "איזה תו זה?",
+    tipFirstTrombone: f => `<b>${f}</b> יושב על הקו השני מלמטה.`, tipFirst: f => `<b>${f}</b> יושב על קו קטן משלו מתחת לחמשה.`,
+    tips: ["<b>קו או רווח?</b> מסתכלים טוב לפני שעונים.", "<b>מוצאים תו שמכירים,</b> ואז עולים או יורדים.", "<b>אומרים ביחד,</b> ואז בודקים את התשובה."],
+    score: (s, b) => `ברצף: <b>${s}</b> · שיא: ${b}`, playThem: "▶ להשמיע", next: "הבא ◀", nameIt: "איך קוראים לו? ◀", hearIt: "🔊 לשמוע",
+    info: { trumpet: "חצוצרה בסי במול · תווים כתובים במפתח סול · הצליל נשמע טון אחד נמוך יותר", trombone: "טרומבון · מפתח פה · נשמע בדיוק כמו שכתוב", horn: "קרן בפה · תווים כתובים במפתח סול · הצליל נשמע קווינטה נמוך יותר" },
+    names: ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"]
+  },
+  en: {
+    pageTitle: "Note Names · Brass App", controls: "Teacher controls", back: "Back to Brass App", tool: "/ Note Names", mode: "Mode",
+    learn: "Meet the notes", quiz: "Name it", level: "Level", noteNames: "Note names", sound: "Sound", fullscreenBtn: "⛶ Full screen",
+    answers: "Answers", levelN: n => `Level ${n}`, levelTip: n => `Level ${n}: ${n + 1} notes`, levelNotes: list => `The notes for this level: ${list}`,
+    playIt: name => `${name}: play`, isNew: "new", whichNote: "Which note is this?",
+    tipFirstTrombone: f => `<b>${f}</b> sits on the second line from the bottom.`, tipFirst: f => `<b>${f}</b> sits on its own little line below the staff.`,
+    tips: ["<b>Line or space?</b> Look carefully before you answer.", "<b>Find a note you know,</b> then step up or down.", "<b>Say it together</b>, then check the answer."],
+    score: (s, b) => `In a row: <b>${s}</b> · Best: ${b}`, playThem: "▶ Play them", next: "Next ▶", nameIt: "Name it ▶", hearIt: "🔊 Hear it",
+    info: { trumpet: "Trumpet in B♭ · written notes, treble clef · the sound is concert pitch, a tone lower", trombone: "Trombone · bass clef · concert pitch, no transposition", horn: "Horn in F · written notes, treble clef · the sound is concert pitch, a 5th lower" },
+    names: ["C", "D", "E", "F", "G", "A", "B"]
+  }
+};
+applyText();
 
 /* ---------- Note Names ----------
    Students always see their own WRITTEN note, in their own clef, with the name they read.
@@ -167,7 +249,7 @@ const MUSIC_FONT = "font-family: Bravura";
 const WHOLE_WIDTH = 1.688; // staff spaces
 
 const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
-const SOLFEGE = ["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"];
+const SOLFEGE = TEXT.he.names;          // Hebrew do re mi; English always names notes by letter
 const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
 
 // A written note: letter index (C = 0 … B = 6), octave (C4 = middle C), alteration (-1 = flat).
@@ -198,7 +280,7 @@ const state = {
   learn: [], timers: []
 };
 
-const nameOf = n => (state.names === "solfege" ? SOLFEGE : LETTERS)[n.l] + (n.a === -1 ? "♭" : "");
+const nameOf = n => (state.names === "solfege" && LANG === "he" ? SOLFEGE : LETTERS)[n.l] + (n.a === -1 ? "♭" : "");
 const concertMidi = n => 12 * (n.o + 1) + SEMITONE[n.l] + n.a + INSTRUMENTS[state.inst].transpose;
 const levelNotes = () => INSTRUMENTS[state.inst].notes.slice(0, state.level + 1);
 
@@ -294,18 +376,18 @@ function renderLearn() {
   const VW = first + ns.length * gap + 20, VH = 400;
   const card = $("card");
   card.textContent = "";
-  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": `The notes for this level: ${ns.map(nameOf).join(", ")}` }, card);
+  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": T("levelNotes", ns.map(nameOf).join(", ")) }, card);
   const yOf = drawStaff(svg, 20, VW - 20, yTop, S);
   state.learn = ns.map((n, i) => {
     const x = first + i * gap;
-    const item = el("g", { class: "learn-note", tabindex: 0, role: "button", "aria-label": `${nameOf(n)}: play` }, svg);
+    const item = el("g", { class: "learn-note", tabindex: 0, role: "button", "aria-label": T("playIt", nameOf(n)) }, svg);
     const box = el("rect", { x: x - 24, y: 22, width: WHOLE_WIDTH * S + 48, height: 364, rx: 16, fill: "transparent" }, item);
     const drawn = drawNote(item, n, x, yOf, S);
     const label = el("text", { x: drawn.cx, y: 364, "text-anchor": "middle", "font-size": 40, "font-weight": 700, fill: INK, style: "font-family: var(--display)" }, item);
     label.textContent = nameOf(n);
     if (state.level > 1 && i === ns.length - 1) {
       el("rect", { x: drawn.cx - 34, y: 34, width: 68, height: 30, rx: 15, fill: "#fdf1d6", stroke: GOLD, "stroke-width": 2 }, item);
-      el("text", { x: drawn.cx, y: 55, "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: GOLD, style: "font-family: var(--display)" }, item).textContent = "new";
+      el("text", { x: drawn.cx, y: 55, "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: GOLD, style: "font-family: var(--display)" }, item).textContent = T("isNew");
     }
     item.addEventListener("click", () => playOne(i));
     item.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playOne(i); } });
@@ -359,7 +441,7 @@ function renderQuiz() {
   const S = 30, VW = 720, VH = 400, yTop = 120;
   const card = $("card");
   card.textContent = "";
-  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": "Which note is this?" }, card);
+  const svg = el("svg", { viewBox: `0 0 ${VW} ${VH}`, role: "img", "aria-label": T("whichNote") }, card);
   const yOf = drawStaff(svg, 30, VW - 30, yTop, S);
   const drawn = drawNote(svg, state.current, 390, yOf, S);
   const label = el("text", { x: drawn.cx, y: 372, "text-anchor": "middle", "font-size": 60, "font-weight": 700, fill: GOOD, opacity: 0, style: "font-family: var(--display)" }, svg);
@@ -405,10 +487,8 @@ function hear() {
 function tips() {
   const first = nameOf(INSTRUMENTS[state.inst].notes[0]);
   return [
-    state.inst === "trombone" ? `<b>${first}</b> sits on the second line from the bottom.` : `<b>${first}</b> sits on its own little line below the staff.`,
-    "<b>Line or space?</b> Look carefully before you answer.",
-    "<b>Find a note you know,</b> then step up or down.",
-    "<b>Say it together</b>, then check the answer."
+    state.inst === "trombone" ? T("tipFirstTrombone", first) : T("tipFirst", first),
+    ...T("tips")
   ];
 }
 
@@ -419,22 +499,23 @@ function rotateTip() {
 }
 
 function updateScore() {
-  $("score").innerHTML = state.mode === "quiz" ? `In a row: <b>${state.streak}</b> · Best: ${state.best}` : "";
+  $("score").innerHTML = state.mode === "quiz" ? T("score", state.streak, state.best) : "";
 }
 
 function updateHeader() {
   const I = INSTRUMENTS[state.inst];
-  $("levelNum").textContent = `Level ${state.level}`;
+  $("levelNum").textContent = T("levelN", state.level);
   $("levelNotes").textContent = levelNotes().map(nameOf).join(" · ");
-  $("info").textContent = I.info;
+  $("info").textContent = T("info")[state.inst];
+  $("namesSeg").hidden = LANG === "en";      // English names notes by letter only
   document.querySelectorAll(".lvl").forEach((b, i) => b.setAttribute("aria-pressed", String(i + 1 === state.level)));
   for (const k in INSTRUMENTS) $("in" + k[0].toUpperCase() + k.slice(1)).setAttribute("aria-pressed", String(k === state.inst));
   $("mLearn").setAttribute("aria-pressed", String(state.mode === "learn"));
   $("mQuiz").setAttribute("aria-pressed", String(state.mode === "quiz"));
   $("nSolfege").setAttribute("aria-pressed", String(state.names === "solfege"));
   $("nLetters").setAttribute("aria-pressed", String(state.names === "letters"));
-  $("primaryBtn").textContent = state.mode === "learn" ? "▶ Play them" : "Next ▶";
-  $("secondaryBtn").textContent = state.mode === "learn" ? "Name it ▶" : "🔊 Hear it";
+  $("primaryBtn").textContent = state.mode === "learn" ? T("playThem") : T("next");
+  $("secondaryBtn").textContent = state.mode === "learn" ? T("nameIt") : T("hearIt");
   updateScore();
 }
 
@@ -446,7 +527,10 @@ function render({ newNote = false } = {}) {
   else renderQuiz();
 }
 
-function setInstrument(k) { state.inst = k; state.current = null; state.last = -1; state.streak = 0; render(); }
+function setInstrument(k) {
+  state.inst = k;
+  try { localStorage.setItem("brass-inst", k); } catch (_) {}
+  state.current = null; state.last = -1; state.streak = 0; render(); }
 function setLevel(n) { state.level = n; state.current = null; state.last = -1; state.streak = 0; render(); }
 function setMode(m) { state.mode = m; render({ newNote: m === "quiz" }); }
 function setNames(sys) { state.names = sys; render(); }
@@ -500,7 +584,7 @@ for (let n = 1; n <= LEVEL_COUNT; n++) {
   b.className = "lvl";
   b.id = "lvl" + n;
   b.textContent = n;
-  b.title = `Level ${n}: ${n + 1} notes`;
+  b.title = T("levelTip", n);
   b.setAttribute("aria-label", b.title);
   b.addEventListener("click", () => setLevel(n));
   $("levels").appendChild(b);
@@ -536,6 +620,7 @@ const rootEl = document.documentElement;
 if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 
+try { const s = localStorage.getItem("brass-inst"); if (INSTRUMENTS[s]) state.inst = s; } catch (_) {}
 render();
 // Draw again once the music font has loaded, so clefs and notes never show as blank boxes.
 if (document.fonts && document.fonts.load) document.fonts.load("120px Bravura").then(() => render(), () => {});

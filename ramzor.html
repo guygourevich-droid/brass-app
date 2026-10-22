@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>רמזור · Brass App</title>
+<title>Traffic Light · Brass App</title>
 <meta name="theme-color" content="#0d1117">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -12,6 +12,10 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="fonts/fonts.css">
+<script>
+  // English pages lay out left to right from the first paint (the language block fills in the words).
+  try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
+</script>
 <style>
   :root {
     --panel: #0d1117;
@@ -74,13 +78,13 @@
 </head>
 <body>
 <div class="app">
-  <main class="stage" id="stage" data-light="red" role="img" aria-label="רמזור">
+  <main class="stage" id="stage" data-light="red" role="img" data-t-aria="scene">
     <div class="lamps">
       <svg class="lamp lamp-red" viewBox="0 0 100 100" aria-hidden="true"><polygon class="shape" points="31,3 69,3 97,31 97,69 69,97 31,97 3,69 3,31"/></svg>
       <svg class="lamp lamp-amber" viewBox="0 0 100 100" aria-hidden="true"><polygon class="shape" points="50,5 97,93 3,93"/></svg>
       <svg class="lamp lamp-green" viewBox="0 0 100 100" aria-hidden="true"><circle class="shape" cx="50" cy="50" r="46"/></svg>
     </div>
-    <div class="word" id="word">עֲצוֹר</div>
+    <div class="word" id="word"></div>
   </main>
 
   <div class="hold" id="hold" hidden><div class="hold-bar" id="holdBar"></div></div>
@@ -88,21 +92,84 @@
   <footer class="chrome">
     <a href="index.html">‹ Brass App</a>
     <span class="spacer"></span>
-    <label class="ctl" for="hold-len">החזקה<select id="hold-len">
+    <label class="ctl" for="hold-len"><span data-t="hold"></span><select id="hold-len">
       <option value="0" selected>—</option>
       <option value="2">2</option>
       <option value="3">3</option>
       <option value="4">4</option>
     </select></label>
-    <label class="ctl" for="words"><input id="words" type="checkbox" checked>מילים</label>
-    <label class="ctl" for="sound"><input id="sound" type="checkbox" checked>צליל</label>
-    <button id="fullscreen" class="icon-btn" title="מסך מלא (F)">⛶</button>
+    <label class="ctl" for="words"><input id="words" type="checkbox" checked><span data-t="words"></span></label>
+    <label class="ctl" for="sound"><input id="sound" type="checkbox" checked><span data-t="sound"></span></label>
+    <button id="fullscreen" class="icon-btn" data-t-title="fullscreen">⛶</button>
     <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> · <kbd>Space</kbd> · <kbd>B</kbd></span>
     <span id="version">v8</span>
   </footer>
 </div>
 <script>
 "use strict";
+
+/* ---------- Language ----------
+   Hebrew or English, chosen on the home screen (`brass-lang`; ?lang=en|he for a link). Never mixed: every
+   word on screen comes from TEXT (elements carry data-t / data-t-html / data-t-title / data-t-aria), and
+   English names notes by letter (C D E, B♭). COMMON holds what every page says (microphone, pause, buttons). */
+const LANG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "he") return q;
+    return localStorage.getItem("brass-lang") === "en" ? "en" : "he";
+  } catch (_) { return "he"; }
+})();
+const COMMON = {
+  he: {
+    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
+    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
+    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
+    diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+  },
+  en: {
+    listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
+    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
+    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
+    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
+    diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+  }
+};
+const T = (key, ...args) => {
+  const v = (TEXT[LANG] && TEXT[LANG][key]) ?? COMMON[LANG][key] ?? (TEXT.he && TEXT.he[key]) ?? COMMON.he[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+};
+function applyText() {
+  const root = document.documentElement;
+  root.lang = LANG;
+  root.dir = LANG === "he" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(n => { n.textContent = T(n.dataset.t); });
+  document.querySelectorAll("[data-t-html]").forEach(n => { n.innerHTML = T(n.dataset.tHtml); });
+  document.querySelectorAll("[data-t-title]").forEach(n => { n.title = T(n.dataset.tTitle); });
+  document.querySelectorAll("[data-t-aria]").forEach(n => { n.setAttribute("aria-label", T(n.dataset.tAria)); });
+  if (TEXT[LANG] && TEXT[LANG].pageTitle) document.title = T("pageTitle");
+}
+const TEXT = {
+  he: {
+    pageTitle: "רמזור · Brass App", scene: "רמזור", hold: "החזקה", words: "מילים", sound: "צליל",
+    words3: { red: "עֲצוֹר", amber: "מוּכָנִים", green: "נַגְּנוּ", off: "" },
+    labels: { red: "אדום: כלי למטה", amber: "צהוב: מוכנים, נושמים", green: "ירוק: מנגנים", off: "רמזור כבוי" }
+  },
+  en: {
+    pageTitle: "Traffic Light · Brass App", scene: "Traffic light", hold: "Hold", words: "Words", sound: "Sound",
+    words3: { red: "STOP", amber: "READY", green: "PLAY", off: "" },
+    labels: { red: "Red: instruments down", amber: "Yellow: get ready, breathe", green: "Green: play", off: "Traffic light off" }
+  }
+};
+applyText();
 
 /* ---------- Ramzor ----------
    Teacher-controlled only. Red = instrument down, amber = get ready and breathe, green = play.
@@ -111,8 +178,8 @@
 
 const $ = id => document.getElementById(id);
 const ORDER = ["red", "amber", "green"];
-const WORDS = { red: "עֲצוֹר", amber: "מוּכָנִים", green: "נַגְּנוּ", off: "" };
-const LABELS = { red: "אדום: כלי למטה", amber: "צהוב: מוכנים, נושמים", green: "ירוק: מנגנים", off: "רמזור כבוי" };
+const WORDS = T("words3");
+const LABELS = T("labels");
 const TONE = { red: 180, amber: 400, green: 620 };
 const MIN_GAP_MS = 250; // a projected full-screen colour change must never repeat faster than this
 

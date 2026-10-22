@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Brass App</title>
-<meta name="description" content="Simple tools for brass and rhythm lessons.">
+<meta name="description" content="Simple games for beginner brass lessons.">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,6 +13,10 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="fonts/fonts.css">
+<script>
+  // English pages lay out left to right from the first paint (the language block fills in the words).
+  try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
+</script>
 <style>
   :root {
     --paper: #ffffff;
@@ -22,28 +26,31 @@
     --line: #e1e7ef;
     --console: #f2f5f9;
     --blue: #1a7fe2;
-    --wash: #ddebfa;
-    --brass: #e3a92b;
     --brass-deep: #8f5b0e;
-    --display: "Lexend", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-    --body: "Atkinson Hyperlegible", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --font: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
     color-scheme: light;
   }
   * { box-sizing: border-box; }
   html, body { background: var(--paper); color: var(--ink); }
-  body { margin: 0; font-family: var(--body); font-size: 16px; line-height: 1.5; }
+  body { margin: 0; font-family: var(--font); font-size: 16px; line-height: 1.5; }
+  button { font: inherit; color: inherit; }
   :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 
   .wrap { max-width: 1040px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 48px); padding-block: clamp(28px, 6vh, 64px); display: grid; gap: clamp(28px, 5vh, 48px); }
 
-  .masthead { display: flex; align-items: center; gap: 18px; }
+  .masthead { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
   .masthead img { width: clamp(56px, 8vw, 76px); height: auto; border-radius: 22%; }
-  .masthead h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em; line-height: 1.05; }
+  .masthead h1 { margin: 0; font-weight: 700; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.01em; line-height: 1.05; }
   .masthead p { margin: 4px 0 0; color: var(--muted); font-size: clamp(15px, 1.8vw, 18px); }
+  /* Who is playing: the instrument and the language, one tap to change them. */
+  .me { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 16px 6px 8px; cursor: pointer; min-height: 52px; }
+  .me:hover { border-color: var(--blue); }
+  .me svg { width: 54px; height: 36px; }
+  .me b { font-weight: 700; }
+  .me span { color: var(--muted); }
 
-  .section-k { margin: 0 0 12px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brass-deep); font-weight: 700; }
+  .section-k { margin: 0 0 12px; font-size: 13px; letter-spacing: .08em; color: var(--brass-deep); font-weight: 700; }
   .tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 16px; }
-
   .tool {
     display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center;
     padding: 20px 22px; border: 2px solid var(--line); border-radius: 18px;
@@ -53,24 +60,38 @@
   .tool:hover { border-color: var(--blue); }
   .tool:active { transform: scale(.99); }
   .tool svg { width: clamp(110px, 18vw, 150px); height: auto; display: block; }
-  .tool h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: clamp(22px, 2.6vw, 26px); letter-spacing: -0.01em; }
-  .tool h2 { display: flex; align-items: baseline; gap: 10px; }
-  .tool h2 small { font-weight: 500; font-size: .62em; color: var(--muted); }
+  .tool h2 { margin: 0; font-weight: 700; font-size: clamp(22px, 2.6vw, 26px); display: flex; align-items: baseline; gap: 10px; }
   .num { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--console); color: var(--brass-deep); font-size: .72em; font-weight: 700; }
   .tool p { margin: 4px 0 10px; color: var(--ink-2); max-width: 44ch; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--console); color: var(--ink-2); }
 
-  .home { direction: rtl; text-align: right; background: var(--console); border-radius: 18px; padding: 18px 22px; font-family: "Rubik", var(--body); }
+  .home { background: var(--console); border-radius: 18px; padding: 18px 22px; }
   .home h2 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
   .home ol { margin: 0; padding-inline-start: 1.4em; display: grid; gap: 4px; font-size: 17px; color: var(--ink-2); }
-  .install { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 15px; max-width: 65ch; }
+  .install { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 15px; max-width: 70ch; }
   .install b { color: var(--ink-2); }
   @media (display-mode: standalone) { .install { display: none; } }
 
-  @media (max-width: 520px) {
-    .tool { grid-template-columns: 1fr; }
-  }
+  /* First visit (and "change"): the language, then the instrument. */
+  .setup { position: fixed; inset: 0; z-index: 10; background: linear-gradient(180deg, #e8f4ff 0%, #ffffff 60%); overflow-y: auto; display: grid; place-items: center; padding: 24px 16px; }
+  .setup[hidden] { display: none; }
+  .card { width: min(100%, 760px); text-align: center; }
+  .card img { width: 84px; border-radius: 22%; }
+  .card h2 { margin: 14px 0 22px; font-size: clamp(24px, 4vw, 34px); font-weight: 700; }
+  .langs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; max-width: 520px; margin: 0 auto; }
+  .lang { border: 3px solid var(--line); background: #fff; border-radius: 22px; min-height: 110px; font-size: clamp(28px, 4vw, 38px); font-weight: 700; cursor: pointer; }
+  .lang:hover, .inst:not([disabled]):hover { border-color: var(--blue); }
+  .lang[aria-pressed="true"], .inst[aria-pressed="true"] { border-color: var(--blue); background: #eef6ff; }
+  .insts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .inst { position: relative; border: 3px solid var(--line); background: #fff; border-radius: 20px; padding: 14px 10px 12px; cursor: pointer; display: grid; justify-items: center; gap: 6px; font-size: 20px; font-weight: 700; }
+  .inst svg { width: 110px; height: 74px; }
+  .inst[disabled] { cursor: default; color: var(--muted); background: #f7f9fc; }
+  .inst[disabled] svg { opacity: .45; }
+  .soon { font-size: 13px; font-weight: 600; color: var(--brass-deep); background: #fff3d6; border-radius: 999px; padding: 1px 10px; }
+  .back { margin-top: 22px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 16px; min-height: 44px; }
+
+  @media (max-width: 520px) { .tool { grid-template-columns: 1fr; } .me { margin-inline-start: 0; } }
   @media (prefers-reduced-motion: reduce) { .tool { transition: none; } }
 </style>
 </head>
@@ -80,22 +101,23 @@
     <img src="icons/icon-192.png" alt="">
     <div>
       <h1>Brass App</h1>
-      <p>Simple tools for brass and rhythm lessons</p>
+      <p data-t="tagline"></p>
     </div>
+    <button class="me" id="me" data-t-title="change"><svg id="meIcon" viewBox="0 0 120 80" aria-hidden="true"></svg><b id="meInst"></b><span id="meLang"></span></button>
   </header>
 
-  <section class="home" lang="he" aria-label="בבית">
-    <h2>מתאמנים בבית?</h2>
+  <section class="home" data-t-aria="homeLabel">
+    <h2 data-t="homeTitle"></h2>
     <ol>
-      <li>בוחרים משחק, ולמעלה בוחרים את הכלי שלכם: חצוצרה, טרומבון או קרן.</li>
-      <li>לוחצים על ⚙ ומסמנים את הצלילים שכבר למדתם.</li>
-      <li>במשחקים עם מיקרופון, כשהדפדפן שואל, מאשרים את המיקרופון.</li>
-      <li>בטלפון מסובבים את המסך לרוחב, כך הכול גדול יותר.</li>
+      <li data-t="home1"></li>
+      <li data-t="home2"></li>
+      <li data-t="home3"></li>
+      <li data-t="home4"></li>
     </ol>
   </section>
 
   <main>
-    <h2 class="section-k">Tools</h2>
+    <h2 class="section-k" data-t="games"></h2>
     <div class="tools">
       <a class="tool" href="ramzor.html">
         <svg viewBox="0 0 200 84" aria-hidden="true">
@@ -104,10 +126,10 @@
           <polygon points="100,34 118,66 82,66" fill="#f0a81e" opacity=".35"/>
           <circle cx="100" cy="70" r="9" fill="#22b268" opacity=".35"/>
         </svg>
-        <div dir="rtl">
-          <h2><bdi lang="he">רמזור</bdi> <small>Traffic light</small></h2>
-          <p>אדום עוצרים, צהוב מתכוננים ונושמים, ירוק מנגנים. בשליטה שלך.</p>
-          <div class="chips"><span class="chip">כיתה</span><span class="chip">מקלדת ושלט</span><span class="chip">ללא מיקרופון</span></div>
+        <div>
+          <h2><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="balloon-breath.html">
@@ -120,10 +142,10 @@
           <circle cx="36" cy="22" r="11" fill="#d6ecff" fill-opacity=".5" stroke="url(#tileRim)" stroke-width="2"/>
           <g stroke="#9fb6cc" stroke-width="3" fill="none" stroke-linecap="round"><path d="M 192 36 c -6 -4 -12 4 -18 0"/><path d="M 190 48 c -6 -4 -12 4 -18 0"/></g>
         </svg>
-        <div dir="rtl">
-          <h2><span class="num">1</span><bdi lang="he">נשימה</bdi> <small>Breathing</small></h2>
-          <p>שואפים, ואז נושפים לאט: בועת סבון ענקית גדלה, או שהרוח לוקחת את זרעי שן הארי. לחיצה אחת = נשימה אחת.</p>
-          <div class="chips"><span class="chip">🫧 · 🌼</span><span class="chip">נושפים 4 · 8 · 12 · 16</span></div>
+        <div>
+          <h2><span class="num">1</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="buzz-along.html">
@@ -139,10 +161,10 @@
           <g transform="translate(172 40)"><g fill="#ff8fb1"><ellipse cy="-11" rx="6" ry="10"/><ellipse cy="11" rx="6" ry="10"/><ellipse cx="-11" rx="10" ry="6"/><ellipse cx="11" rx="10" ry="6"/></g><circle r="6" fill="#f2a900"/></g>
           <line x1="172" y1="50" x2="172" y2="84" stroke="#2f9e66" stroke-width="3"/>
         </svg>
-        <div dir="rtl">
-          <h2><span class="num">2</span><bdi lang="he">זמזום</bdi> <small>Buzzing</small></h2>
-          <p>מזמזמים בפומית והדבורה עפה: מזמזמים, מגיעים לאותו צליל של הפרח, מחזיקים ארוך ויציב, ועושים סירנות.</p>
-          <div class="chips"><span class="chip">מיקרופון</span><span class="chip">🐝 · 🌸 · 🍯 · 〰️</span><span class="chip">חצוצרה · טרומבון · קרן</span></div>
+        <div>
+          <h2><span class="num">2</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="sound-game.html">
@@ -158,10 +180,10 @@
             <circle cy="-76" r="18" fill="#8fd3ff" stroke="#1a7fe2" stroke-width="6"/>
           </g>
         </svg>
-        <div dir="rtl">
-          <h2><span class="num">3</span><bdi lang="he">צליל ארוך</bdi> <small>Long note</small></h2>
-          <p>צליל אחד ארוך מטיס חללית מהאדמה אל החלל. ככל שמחזיקים יותר, מגיעים רחוק יותר.</p>
-          <div class="chips"><span class="chip">מיקרופון</span><span class="chip">כל כלי</span><span class="chip">4 · 8 · 12 · 16 · ∞</span></div>
+        <div>
+          <h2><span class="num">3</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="right-note.html">
@@ -175,10 +197,10 @@
           <ellipse cx="150" cy="30" rx="13" ry="9.5" transform="rotate(-20 150 30)" fill="none" stroke="#15181d" stroke-width="4"/>
           <path d="M 108 44 L 122 30 L 115 30 L 115 16 L 101 16 L 101 30 L 94 30 Z" fill="#1a7fe2"/>
         </svg>
-        <div dir="rtl">
-          <h2><span class="num">4</span><bdi lang="he">צליל נכון</bdi> <small>Right note</small></h2>
-          <p>התו שרוצים לנגן והתו שבאמת יוצא, על אותה חמשה. מחזיקים את הצליל הנכון ומקבלים כוכב.</p>
-          <div class="chips"><span class="chip">מיקרופון</span><span class="chip">בחירת צלילים</span><span class="chip">קרן · חצוצרה · טרומבון</span></div>
+        <div>
+          <h2><span class="num">4</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="horn-ladder.html">
@@ -195,10 +217,10 @@
           <path d="M 86 43 L 78 30 M 114 43 L 122 30" stroke="#8a5a32" stroke-width="5" stroke-linecap="round"/>
           <path d="M 40 26 C 43 36 56 38 62 28 C 59 31 49 33 44 23 Z" fill="#ffd23f" stroke="#c99a00" stroke-width="1.5"/>
         </svg>
-        <div dir="rtl">
-          <h2><span class="num">5</span><bdi lang="he">סולם</bdi> <small>Open-note ladder</small></h2>
-          <p>כל שלב בסולם הוא צליל פתוח, בלי אצבעות. הקוף מטפס לצליל שמנגנים, ותופסים את הבננה.</p>
-          <div class="chips"><span class="chip">מיקרופון</span><span class="chip">חצוצרה · טרומבון · קרן</span><span class="chip">צלילים אמיתיים</span></div>
+        <div>
+          <h2><span class="num">5</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="ninja.html">
@@ -222,10 +244,10 @@
             <line x1="-14" y1="-16" x2="14" y2="-68" stroke="#cfd8e3" stroke-width="2.5"/>
           </g>
         </svg>
-        <div dir="rtl">
-          <h2><span class="num">6</span><bdi lang="he">נינג'ה</bdi> <small>Note Ninja</small></h2>
-          <p>תווים עפים פנימה אחד אחרי השני. מנגנים את התו לפני שהזמן נגמר, והנינג'ה חותך אותו.</p>
-          <div class="chips"><span class="chip">מיקרופון</span><span class="chip">סיבוב לכל ילד</span><span class="chip">קרן · חצוצרה · טרומבון</span></div>
+        <div>
+          <h2><span class="num">6</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="songs.html">
@@ -243,10 +265,10 @@
           <text x="114" y="38" font-size="40" fill="#1a7fe2" style="font-family: Bravura">&#xE1D6;</text>
           <text x="148" y="43" font-size="40" fill="#15181d" style="font-family: Bravura">&#xE1D3;</text>
         </svg>
-        <div dir="rtl">
-          <h2><span class="num">7</span><bdi lang="he">שירים</bdi> <small>Songs</small></h2>
-          <p>מנגנים שיר שלם: לומדים תו אחרי תו, ואחר כך בקצב. אפשר להקשיב קודם ולתרגל רק קטע.</p>
-          <div class="chips"><span class="chip">מיקרופון</span><span class="chip">12 שירים</span><span class="chip">קרן · חצוצרה · טרומבון</span></div>
+        <div>
+          <h2><span class="num">7</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="note-names.html">
@@ -264,9 +286,9 @@
           <text x="166" y="80" font-size="22" font-weight="700" fill="#1a7fe2" text-anchor="middle" style="font-family: var(--display)">Do</text>
         </svg>
         <div>
-          <h2><span class="num">8</span><bdi lang="he">תווים</bdi> <small>Note Names</small></h2>
-          <p>Meet the first notes and name them. Each instrument reads its own written notes and clef, and hears the real sound.</p>
-          <div class="chips"><span class="chip">Reading</span><span class="chip">Do Re Mi · C D E</span><span class="chip">7 levels</span></div>
+          <h2><span class="num">8</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
       <a class="tool" href="clap-along.html">
@@ -288,18 +310,237 @@
           </g>
         </svg>
         <div>
-          <h2><span class="num">9</span><bdi lang="he">קצב</bdi> <small>Clap-Along</small></h2>
-          <p>Hear a rhythm and clap it back, or pick which of three rhythms you heard.</p>
-          <div class="chips"><span class="chip">Echo</span><span class="chip">Ear quiz</span><span class="chip">9 levels</span></div>
+          <h2><span class="num">9</span><span data-name></span></h2>
+          <p></p>
+          <div class="chips"></div>
         </div>
       </a>
     </div>
   </main>
 
-  <p class="install" dir="rtl" lang="he" style="text-align:right; font-family: Rubik, var(--body)"><b>להתקין כמו אפליקציה:</b> באייפד ובאייפון פותחים את הדף בספארי, לוחצים שיתוף ואז <b>הוספה למסך הבית</b>. באנדרואיד: בכרום, תפריט ⋮ ואז <b>הוספה למסך הבית</b>. אחרי הפעם הראשונה זה עובד גם בלי אינטרנט.</p>
+  <p class="install" data-t-html="install"></p>
 </div>
+
+<div class="setup" id="setup" hidden>
+  <div class="card" id="stepLang">
+    <img src="icons/icon-192.png" alt="">
+    <h2><span lang="he" dir="rtl">בחרו שפה</span> · <span lang="en" dir="ltr">Choose a language</span></h2>
+    <div class="langs">
+      <button class="lang" id="langHe" lang="he" dir="rtl">עברית</button>
+      <button class="lang" id="langEn" lang="en" dir="ltr">English</button>
+    </div>
+  </div>
+  <div class="card" id="stepInst" hidden>
+    <h2 id="instTitle"></h2>
+    <div class="insts" id="insts"></div>
+    <button class="back" id="backLang"></button>
+  </div>
+</div>
+
 <script>
-  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+"use strict";
+
+/* ---------- Language ----------
+   Hebrew or English, chosen on the home screen (`brass-lang`; ?lang=en|he for a link). Never mixed: every
+   word on screen comes from TEXT (elements carry data-t / data-t-html / data-t-title / data-t-aria), and
+   English names notes by letter (C D E, B♭). COMMON holds what every page says (microphone, pause, buttons). */
+const LANG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "he") return q;
+    return localStorage.getItem("brass-lang") === "en" ? "en" : "he";
+  } catch (_) { return "he"; }
+})();
+const COMMON = {
+  he: {
+    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
+    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
+    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
+    diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+  },
+  en: {
+    listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
+    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
+    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
+    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
+    diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+  }
+};
+const T = (key, ...args) => {
+  const v = (TEXT[LANG] && TEXT[LANG][key]) ?? COMMON[LANG][key] ?? (TEXT.he && TEXT.he[key]) ?? COMMON.he[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+};
+function applyText() {
+  const root = document.documentElement;
+  root.lang = LANG;
+  root.dir = LANG === "he" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(n => { n.textContent = T(n.dataset.t); });
+  document.querySelectorAll("[data-t-html]").forEach(n => { n.innerHTML = T(n.dataset.tHtml); });
+  document.querySelectorAll("[data-t-title]").forEach(n => { n.title = T(n.dataset.tTitle); });
+  document.querySelectorAll("[data-t-aria]").forEach(n => { n.setAttribute("aria-label", T(n.dataset.tAria)); });
+  if (TEXT[LANG] && TEXT[LANG].pageTitle) document.title = T("pageTitle");
+}
+const $ = id => document.getElementById(id);
+
+const TEXT = {
+  he: {
+    tagline: "משחקים פשוטים לשיעורי כלי נשיפה למתחילים",
+    change: "החלפת כלי או שפה", langName: "עברית",
+    homeLabel: "בבית", homeTitle: "מתאמנים בבית?",
+    home1: "בוחרים משחק. הכלי שלכם כבר מוכן בכל המשחקים.",
+    home2: "לוחצים על ⚙ ומסמנים את הצלילים שכבר למדתם.",
+    home3: "במשחקים עם מיקרופון, כשהדפדפן שואל, מאשרים את המיקרופון.",
+    home4: "בטלפון מסובבים את המסך לרוחב, כך הכול גדול יותר.",
+    games: "משחקים",
+    install: "<b>להתקין כמו אפליקציה:</b> באייפד ובאייפון פותחים את הדף בספארי, לוחצים שיתוף ואז <b>הוספה למסך הבית</b>. באנדרואיד: בכרום, תפריט ⋮ ואז <b>הוספה למסך הבית</b>. אחרי הפעם הראשונה זה עובד גם בלי אינטרנט.",
+    instTitle: "על מה אתם מנגנים?", soon: "בקרוב", backLang: "‹ שפה",
+    sax: "סקסופון", flute: "חליל צד", clarinet: "קלרינט", recorder: "חלילית",
+    mic: "מיקרופון", insts: "חצוצרה · טרומבון · קרן", tileDo: "דו",
+    t_ramzor: "רמזור", d_ramzor: "אדום עוצרים, צהוב מתכוננים ונושמים, ירוק מנגנים. בשליטה שלך.", c_ramzor: ["כיתה", "מקלדת ושלט", "ללא מיקרופון"],
+    t_breath: "נשימה", d_breath: "שואפים, ואז נושפים לאט: בועת סבון ענקית גדלה, או שהרוח לוקחת את זרעי שן הארי. לחיצה אחת = נשימה אחת.", c_breath: ["🫧 · 🌼", "נושפים 4 · 8 · 12 · 16"],
+    t_buzz: "זמזום", d_buzz: "מזמזמים בפומית והדבורה עפה: מזמזמים, מגיעים לאותו צליל של הפרח, מחזיקים ארוך ויציב, ועושים סירנות.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️", "@insts"],
+    t_long: "צליל ארוך", d_long: "צליל אחד ארוך מטיס חללית מהאדמה אל החלל. ככל שמחזיקים יותר, מגיעים רחוק יותר.", c_long: ["@mic", "כל כלי", "4 · 8 · 12 · 16 · ∞"],
+    t_right: "צליל נכון", d_right: "התו שרוצים לנגן והתו שבאמת יוצא, על אותה חמשה. מחזיקים את הצליל הנכון ומקבלים כוכב.", c_right: ["@mic", "בחירת צלילים", "@insts"],
+    t_ladder: "סולם", d_ladder: "כל שלב בסולם הוא צליל. הקוף מטפס לצליל שמנגנים, ותופסים את הבננה.", c_ladder: ["@mic", "@insts", "צלילים אמיתיים"],
+    t_ninja: "נינג'ה", d_ninja: "תווים עפים פנימה אחד אחרי השני. מנגנים את התו לפני שהזמן נגמר, והנינג'ה חותך אותו.", c_ninja: ["@mic", "סיבוב לכל ילד", "@insts"],
+    t_songs: "שירים", d_songs: "מנגנים שיר שלם: תו אחרי תו, ואחר כך בקצב עם להקה. אפשר להקשיב קודם ולתרגל רק קטע.", c_songs: ["@mic", "12 שירים", "@insts"],
+    t_names: "תווים", d_names: "מכירים את הצלילים הראשונים וקוראים להם בשם. כל כלי קורא את התווים שלו במפתח שלו ושומע את הצליל האמיתי.", c_names: ["קריאת תווים", "דו רה מי · C D E", "7 שלבים"],
+    t_clap: "קצב", d_clap: "שומעים קצב ומוחאים אותו בחזרה, או בוחרים איזה משלושה קצבים שמעתם.", c_clap: ["הד", "חידון שמיעה", "9 שלבים"]
+  },
+  en: {
+    tagline: "Simple games for beginner brass lessons",
+    change: "Change instrument or language", langName: "English",
+    homeLabel: "At home", homeTitle: "Practising at home?",
+    home1: "Pick a game. Your instrument is already set in every game.",
+    home2: "Tap ⚙ and tick the notes you've already learned.",
+    home3: "In the microphone games, allow the microphone when the browser asks.",
+    home4: "On a phone, turn the screen sideways: everything gets bigger.",
+    games: "Games",
+    install: "<b>Install it like an app:</b> on an iPad or iPhone, open this page in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, in Chrome: menu ⋮, then <b>Add to Home Screen</b>. After the first time it works offline too.",
+    instTitle: "What do you play?", soon: "Coming soon", backLang: "‹ Language",
+    sax: "Saxophone", flute: "Flute", clarinet: "Clarinet", recorder: "Recorder",
+    mic: "Microphone", insts: "Trumpet · Trombone · Horn", tileDo: "C",
+    t_ramzor: "Traffic Light", d_ramzor: "Red: stop. Yellow: get ready and breathe. Green: play. You're in control.", c_ramzor: ["Class", "Keyboard & clicker", "No microphone"],
+    t_breath: "Breathing", d_breath: "Breathe in, then blow out slowly: a giant soap bubble grows, or the wind carries off the dandelion seeds. One tap = one breath.", c_breath: ["🫧 · 🌼", "Blow out 4 · 8 · 12 · 16"],
+    t_buzz: "Buzzing", d_buzz: "Buzz on the mouthpiece and the bee flies: buzz, match the flower's note, hold it long and steady, then play sirens.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️", "@insts"],
+    t_long: "Long Note", d_long: "One long note flies a rocket from the ground into space. The longer you hold it, the further it goes.", c_long: ["@mic", "Any instrument", "4 · 8 · 12 · 16 · ∞"],
+    t_right: "Right Note", d_right: "The note you want and the note that really comes out, on the same staff. Hold the right note to earn a star.", c_right: ["@mic", "Choose the notes", "@insts"],
+    t_ladder: "Ladder", d_ladder: "Each rung is a note. The monkey climbs to the note you play: catch the banana.", c_ladder: ["@mic", "@insts", "Real instrument sounds"],
+    t_ninja: "Note Ninja", d_ninja: "Notes fly in one after another. Play each one before time runs out and the ninja slices it.", c_ninja: ["@mic", "One round per child", "@insts"],
+    t_songs: "Songs", d_songs: "Play a whole song: note by note, then in time with a band. Listen first, and practise just a section.", c_songs: ["@mic", "12 songs", "@insts"],
+    t_names: "Note Names", d_names: "Meet the first notes and name them. Each instrument reads its own notes in its own clef and hears the real sound.", c_names: ["Reading", "C D E", "7 levels"],
+    t_clap: "Clap-Along", d_clap: "Hear a rhythm and clap it back, or pick which of three rhythms you heard.", c_clap: ["Echo", "Ear quiz", "9 levels"]
+  }
+};
+
+// Instruments: the three that every game knows, then the woodwinds that are on their way.
+const INSTRUMENTS = [
+  { id: "trumpet", ready: true }, { id: "trombone", ready: true }, { id: "horn", ready: true },
+  { id: "sax" }, { id: "flute" }, { id: "clarinet" }, { id: "recorder" }
+];
+// Small drawings, all on a 120 × 80 box.
+const ICONS = {
+  trumpet: `<g fill="none" stroke="#c98a00" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M 8 38 L 82 38"/><path d="M 30 38 L 30 56 Q 30 62 36 62 L 74 62 Q 80 62 80 56 L 80 38"/></g><path d="M 82 30 L 114 14 L 114 62 L 82 46 Z" fill="#f2b705" stroke="#c98a00" stroke-width="4" stroke-linejoin="round"/><g fill="#c98a00">${[44, 54, 64].map(x => `<rect x="${x}" y="22" width="7" height="18" rx="2"/>`).join("")}</g><rect x="4" y="34" width="8" height="8" rx="2" fill="#8a97a8"/>`,
+  trombone: `<g fill="none" stroke="#c98a00" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M 14 30 L 100 30 Q 108 30 108 38 Q 108 46 100 46 L 40 46"/><path d="M 14 46 L 70 46"/><path d="M 70 30 L 70 46"/></g><path d="M 6 22 L 28 30 L 28 46 L 6 54 Z" fill="#f2b705" stroke="#c98a00" stroke-width="4" stroke-linejoin="round"/>`,
+  horn: `<circle cx="54" cy="42" r="24" fill="none" stroke="#c98a00" stroke-width="5"/><circle cx="54" cy="42" r="13" fill="none" stroke="#c98a00" stroke-width="4"/><path d="M 74 54 L 104 70 Q 116 58 110 40 Z" fill="#f2b705" stroke="#c98a00" stroke-width="4" stroke-linejoin="round"/><path d="M 34 30 L 14 16" stroke="#c98a00" stroke-width="5" stroke-linecap="round"/><g fill="#c98a00"><rect x="44" y="10" width="6" height="12" rx="2"/><rect x="54" y="10" width="6" height="12" rx="2"/></g>`,
+  sax: `<path d="M 44 8 L 50 6 L 54 14 L 54 56 Q 54 72 70 72 Q 86 72 88 58 L 92 44" fill="none" stroke="#c98a00" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M 84 46 L 104 36 L 100 56 Z" fill="#f2b705" stroke="#c98a00" stroke-width="4" stroke-linejoin="round"/><g fill="#8f5b0e">${[24, 34, 44].map(y => `<circle cx="54" cy="${y}" r="3.5"/>`).join("")}</g>`,
+  flute: `<rect x="6" y="34" width="108" height="10" rx="5" fill="#d6dde6" stroke="#8a97a8" stroke-width="3"/><g fill="#8a97a8">${[46, 58, 70, 82, 94].map(x => `<circle cx="${x}" cy="39" r="3.5"/>`).join("")}</g><ellipse cx="22" cy="39" rx="4" ry="3" fill="#56616f"/>`,
+  clarinet: `<rect x="53" y="8" width="14" height="56" rx="4" fill="#2b3445"/><path d="M 52 62 L 68 62 L 76 76 L 44 76 Z" fill="#2b3445"/><rect x="55" y="2" width="10" height="9" rx="3" fill="#56616f"/><g fill="#d6dde6">${[20, 30, 40, 50].map(y => `<circle cx="60" cy="${y}" r="2.6"/>`).join("")}</g>`,
+  recorder: `<path d="M 54 4 L 66 4 L 68 14 L 66 66 Q 66 76 60 76 Q 54 76 54 66 L 52 14 Z" fill="#e8c99a" stroke="#a87b45" stroke-width="3" stroke-linejoin="round"/><rect x="56" y="16" width="8" height="5" rx="1.5" fill="#a87b45"/><g fill="#7a5a30">${[30, 38, 46, 54, 62].map(y => `<circle cx="60" cy="${y}" r="2.4"/>`).join("")}</g>`
+};
+const instName = id => T(id);
+
+const TILES = { "ramzor.html": "ramzor", "balloon-breath.html": "breath", "buzz-along.html": "buzz", "sound-game.html": "long",
+  "right-note.html": "right", "horn-ladder.html": "ladder", "ninja.html": "ninja", "songs.html": "songs", "note-names.html": "names", "clap-along.html": "clap" };
+
+function fillTiles() {
+  document.querySelectorAll(".tool").forEach(a => {
+    const k = TILES[a.getAttribute("href")];
+    a.querySelector("[data-name]").textContent = T("t_" + k);
+    a.querySelector("p").textContent = T("d_" + k);
+    a.querySelectorAll("svg text").forEach(t => { if (t.textContent.trim() === "Do" || t.dataset.do) { t.dataset.do = 1; t.textContent = T("tileDo"); } });
+    const chips = a.querySelector(".chips");
+    chips.textContent = "";
+    T("c_" + k).forEach(c => {
+      const s = document.createElement("span");
+      s.className = "chip";
+      s.textContent = c[0] === "@" ? T(c.slice(1)) : c;
+      chips.appendChild(s);
+    });
+  });
+}
+
+function fillMe() {
+  let inst = "trumpet";
+  try { const s = localStorage.getItem("brass-inst"); if (INSTRUMENTS.some(i => i.id === s && i.ready)) inst = s; } catch (_) {}
+  $("meIcon").innerHTML = ICONS[inst];
+  $("meInst").textContent = instName(inst);
+  $("meLang").textContent = T("langName");
+}
+
+/* ---------- Setup: the language, then the instrument ---------- */
+
+function showSetup(step) {
+  $("setup").hidden = false;
+  $("stepLang").hidden = step !== "lang";
+  $("stepInst").hidden = step !== "inst";
+  $("langHe").setAttribute("aria-pressed", String(LANG === "he"));
+  $("langEn").setAttribute("aria-pressed", String(LANG === "en"));
+  if (step === "inst") {
+    $("instTitle").textContent = T("instTitle");
+    $("backLang").textContent = T("backLang");
+    let cur = null;
+    try { cur = localStorage.getItem("brass-inst"); } catch (_) {}
+    const box = $("insts");
+    box.textContent = "";
+    INSTRUMENTS.forEach(i => {
+      const b = document.createElement("button");
+      b.className = "inst";
+      b.innerHTML = `<svg viewBox="0 0 120 80" aria-hidden="true">${ICONS[i.id]}</svg><span></span>` + (i.ready ? "" : `<span class="soon"></span>`);
+      b.children[1].textContent = instName(i.id);
+      if (!i.ready) { b.disabled = true; b.querySelector(".soon").textContent = T("soon"); }
+      b.setAttribute("aria-pressed", String(i.id === cur));
+      b.addEventListener("click", () => {
+        try { localStorage.setItem("brass-inst", i.id); } catch (_) {}
+        $("setup").hidden = true;
+        fillMe();
+      });
+      box.appendChild(b);
+    });
+  }
+}
+
+function chooseLang(l) {
+  try { localStorage.setItem("brass-lang", l); } catch (_) {}
+  // The whole page changes language and direction: simplest and surest is to load it again, on the instruments.
+  if (l !== LANG) location.replace(location.pathname + "?setup=inst");
+  else showSetup("inst");
+}
+
+$("langHe").addEventListener("click", () => chooseLang("he"));
+$("langEn").addEventListener("click", () => chooseLang("en"));
+$("backLang").addEventListener("click", () => showSetup("lang"));
+$("me").addEventListener("click", () => showSetup("lang"));
+
+applyText();
+fillTiles();
+fillMe();
+let chosen = false;
+try { chosen = !!localStorage.getItem("brass-lang"); } catch (_) {}
+const askFor = new URLSearchParams(location.search).get("setup");
+if (askFor === "inst") { history.replaceState(null, "", location.pathname); showSetup("inst"); }
+else if (!chosen) showSetup("lang");
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
 </html>
