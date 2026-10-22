@@ -598,7 +598,7 @@ function buildScene() {
   g.noteLayer = el("g", {}, svg);
   g.fx = el("g", {}, svg);
   buildNinja(svg);
-  g.streak = el("text", { x: 0, y: 64, "text-anchor": "middle", "font-size": 44, "font-weight": 900, fill: "#e0750b", style: "font-family: var(--display)", opacity: 0 }, svg);
+  g.streak = el("text", { x: HOME_X, y: 120, "text-anchor": "middle", "font-size": 32, "font-weight": 800, fill: "#c46a12", style: "font-family: var(--display)", opacity: 0 }, svg);
   g.banner = el("text", { x: 560, y: 120, "text-anchor": "middle", "font-size": 92, "font-weight": 900, fill: "#7a5cf0", style: "font-family: var(--display)", direction: "rtl", opacity: 0 }, svg);
   drawDots();
 }
@@ -655,19 +655,18 @@ function drawDots() {
       el("path", { d: `M ${x - 5} 43 L ${x + 5} 53 M ${x + 5} 43 L ${x - 5} 53`, stroke: "#94a3b8", "stroke-width": 3, "stroke-linecap": "round" }, g.dots);
     } else el("circle", { cx: x, cy: 48, r: now ? 15 : 13, fill: "#fff", stroke: "#7a5cf0", "stroke-width": now ? 6 : 4 }, g.dots);
   }
-  g.streak.setAttribute("x", x0 + (n - 1) * gap + 70);
 }
 
-// 🔥 n beside the dots from two in a row; it pops when it grows.
+// 🔥 n in the top corner, above the ninja, from two in a row; a small pop when it grows.
 function showStreak() {
   const s = state.streak;
   g.streak.textContent = s >= 2 ? "🔥 " + s : "";
-  g.streak.setAttribute("opacity", s >= 2 ? 1 : 0);
+  g.streak.setAttribute("opacity", s >= 2 ? 0.85 : 0);
   if (s < 2) return;
-  const x = +g.streak.getAttribute("x"), t0 = performance.now();
+  const x = HOME_X, y = 108, t0 = performance.now();
   (function pop(now) {
-    const p = Math.min(1, (now - t0) / 350), k = 1 + 0.35 * Math.sin(p * Math.PI);
-    g.streak.setAttribute("transform", `translate(${x} 50) scale(${k.toFixed(3)}) translate(${-x} -50)`);
+    const p = Math.min(1, (now - t0) / 350), k = 1 + 0.15 * Math.sin(p * Math.PI);
+    g.streak.setAttribute("transform", `translate(${x} ${y}) scale(${k.toFixed(3)}) translate(${-x} ${-y})`);
     if (p < 1) requestAnimationFrame(pop);
   })(t0);
 }
