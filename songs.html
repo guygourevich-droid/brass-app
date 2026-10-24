@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Songs · Brass App</title>
+<title>Songs · Tonebee</title>
 <meta name="theme-color" content="#bfe4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Brass App">
+<meta name="apple-mobile-web-app-title" content="Tonebee">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -123,7 +123,7 @@
 <body>
 <div class="app">
   <header class="console">
-    <a class="home" href="index.html" aria-label="Brass App">‹<img class="home-icon" src="icons/icon-192.png" alt=""><span class="home-word"> Brass App</span></a>
+    <a class="home" href="index.html" aria-label="Tonebee" data-t-aria="brand">‹<img class="home-icon" src="icons/icon-192.png" alt=""><span class="home-word"> <span data-t="brand">Tonebee</span></span></a>
     <button id="listBtn" class="icon-btn" data-t-title="listTip" data-t="songsBtn"></button>
     <span class="spacer"></span>
     <span><span class="mic-dot" id="micDot"></span> <span id="micText" data-t="mic"></span></span>
@@ -201,7 +201,7 @@ const COMMON = {
     keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
     micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
-    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
     diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
@@ -212,7 +212,7 @@ const COMMON = {
     keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
     micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
-    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
     diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
@@ -234,7 +234,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "שירים · Brass App", songsBtn: "🎵 שירים", listTip: "רשימת השירים (L)", settings: "הגדרות (S)", scene: "שיר", songs: "שירים",
+    pageTitle: "שירים · טונבי", songsBtn: "🎵 שירים", listTip: "רשימת השירים (L)", settings: "הגדרות (S)", scene: "שיר", songs: "שירים",
     whichSong: "איזה שיר?", needNotes: "כדי לנגן שיר צריך עוד צלילים", chooseNotes: "⚙ לבחור צלילים", settingsLabel: "הגדרות",
     whichNotes: "אילו צלילים?", sameAs: "אותה בחירה כמו בצליל נכון ובנינג'ה. מוצגים רק שירים שמשתמשים בצלילים האלה.",
     noteName: "שם הצליל", repeated: "צליל חוזר", close: "סגירה", mode: "מצב", follow: "לומדים", inTime: "בקצב", tempo: "קצב",
@@ -245,7 +245,7 @@ const TEXT = {
     open: "בלי אצבעות", show: "מראים", hide: "מסתירים", newTongue: "צריך לשון חדשה", justHold: "מספיק להחזיק"
   },
   en: {
-    pageTitle: "Songs · Brass App", songsBtn: "🎵 Songs", listTip: "The song list (L)", settings: "Settings (S)", scene: "Song", songs: "Songs",
+    pageTitle: "Songs · Tonebee", songsBtn: "🎵 Songs", listTip: "The song list (L)", settings: "Settings (S)", scene: "Song", songs: "Songs",
     whichSong: "Which song?", needNotes: "To play a song you need a few more notes", chooseNotes: "⚙ Choose notes", settingsLabel: "Settings",
     whichNotes: "Which notes?", sameAs: "The same choice as in Right Note and Note Ninja. Only songs that use these notes can be played.",
     noteName: "Note name", repeated: "Repeated note", close: "Close", mode: "Mode", follow: "Note by note", inTime: "In time", tempo: "Tempo",

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Traffic Light · Brass App</title>
+<title>Traffic Light · Tonebee</title>
 <meta name="theme-color" content="#0d1117">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Brass App">
+<meta name="apple-mobile-web-app-title" content="Tonebee">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -109,7 +109,7 @@
   <div class="hold" id="hold" hidden><div class="hold-bar" id="holdBar"></div></div>
 
   <footer class="chrome">
-    <a href="index.html">‹ Brass App</a>
+    <a href="index.html">‹ <span data-t="brand">Tonebee</span></a>
     <span class="spacer"></span>
     <label class="ctl" for="hold-len"><span data-t="hold"></span><select id="hold-len">
       <option value="0" selected>—</option>
@@ -145,7 +145,7 @@ const COMMON = {
     keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
     micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
-    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
     diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
@@ -156,7 +156,7 @@ const COMMON = {
     keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
     micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
-    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
     diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
@@ -178,12 +178,12 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "רמזור · Brass App", scene: "רמזור", hold: "החזקה", words: "מילים", sound: "צליל",
+    pageTitle: "רמזור · טונבי", scene: "רמזור", hold: "החזקה", words: "מילים", sound: "צליל",
     words3: { red: "עֲצוֹר", amber: "מוּכָנִים", green: "נַגְּנוּ", off: "" },
     labels: { red: "אדום: כלי למטה", amber: "צהוב: מוכנים, נושמים", green: "ירוק: מנגנים", off: "רמזור כבוי" }
   },
   en: {
-    pageTitle: "Traffic Light · Brass App", scene: "Traffic light", hold: "Hold", words: "Words", sound: "Sound",
+    pageTitle: "Traffic Light · Tonebee", scene: "Traffic light", hold: "Hold", words: "Words", sound: "Sound",
     words3: { red: "STOP", amber: "READY", green: "PLAY", off: "" },
     labels: { red: "Red: instruments down", amber: "Yellow: get ready, breathe", green: "Green: play", off: "Traffic light off" }
   }

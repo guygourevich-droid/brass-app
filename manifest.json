@@ -1,6 +1,6 @@
 {
-  "name": "Brass App",
-  "short_name": "Brass App",
+  "name": "Tonebee",
+  "short_name": "Tonebee",
   "description": "Simple tools for brass and rhythm lessons.",
   "start_url": "./index.html",
   "scope": "./",

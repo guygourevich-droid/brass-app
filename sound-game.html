@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Long Note · Brass App</title>
+<title>Long Note · Tonebee</title>
 <meta name="theme-color" content="#bfe4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Brass App">
+<meta name="apple-mobile-web-app-title" content="Tonebee">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -103,7 +103,7 @@
 <div class="sky" id="sky2"></div><div class="sky" id="sky3"></div><div class="sky" id="sky4"></div><div class="sky" id="sky5"></div><div class="sky" id="sky6"></div><div class="sky" id="sky7"></div>
 <div class="app">
   <header class="console">
-    <a class="home" href="index.html" aria-label="Brass App">‹<img class="home-icon" src="icons/icon-192.png" alt=""><span class="home-word"> Brass App</span></a>
+    <a class="home" href="index.html" aria-label="Tonebee" data-t-aria="brand">‹<img class="home-icon" src="icons/icon-192.png" alt=""><span class="home-word"> <span data-t="brand">Tonebee</span></span></a>
     <div class="seg" role="group" data-t-aria="level">
       <button id="lv1" class="seg-btn" aria-pressed="true" data-t-title="lv1">☀️ 4</button>
       <button id="lv2" class="seg-btn" aria-pressed="false" data-t-title="lv2">🛰️ 8</button>
@@ -158,7 +158,7 @@ const COMMON = {
     keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
     micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
-    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
     diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
@@ -169,7 +169,7 @@ const COMMON = {
     keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
     micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
-    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
     diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
@@ -191,12 +191,12 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "צליל ארוך · Brass App", level: "שלב", scene: "חללית שטסה עם צליל ארוך", turns: "תורות",
+    pageTitle: "צליל ארוך · טונבי", level: "שלב", scene: "חללית שטסה עם צליל ארוך", turns: "תורות",
     lv1: "4 שניות · מעל העננים", lv2: "8 שניות · לוויין", lv3: "12 שניות · ירח", lv4: "16 שניות · שבתאי", lv5: "כמה שאפשר",
     keys: "<kbd>Space</kbd> תור הבא · <kbd>Esc</kbd> השהיה · <kbd>1</kbd>–<kbd>5</kbd> שלב · <kbd>R</kbd> כיול · <kbd>D</kbd> מידע"
   },
   en: {
-    pageTitle: "Long Note · Brass App", level: "Level", scene: "A rocket flying on one long note", turns: "Turns",
+    pageTitle: "Long Note · Tonebee", level: "Level", scene: "A rocket flying on one long note", turns: "Turns",
     lv1: "4 seconds · above the clouds", lv2: "8 seconds · the satellite", lv3: "12 seconds · the Moon", lv4: "16 seconds · Saturn", lv5: "As long as you can",
     keys: "<kbd>Space</kbd> next turn · <kbd>Esc</kbd> pause · <kbd>1</kbd>–<kbd>5</kbd> level · <kbd>R</kbd> recalibrate · <kbd>D</kbd> mic check"
   }

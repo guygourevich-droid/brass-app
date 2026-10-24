@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Brass App">
+<meta name="apple-mobile-web-app-title" content="Tonebee">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>קצב · Brass App</title>
+<title>קצב · Tonebee</title>
 <script>
   // English pages lay out left to right from the first paint (the language block fills in the words).
   try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
@@ -196,7 +196,7 @@
 
 <div class="app" id="app">
   <header class="console" data-t-aria="controls">
-    <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool" data-t="tool"></span></a>
+    <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> <span data-t="brand">Tonebee</span> <span class="brand-tool" data-t="tool"></span></a>
     <div class="seg" role="group" data-t-aria="mode">
       <button id="modeEcho" class="seg-btn" aria-pressed="true" data-t="echo"></button>
       <button id="modeQuiz" class="seg-btn" aria-pressed="false" data-t="quiz"></button>
@@ -261,7 +261,7 @@ const COMMON = {
     keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
     micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
-    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
     diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
@@ -272,7 +272,7 @@ const COMMON = {
     keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
     micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
-    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
     diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
@@ -294,7 +294,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "קצב · Brass App", tool: "/ קצב", back: "חזרה ל-Brass App", controls: "שליטה למורה",
+    pageTitle: "קצב · טונבי", tool: "/ קצב", back: "חזרה ל-טונבי", controls: "שליטה למורה",
     mode: "מצב", echo: "הד", quiz: "חידון שמיעה", level: "שלב", click: "מטרונום", counts: "ספירה", fullBtn: "⛶ מסך מלא",
     keys: "<kbd>Space</kbd> ניגון / הבא &nbsp; <kbd>R</kbd> שוב &nbsp; <kbd>F</kbd> מסך מלא &nbsp; <kbd>Esc</kbd> השהיה",
     levelN: n => `שלב ${n}`,
@@ -310,7 +310,7 @@ const TEXT = {
     stopped: "עצרנו. שוב, או הבא?", rhythm: (bars, beats) => `קצב, ${bars === 1 ? "תיבה אחת" : bars + " תיבות"} ב-${beats}/4`
   },
   en: {
-    pageTitle: "Clap-Along · Brass App", tool: "/ Clap-Along", back: "Back to Brass App", controls: "Teacher controls",
+    pageTitle: "Clap-Along · Tonebee", tool: "/ Clap-Along", back: "Back to Tonebee", controls: "Teacher controls",
     mode: "Mode", echo: "Echo", quiz: "Ear quiz", level: "Level", click: "Click", counts: "Counts", fullBtn: "⛶ Full screen",
     keys: "<kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen &nbsp; <kbd>Esc</kbd> Pause",
     levelN: n => `Level ${n}`,

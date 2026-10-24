@@ -1,0 +1,8 @@
+// Cloudflare deploy: static files (Workers static assets) + worker.js for "/". `npx wrangler deploy` from this folder.
+{
+  "name": "tonebee",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./", "binding": "ASSETS", "html_handling": "none" },
+  "routes": [{ "pattern": "tonebee.app", "custom_domain": true }]
+}

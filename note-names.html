@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Note Names · Brass App</title>
+<title>Note Names · Tonebee</title>
 <meta name="theme-color" content="#bfe4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Brass App">
+<meta name="apple-mobile-web-app-title" content="Tonebee">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -139,7 +139,7 @@
 
 <div class="app">
   <header class="console" data-t-aria="controls">
-    <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> Brass App <span class="brand-tool" data-t="tool"></span></a>
+    <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> <span data-t="brand">Tonebee</span> <span class="brand-tool" data-t="tool"></span></a>
     <div class="seg" role="group" data-t-aria="mode">
       <button id="mLearn" class="seg-btn" aria-pressed="true" data-t="learn"></button>
       <button id="mQuiz" class="seg-btn" aria-pressed="false" data-t="quiz"></button>
@@ -193,7 +193,7 @@ const COMMON = {
     keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
     micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
-    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ Brass App",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
     diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
@@ -204,7 +204,7 @@ const COMMON = {
     keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
     micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
-    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Brass App",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
     diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
@@ -226,7 +226,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "תווים · Brass App", controls: "פקדי המורה", back: "חזרה ל-Brass App", tool: "/ תווים", mode: "מצב",
+    pageTitle: "תווים · טונבי", controls: "פקדי המורה", back: "חזרה ל-טונבי", tool: "/ תווים", mode: "מצב",
     learn: "מכירים את התווים", quiz: "איך קוראים לו?", level: "שלב", noteNames: "שמות התווים", sound: "צליל", fullscreenBtn: "⛶ מסך מלא",
     answers: "תשובות", levelN: n => `שלב ${n}`, levelTip: n => `שלב ${n}: ${n + 1} תווים`, levelNotes: list => `התווים בשלב הזה: ${list}`,
     playIt: name => `${name}: להשמיע`, isNew: "חדש", whichNote: "איזה תו זה?",
@@ -237,7 +237,7 @@ const TEXT = {
     names: ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"]
   },
   en: {
-    pageTitle: "Note Names · Brass App", controls: "Teacher controls", back: "Back to Brass App", tool: "/ Note Names", mode: "Mode",
+    pageTitle: "Note Names · Tonebee", controls: "Teacher controls", back: "Back to Tonebee", tool: "/ Note Names", mode: "Mode",
     learn: "Meet the notes", quiz: "Name it", level: "Level", noteNames: "Note names", sound: "Sound", fullscreenBtn: "⛶ Full screen",
     answers: "Answers", levelN: n => `Level ${n}`, levelTip: n => `Level ${n}: ${n + 1} notes`, levelNotes: list => `The notes for this level: ${list}`,
     playIt: name => `${name}: play`, isNew: "new", whichNote: "Which note is this?",

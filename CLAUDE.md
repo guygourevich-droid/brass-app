@@ -1,9 +1,10 @@
-# Brass App
+# Tonebee (טונבי) — formerly Brass App
 
-Music teacher's toolkit for brass and rhythm lessons: kids 9–12, projected in class, and installed on an iPad for offline use. Hosted on GitHub Pages from `main` (repo root). Brass-specific tools (trumpet first) are planned but not yet designed.
+Music teacher's toolkit for brass and rhythm lessons: kids 9–12, projected in class, and installed on an iPad for offline use. Live at https://tonebee.app — Cloudflare Workers static assets, deployed with `npx wrangler deploy` (`wrangler.jsonc`, `.assetsignore`; `worker.js` only maps `/` to `index.html` because `html_handling` is `none`, so `.html` URLs never redirect). The old GitHub Pages copy (guygourevich-droid.github.io/brass-app) is being retired. Business side (plan, brand, decisions) lives outside this repo in `../ops/`. Brass-specific tools (trumpet first) are planned but not yet designed.
 
 ## Constraints
-- Plain HTML/CSS/JS only. No build step, frameworks, CDNs or backend — every page must work offline.
+- Plain HTML/CSS/JS only. No build step, frameworks, CDNs or backend (`worker.js` is edge routing only) — every page must work offline.
+- Brand name on screen comes from COMMON `brand` ("טונבי" / "Tonebee") via `data-t="brand"`; localStorage keys keep their old `brass-*` names on purpose (renaming would wipe saved settings).
 - One tool = one self-contained HTML file at repo root + a tile in `index.html`.
 - New or renamed file → add it to `FILES` in `sw.js` and bump `CACHE`, or installed iPads keep serving the old copy.
 - Fonts are self-hosted in `fonts/`; never link Google Fonts.
