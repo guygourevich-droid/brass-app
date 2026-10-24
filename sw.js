@@ -1,6 +1,6 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "tonebee-v38";
+const CACHE = "tonebee-v39";
 const FILES = [
   "./",
   "index.html",

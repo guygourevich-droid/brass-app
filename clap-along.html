@@ -12,6 +12,25 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>קצב · Tonebee</title>
 <script>
+  // Moving house: the old address (GitHub Pages) hands this device's settings to tonebee.app and sends the page there.
+  (function () {
+    var keep = /^(brass-|right-note-|ninja-|horn-ladder|breath$|buzz$|songs$|sound-game$)/;
+    try {
+      if (/github\.io$/.test(location.hostname)) {
+        var d = {};
+        for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (keep.test(k)) d[k] = localStorage.getItem(k); }
+        var page = location.pathname.split("/").pop() || "index.html";
+        location.replace("https://tonebee.app/" + page + location.search + "#move=" + encodeURIComponent(JSON.stringify(d)));
+        return;
+      }
+      var m = location.hash.match(/^#move=(.*)$/);
+      if (m) {
+        var s = JSON.parse(decodeURIComponent(m[1]));
+        for (var key in s) if (keep.test(key) && typeof s[key] === "string") localStorage.setItem(key, s[key]);
+        history.replaceState(null, "", location.pathname + location.search);
+      }
+    } catch (_) {}
+  })();
   // English pages lay out left to right from the first paint (the language block fills in the words).
   try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
 </script>
