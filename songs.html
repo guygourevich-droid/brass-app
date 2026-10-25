@@ -94,6 +94,9 @@
   .song-card.locked { background: #f6f8fb; border-style: dashed; color: var(--muted); }
   .song-card.locked b::after { content: " 🔒"; font-size: .8em; }
   .song-card.locked span.missing { background: #fff3d6; color: #8a5a00; border: 2px dashed #e0a500; font-weight: 700; }
+  /* Last card: more songs are coming; a tap counts the interest (analytics) and opens an email. */
+  .song-card.later { display: block; text-decoration: none; background: #fffaf0; border-style: dashed; border-color: #e0a500; color: var(--muted); }
+  .song-card.later span { background: none; padding: 0; font-size: 16px; }
   .empty { text-align: center; margin: 3vh 0 2vh; }
   .empty p { font-size: clamp(20px, 3vh, 30px); font-weight: 700; margin: 0 0 2vh; }
   .empty button { background: var(--accent); color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(20px, 3vh, 30px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
@@ -138,6 +141,38 @@
     .seg-btn { padding: 0 10px; }
   }
 </style>
+<script>
+  // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
+  // No cookies, names, recordings, autocapture or heatmaps. Off on localhost (?ph=1 turns it on) and in ?test= mode;
+  // offline it quietly does nothing. Teacher link: tonebee.app/?t=<name> remembers <name> on this device as `ref`.
+  // ?me=1 once on the founder's own devices marks their visits internal (PostHog's test-account filter hides them).
+  // tbTrack(event, props) is safe to call from any page, with or without analytics.
+  window.tbTrack = function (event, props) { try { if (window.posthog && posthog.capture) posthog.capture(event, props); } catch (_) {} };
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search), ls = window.localStorage;
+      if (q.get("t")) ls.setItem("brass-ref", q.get("t").slice(0, 40).toLowerCase());
+      if (q.get("me") === "1") ls.setItem("brass-me", "1");
+      if (q.has("test") || (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && q.get("ph") !== "1")) return;
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+      posthog.init("phc_QLyyt71c7pnUPyUGEDB9fXAsHrTl3cvey4e7oQ0V1S7", {
+        api_host: "https://us.i.posthog.com", defaults: "2026-08-30",
+        persistence: "localStorage", person_profiles: "identified_only", advanced_disable_flags: true,
+        autocapture: false, capture_pageview: false, capture_pageleave: false, capture_dead_clicks: false, rageclick: false,
+        capture_heatmaps: false, capture_performance: false, disable_session_recording: true, disable_surveys: true,
+        mask_all_text: true, capture_exceptions: true
+      });
+      var page = location.pathname.split("/").pop() || "index.html";
+      posthog.register({
+        app: "tonebee", page: page.replace(/\.html$/, ""), ref: ls.getItem("brass-ref") || "none",
+        inst: ls.getItem("brass-inst") || "none", lang: ls.getItem("brass-lang") || "none",
+        installed: !!(matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+      });
+      if (ls.getItem("brass-me")) posthog.register({ is_internal: true });
+      posthog.capture("$pageview");
+    } catch (_) {}
+  })();
+</script>
 </head>
 <body>
 <div class="app">
@@ -261,7 +296,8 @@ const TEXT = {
     bars: "תיבות", fromBar: "מתיבה", toBar: "עד תיבה", listenTip: "להקשיב לשיר (H)", listen: "🎧 להקשיב", play: "▶ מנגנים",
     keys: "<kbd>Space</kbd> ניגון · <kbd>H</kbd> להקשיב · <kbd>M</kbd> מצב · <kbd>Esc</kbd> השהיה",
     wellDone: "כל הכבוד!", perfect: "מושלם!", veryGood: "יפה מאוד!", lockedNote: "שירים עם 🔒 צריכים עוד צלילים: מסמנים אותם בהגדרות ⚙",
-    open: "בלי אצבעות", show: "מראים", hide: "מסתירים", newTongue: "צריך לשון חדשה", justHold: "מספיק להחזיק"
+    moreSongs: "🎵 עוד שירים בדרך", moreAsk: "רוצים שנודיע לכם? כתבו לנו", moreSubject: "טונבי: שירים חדשים", moreBody: "שלום, אשמח לשמוע כשיהיו עוד שירים בטונבי.",
+    open:"בלי אצבעות", show: "מראים", hide: "מסתירים", newTongue: "צריך לשון חדשה", justHold: "מספיק להחזיק"
   },
   en: {
     pageTitle: "Songs · Tonebee", songsBtn: "🎵 Songs", listTip: "The song list (L)", settings: "Settings (S)", scene: "Song", songs: "Songs",
@@ -272,6 +308,7 @@ const TEXT = {
     bars: "Bars", fromBar: "From bar", toBar: "To bar", listenTip: "Listen to the song (H)", listen: "🎧 Listen", play: "▶ Play",
     keys: "<kbd>Space</kbd> play · <kbd>H</kbd> listen · <kbd>M</kbd> mode · <kbd>Esc</kbd> pause",
     wellDone: "Well done!", perfect: "Perfect!", veryGood: "Very good!", lockedNote: "Songs with 🔒 need more notes: tick them in the settings ⚙",
+    moreSongs: "🎵 More songs coming", moreAsk: "Want us to tell you? Email us", moreSubject: "Tonebee: new songs", moreBody: "Hello, please let me know when Tonebee has more songs.",
     open: "open", show: "Show", hide: "Hide", newTongue: "Needs a new tongue", justHold: "Holding is enough"
   }
 };
@@ -1230,6 +1267,14 @@ function buildList() {
     b.addEventListener("click", () => lock ? toggleSheet(true) : chooseSong(song));
     box.appendChild(b);
   });
+  const later = document.createElement("a");
+  later.className = "song-card later";
+  later.href = "mailto:hello@tonebee.app?subject=" + encodeURIComponent(T("moreSubject")) + "&body=" + encodeURIComponent(T("moreBody"));
+  later.innerHTML = "<b></b><span></span>";
+  later.children[0].textContent = T("moreSongs");
+  later.children[1].textContent = T("moreAsk");
+  later.addEventListener("click", () => tbTrack("notify_click", { what: "songs" }));
+  box.appendChild(later);
   $("empty").hidden = open.length > 0;
   $("more").textContent = locked.length && open.length ? T("lockedNote") : "";
 }

@@ -4,7 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tonebee</title>
-<meta name="description" content="Simple games for beginner brass lessons.">
+<meta name="description" content="משחקים לשיעורי חצוצרה, טרומבון וקרן למתחילים: נושפים, מזמזמים ומנגנים, והמסך עונה. חינם, בלי הרשמה, בעברית ובאנגלית.">
+<!-- The card WhatsApp, Facebook etc. show for a shared link (icons/og.png is made from .claude/og-image.html). -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tonebee">
+<meta property="og:url" content="https://tonebee.app/">
+<meta property="og:title" content="טונבי · Tonebee">
+<meta property="og:description" content="משחקים לשיעורי חצוצרה, טרומבון וקרן למתחילים: נושפים, מזמזמים ומנגנים, והמסך עונה. חינם, בלי הרשמה.">
+<meta property="og:image" content="https://tonebee.app/icons/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="טונבי: משחקים לשיעורי חצוצרה, טרומבון וקרן למתחילים">
+<meta property="og:locale" content="he_IL">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -85,9 +98,6 @@
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--console); color: var(--ink-2); }
 
-  .home { background: var(--console); border-radius: 18px; padding: 18px 22px; }
-  .home h2 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
-  .home ol { margin: 0; padding-inline-start: 1.4em; display: grid; gap: 4px; font-size: 17px; color: var(--ink-2); }
   .install { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 15px; max-width: 70ch; }
   .install b { color: var(--ink-2); }
   @media (display-mode: standalone) { .install { display: none; } }
@@ -103,13 +113,17 @@
   .card h2.two span + span { font-size: .8em; color: var(--ink-2); }
   .langs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(10px, 3vw, 16px); max-width: 520px; margin: 0 auto; }
   .lang { border: 3px solid var(--line); background: #fff; border-radius: 22px; min-height: clamp(88px, 22vw, 110px); font-size: clamp(26px, 4vw, 38px); font-weight: 700; cursor: pointer; }
-  .lang:hover, .inst:not([disabled]):hover { border-color: var(--blue); }
+  .lang:hover, .inst:not(.later):hover { border-color: var(--blue); }
   .lang[aria-pressed="true"], .inst[aria-pressed="true"] { border-color: var(--blue); background: #eef6ff; }
   .insts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 40vw), 1fr)); gap: clamp(10px, 2.5vw, 14px); }
   .inst { position: relative; border: 3px solid var(--line); background: #fff; border-radius: 20px; padding: 14px 10px 12px; cursor: pointer; display: grid; justify-items: center; align-content: start; gap: 6px; font-size: 20px; font-weight: 700; }
   .inst img { width: 116px; height: 116px; }
-  .inst[disabled] { cursor: default; color: var(--muted); background: #f7f9fc; }
-  .inst[disabled] img { opacity: .6; filter: saturate(.55); }
+  .inst.later { color: var(--muted); background: #f7f9fc; }
+  .inst.later img { opacity: .6; filter: saturate(.55); }
+  .inst.later:hover { border-color: #e0a500; }
+  /* Tapping an instrument that is on its way: a line under the grid with an email link (and a count in analytics). */
+  .soon-note { margin: 16px auto 0; max-width: 34em; font-size: 18px; color: var(--ink-2); }
+  .soon-note a { color: var(--blue); font-weight: 700; }
   .soon { white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--brass-deep); background: #fff3d6; border-radius: 999px; padding: 1px 10px; }
   .back { margin-top: 22px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 16px; min-height: 44px; }
 
@@ -118,9 +132,6 @@
     .wrap { gap: 22px; padding-block: 20px 28px; }
     .masthead { gap: 12px 14px; }
     .me { margin-inline-start: 0; }
-    .home { padding: 14px 16px; }
-    .home h2 { font-size: 18px; }
-    .home ol { font-size: 15px; }
     .tools { gap: 12px; }
     .tool { grid-template-columns: 96px 1fr; gap: 8px 14px; padding: 14px 16px; }
     .tool > div { display: contents; }
@@ -145,6 +156,38 @@
   }
   @media (prefers-reduced-motion: reduce) { .tool { transition: none; } }
 </style>
+<script>
+  // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
+  // No cookies, names, recordings, autocapture or heatmaps. Off on localhost (?ph=1 turns it on) and in ?test= mode;
+  // offline it quietly does nothing. Teacher link: tonebee.app/?t=<name> remembers <name> on this device as `ref`.
+  // ?me=1 once on the founder's own devices marks their visits internal (PostHog's test-account filter hides them).
+  // tbTrack(event, props) is safe to call from any page, with or without analytics.
+  window.tbTrack = function (event, props) { try { if (window.posthog && posthog.capture) posthog.capture(event, props); } catch (_) {} };
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search), ls = window.localStorage;
+      if (q.get("t")) ls.setItem("brass-ref", q.get("t").slice(0, 40).toLowerCase());
+      if (q.get("me") === "1") ls.setItem("brass-me", "1");
+      if (q.has("test") || (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && q.get("ph") !== "1")) return;
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+      posthog.init("phc_QLyyt71c7pnUPyUGEDB9fXAsHrTl3cvey4e7oQ0V1S7", {
+        api_host: "https://us.i.posthog.com", defaults: "2026-08-30",
+        persistence: "localStorage", person_profiles: "identified_only", advanced_disable_flags: true,
+        autocapture: false, capture_pageview: false, capture_pageleave: false, capture_dead_clicks: false, rageclick: false,
+        capture_heatmaps: false, capture_performance: false, disable_session_recording: true, disable_surveys: true,
+        mask_all_text: true, capture_exceptions: true
+      });
+      var page = location.pathname.split("/").pop() || "index.html";
+      posthog.register({
+        app: "tonebee", page: page.replace(/\.html$/, ""), ref: ls.getItem("brass-ref") || "none",
+        inst: ls.getItem("brass-inst") || "none", lang: ls.getItem("brass-lang") || "none",
+        installed: !!(matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+      });
+      if (ls.getItem("brass-me")) posthog.register({ is_internal: true });
+      posthog.capture("$pageview");
+    } catch (_) {}
+  })();
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -156,16 +199,6 @@
     </div>
     <button class="me" id="me" data-t-title="change"><img id="meIcon" alt="" width="40" height="40"><b id="meInst"></b><span id="meLang"></span></button>
   </header>
-
-  <section class="home" data-t-aria="homeLabel">
-    <h2 data-t="homeTitle"></h2>
-    <ol>
-      <li data-t="home1"></li>
-      <li data-t="home2"></li>
-      <li data-t="home3"></li>
-      <li data-t="home4"></li>
-    </ol>
-  </section>
 
   <main>
     <h2 class="section-k" data-t="games"></h2>
@@ -384,6 +417,7 @@
   <div class="card" id="stepInst" hidden>
     <h2 id="instTitle"></h2>
     <div class="insts" id="insts"></div>
+    <p class="soon-note" id="soonNote" hidden><span id="soonText"></span> <a id="soonMail"></a></p>
     <button class="back" id="backLang"></button>
   </div>
 </div>
@@ -446,50 +480,44 @@ const TEXT = {
   he: {
     tagline: "משחקים פשוטים לשיעורי כלי נשיפה למתחילים",
     change: "החלפת כלי או שפה", langName: "עברית",
-    homeLabel: "בבית", homeTitle: "מתאמנים בבית?",
-    home1: "בוחרים משחק. הכלי שלכם כבר מוכן בכל המשחקים.",
-    home2: "לוחצים על ⚙ ומסמנים את הצלילים שכבר למדתם.",
-    home3: "במשחקים עם מיקרופון, כשהדפדפן שואל, מאשרים את המיקרופון.",
-    home4: "בטלפון מסובבים את המסך לרוחב, כך הכול גדול יותר.",
     games: "משחקים",
-    install: "<b>להתקין כמו אפליקציה:</b> באייפד ובאייפון פותחים את הדף בספארי, לוחצים שיתוף ואז <b>הוספה למסך הבית</b>. באנדרואיד: בכרום, תפריט ⋮ ואז <b>הוספה למסך הבית</b>. אחרי הפעם הראשונה זה עובד גם בלי אינטרנט.",
+    install: "<b>להתקנה כאפליקציה:</b> באייפון ובאייפד: שיתוף ← <b>הוספה למסך הבית</b>. באנדרואיד: ⋮ ← <b>הוספה למסך הבית</b>. אחר כך עובד גם בלי אינטרנט.",
     instTitle: "על מה אתם מנגנים?", soon: "בקרוב", backLang: "‹ שפה",
+    soonAsk: n => `${n} בדרך!`, soonMail: "רוצים שנודיע לכם? כתבו לנו",
+    soonSubject: n => `טונבי: ${n}`, soonBody: n => `שלום, אשמח לשמוע כשיהיה אפשר לנגן בטונבי על ${n}.`,
     sax: "סקסופון", flute: "חליל צד", clarinet: "קלרינט", recorder: "חלילית",
-    mic: "מיקרופון", tileDo: "דו",
-    t_ramzor: "רמזור", d_ramzor: "אדום עוצרים, צהוב מתכוננים ונושמים, ירוק מנגנים. בשליטה שלך.", c_ramzor: ["כיתה", "ללא מיקרופון"],
-    t_breath: "נשימה", d_breath: "שואפים, ואז נושפים לאט: בועת סבון ענקית גדלה, או שהרוח לוקחת את זרעי שן הארי. לחיצה אחת = נשימה אחת.", c_breath: ["🫧 · 🌼", "נושפים 4 · 8 · 12 · 16"],
-    t_buzz: "זמזום", d_buzz: "מזמזמים בפומית והדבורה עפה: מזמזמים, מגיעים לאותו צליל של הפרח, מחזיקים ארוך ויציב, ועושים סירנות.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️"],
-    t_long: "צליל ארוך", d_long: "צליל אחד ארוך מטיס חללית מהאדמה אל החלל. ככל שמחזיקים יותר, מגיעים רחוק יותר.", c_long: ["@mic", "4 · 8 · 12 · 16 · ∞"],
-    t_right: "צליל נכון", d_right: "התו שרוצים לנגן והתו שבאמת יוצא, על אותה חמשה. מחזיקים את הצליל הנכון ומקבלים כוכב.", c_right: ["@mic", "בחירת צלילים"],
-    t_ladder: "סולם", d_ladder: "כל שלב בסולם הוא צליל. הקוף מטפס לצליל שמנגנים, ותופסים את הבננה.", c_ladder: ["@mic", "צלילים אמיתיים"],
-    t_ninja: "נינג'ה", d_ninja: "תווים עפים פנימה אחד אחרי השני. מנגנים את התו לפני שהזמן נגמר, והנינג'ה חותך אותו.", c_ninja: ["@mic", "סיבוב לכל ילד"],
-    t_songs: "שירים", d_songs: "מנגנים שיר שלם: תו אחרי תו, ואחר כך בקצב עם להקה. אפשר להקשיב קודם ולתרגל רק קטע.", c_songs: ["@mic", "12 שירים"],
-    t_names: "תווים", d_names: "מכירים את הצלילים הראשונים וקוראים להם בשם, במפתח של הכלי שלכם, ושומעים את הצליל האמיתי.", c_names: ["קריאת תווים", "דו רה מי · C D E", "7 שלבים"],
-    t_clap: "קצב", d_clap: "שומעים קצב ומוחאים אותו בחזרה, או בוחרים איזה משלושה קצבים שמעתם.", c_clap: ["הד", "חידון שמיעה", "9 שלבים"]
+    mic: "🎤 מיקרופון", tileDo: "דו",
+    t_ramzor: "רמזור", d_ramzor: "אדום עוצרים, צהוב נושמים, ירוק מנגנים.", c_ramzor: [],
+    t_breath: "נשימה", d_breath: "נושפים לאט, והבועה גדלה.", c_breath: [],
+    t_buzz: "זמזום", d_buzz: "מזמזמים בפומית, והדבורה עפה.", c_buzz: ["@mic"],
+    t_long: "צליל ארוך", d_long: "צליל ארוך מטיס חללית לחלל.", c_long: ["@mic"],
+    t_right: "צליל נכון", d_right: "מנגנים את התו שעל החמשה.", c_right: ["@mic"],
+    t_ladder: "סולם", d_ladder: "הקוף מטפס לצליל שמנגנים.", c_ladder: ["@mic"],
+    t_ninja: "נינג'ה", d_ninja: "מנגנים את התו, והנינג'ה חותך.", c_ninja: ["@mic"],
+    t_songs: "שירים", d_songs: "שירים שלמים, גם עם להקה.", c_songs: ["@mic"],
+    t_names: "תווים", d_names: "מכירים את התווים בשמם.", c_names: [],
+    t_clap: "קצב", d_clap: "שומעים קצב ומוחאים בחזרה.", c_clap: []
   },
   en: {
     tagline: "Simple games for beginner brass lessons",
     change: "Change instrument or language", langName: "English",
-    homeLabel: "At home", homeTitle: "Practising at home?",
-    home1: "Pick a game. Your instrument is already set in every game.",
-    home2: "Tap ⚙ and tick the notes you've already learned.",
-    home3: "In the microphone games, allow the microphone when the browser asks.",
-    home4: "On a phone, turn the screen sideways: everything gets bigger.",
     games: "Games",
-    install: "<b>Install it like an app:</b> on an iPad or iPhone, open this page in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, in Chrome: menu ⋮, then <b>Add to Home Screen</b>. After the first time it works offline too.",
+    install: "<b>Install as an app:</b> iPhone and iPad: Share → <b>Add to Home Screen</b>. Android: ⋮ → <b>Add to Home Screen</b>. Then it works offline too.",
     instTitle: "What do you play?", soon: "Coming soon", backLang: "‹ Language",
+    soonAsk: n => `${n} is on its way!`, soonMail: "Want us to tell you? Email us",
+    soonSubject: n => `Tonebee: ${n}`, soonBody: n => `Hello, please let me know when I can play Tonebee on the ${n.toLowerCase()}.`,
     sax: "Saxophone", flute: "Flute", clarinet: "Clarinet", recorder: "Recorder",
-    mic: "Microphone", tileDo: "C",
-    t_ramzor: "Traffic Light", d_ramzor: "Red: stop. Yellow: get ready and breathe. Green: play. You're in control.", c_ramzor: ["Class", "No microphone"],
-    t_breath: "Breathing", d_breath: "Breathe in, then blow out slowly: a giant soap bubble grows, or the wind carries off the dandelion seeds. One tap = one breath.", c_breath: ["🫧 · 🌼", "Blow out 4 · 8 · 12 · 16"],
-    t_buzz: "Buzzing", d_buzz: "Buzz on the mouthpiece and the bee flies: buzz, match the flower's note, hold it long and steady, then play sirens.", c_buzz: ["@mic", "🐝 · 🌸 · 🍯 · 〰️"],
-    t_long: "Long Note", d_long: "One long note flies a rocket from the ground into space. The longer you hold it, the further it goes.", c_long: ["@mic", "4 · 8 · 12 · 16 · ∞"],
-    t_right: "Right Note", d_right: "The note you want and the note that really comes out, on the same staff. Hold the right note to earn a star.", c_right: ["@mic", "Choose the notes"],
-    t_ladder: "Ladder", d_ladder: "Each rung is a note. The monkey climbs to the note you play: catch the banana.", c_ladder: ["@mic", "Real instrument sounds"],
-    t_ninja: "Note Ninja", d_ninja: "Notes fly in one after another. Play each one before time runs out and the ninja slices it.", c_ninja: ["@mic", "One round per child"],
-    t_songs: "Songs", d_songs: "Play a whole song: note by note, then in time with a band. Listen first, and practise just a section.", c_songs: ["@mic", "12 songs"],
-    t_names: "Note Names", d_names: "Meet the first notes and name them, in your instrument's clef, and hear the real sound.", c_names: ["Reading", "C D E", "7 levels"],
-    t_clap: "Clap-Along", d_clap: "Hear a rhythm and clap it back, or pick which of three rhythms you heard.", c_clap: ["Echo", "Ear quiz", "9 levels"]
+    mic: "🎤 Microphone", tileDo: "C",
+    t_ramzor: "Traffic Light", d_ramzor: "Red stop, yellow breathe, green play.", c_ramzor: [],
+    t_breath: "Breathing", d_breath: "Blow out slowly; the bubble grows.", c_breath: [],
+    t_buzz: "Buzzing", d_buzz: "Buzz on the mouthpiece; the bee flies.", c_buzz: ["@mic"],
+    t_long: "Long Note", d_long: "One long note flies a rocket to space.", c_long: ["@mic"],
+    t_right: "Right Note", d_right: "Play the note on the staff.", c_right: ["@mic"],
+    t_ladder: "Ladder", d_ladder: "The monkey climbs to your note.", c_ladder: ["@mic"],
+    t_ninja: "Note Ninja", d_ninja: "Play the note; the ninja slices it.", c_ninja: ["@mic"],
+    t_songs: "Songs", d_songs: "Whole songs, with a band too.", c_songs: ["@mic"],
+    t_names: "Note Names", d_names: "Meet the notes by name.", c_names: [],
+    t_clap: "Clap-Along", d_clap: "Hear a rhythm, clap it back.", c_clap: []
   }
 };
 
@@ -550,7 +578,21 @@ function showSetup(step) {
       b.className = "inst";
       b.innerHTML = `<img src="${instPic(i.id)}" alt="" width="104" height="104"><span></span>` + (i.ready ? "" : `<span class="soon"></span>`);
       b.children[1].textContent = instName(i.id);
-      if (!i.ready) { b.disabled = true; b.querySelector(".soon").textContent = T("soon"); }
+      if (!i.ready) {
+        // On its way: no choosing, but a tap counts the interest and offers an email.
+        b.classList.add("later");
+        b.querySelector(".soon").textContent = T("soon");
+        b.addEventListener("click", () => {
+          tbTrack("instrument_interest", { instrument: i.id });
+          $("soonText").textContent = T("soonAsk", instName(i.id));
+          $("soonMail").textContent = T("soonMail");
+          $("soonMail").href = "mailto:hello@tonebee.app?subject=" + encodeURIComponent(T("soonSubject", instName(i.id))) + "&body=" + encodeURIComponent(T("soonBody", instName(i.id)));
+          $("soonMail").onclick = () => tbTrack("notify_click", { what: "instrument", instrument: i.id });
+          $("soonNote").hidden = false;
+        });
+        box.appendChild(b);
+        return;
+      }
       b.setAttribute("aria-pressed", String(i.id === cur));
       b.addEventListener("click", () => {
         try { localStorage.setItem("brass-inst", i.id); } catch (_) {}
