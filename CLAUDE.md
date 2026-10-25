@@ -1,6 +1,6 @@
 # Tonebee (טונבי) — formerly Brass App
 
-Music teacher's toolkit for brass and rhythm lessons: kids 9–12, projected in class, and installed on an iPad for offline use. Live at https://tonebee.app — Cloudflare Workers static assets, deployed with `npx wrangler deploy` (`wrangler.jsonc`, `.assetsignore`; `worker.js` only maps `/` to `index.html` because `html_handling` is `none`, so `.html` URLs never redirect). The old GitHub Pages copy (guygourevich-droid.github.io/brass-app) is being retired. Business side (plan, brand, decisions) lives outside this repo in `../ops/`. Brass-specific tools (trumpet first) are planned but not yet designed.
+Music teacher's toolkit for brass and rhythm lessons: kids 9–12, projected in class, and installed on an iPad for offline use. Live at https://tonebee.app — Cloudflare Workers static assets, deployed with `npx wrangler deploy` (`wrangler.jsonc`, `.assetsignore`; `worker.js` only 301s `www.` to the bare domain and maps `/` to `index.html` because `html_handling` is `none`, so `.html` URLs never redirect). The old GitHub Pages copy (guygourevich-droid.github.io/brass-app) is being retired. Business side (plan, brand, decisions) lives outside this repo in `../ops/`. Brass-specific tools (trumpet first) are planned but not yet designed.
 
 ## Constraints
 - Plain HTML/CSS/JS only. No build step, frameworks, CDNs or backend (`worker.js` is edge routing only) — every page must work offline.
