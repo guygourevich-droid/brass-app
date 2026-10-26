@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>פרטיות · טונבי</title>
+<meta name="description" content="מה טונבי עושה עם מידע: המיקרופון מקשיב רק במכשיר, ספירה אנונימית בלי עוגיות, בלי שמות וחשבונות.">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tonebee">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32"><link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<script>
+  // English pages lay out left to right from the first paint (the language block fills in the words).
+  try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
+</script>
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #15181d;
+    --ink-2: #3b434e;
+    --muted: #66707d;
+    --line: #e1e7ef;
+    --blue: #1a7fe2;
+    --brass-deep: #8f5b0e;
+    --honey: #f2b33d;
+    --cream: #fff8ec;
+    --font: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--paper); color: var(--ink); }
+  body { margin: 0; font-family: var(--font); font-size: 17px; line-height: 1.6; overflow-wrap: anywhere; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+  a { color: var(--blue); }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 48px); padding-block: clamp(20px, 5vh, 48px) 48px; }
+  .home { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--ink-2); text-decoration: none; font-weight: 700; font-size: 18px; }
+  .home img { width: 40px; height: 40px; border-radius: 22%; }
+  .home:hover { color: var(--blue); }
+
+  h1 { margin: 18px 0 2px; font-size: clamp(30px, 5vw, 40px); line-height: 1.1; font-weight: 700; }
+  .updated { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+  .intro { margin: 0 0 22px; color: var(--ink-2); }
+
+  /* The whole page in four lines, for the parent who reads only this. */
+  .short { background: var(--cream); border: 2px solid #f6dca6; border-inline-start: 6px solid var(--honey); border-radius: 16px; padding: 14px 20px; margin: 0 0 30px; }
+  .short h2 { margin: 0 0 6px; font-size: 15px; letter-spacing: .06em; color: var(--brass-deep); }
+  .short ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
+
+  section { border-top: 1px solid var(--line); padding-block: 18px 6px; }
+  section h2 { margin: 0 0 6px; font-size: 21px; font-weight: 700; }
+  section p { margin: 0 0 12px; }
+  .ltr { direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+
+  @media (max-width: 600px) {
+    body { font-size: 16px; }
+    .home img { width: 34px; height: 34px; }
+    .short { padding: 12px 14px; }
+    section h2 { font-size: 19px; }
+  }
+</style>
+<script>
+  // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
+  // No cookies, names, recordings, autocapture or heatmaps. Off on localhost (?ph=1 turns it on) and in ?test= mode;
+  // offline it quietly does nothing. Teacher link: tonebee.app/?t=<name> remembers <name> on this device as `ref`.
+  // ?me=1 once on the founder's own devices marks their visits internal (PostHog's test-account filter hides them).
+  // tbTrack(event, props) is safe to call from any page, with or without analytics.
+  window.tbTrack = function (event, props) { try { if (window.posthog && posthog.capture) posthog.capture(event, props); } catch (_) {} };
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search), ls = window.localStorage;
+      if (q.get("t")) ls.setItem("brass-ref", q.get("t").slice(0, 40).toLowerCase());
+      if (q.get("me") === "1") ls.setItem("brass-me", "1");
+      if (q.has("test") || (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && q.get("ph") !== "1")) return;
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+      posthog.init("phc_qT52WGA8rWLi0ZPFQHfUqE2KaO0gYCXDEml6THivdXr", {
+        api_host: "https://us.i.posthog.com", defaults: "2026-08-30",
+        persistence: "localStorage", person_profiles: "identified_only", advanced_disable_flags: true,
+        autocapture: false, capture_pageview: false, capture_pageleave: false, capture_dead_clicks: false, rageclick: false,
+        capture_heatmaps: false, capture_performance: false, disable_session_recording: true, disable_surveys: true,
+        mask_all_text: true, capture_exceptions: true
+      });
+      var page = location.pathname.split("/").pop() || "index.html";
+      posthog.register({
+        app: "tonebee", page: page.replace(/\.html$/, ""), ref: ls.getItem("brass-ref") || "none",
+        inst: ls.getItem("brass-inst") || "none", lang: ls.getItem("brass-lang") || "none",
+        installed: !!(matchMedia("(display-mode: standalone)").matches || navigator.standalone)
+      });
+      if (ls.getItem("brass-me")) posthog.register({ is_internal: true });
+      posthog.capture("$pageview");
+    } catch (_) {}
+  })();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <a class="home" href="index.html"><span aria-hidden="true">‹</span><img src="icons/icon-192.png" alt="" width="40" height="40"><span data-t="brand">טונבי</span></a>
+
+  <main>
+    <h1 data-t="title"></h1>
+    <p class="updated" data-t="updated"></p>
+    <p class="intro" data-t="intro"></p>
+
+    <div class="short">
+      <h2 data-t="shortTitle"></h2>
+      <ul>
+        <li data-t="s1"></li>
+        <li data-t="s2"></li>
+        <li data-t="s3"></li>
+        <li data-t="s4"></li>
+      </ul>
+    </div>
+
+    <section>
+      <h2 data-t="micTitle"></h2>
+      <p data-t-html="micBody"></p>
+    </section>
+    <section>
+      <h2 data-t="statsTitle"></h2>
+      <p data-t-html="statsBody"></p>
+      <p data-t-html="statsMore"></p>
+    </section>
+    <section>
+      <h2 data-t="refTitle"></h2>
+      <p data-t-html="refBody"></p>
+    </section>
+    <section>
+      <h2 data-t="deviceTitle"></h2>
+      <p data-t-html="deviceBody"></p>
+    </section>
+    <section>
+      <h2 data-t="kidsTitle"></h2>
+      <p data-t="kidsBody"></p>
+    </section>
+    <section>
+      <h2 data-t="contactTitle"></h2>
+      <p data-t-html="contactBody"></p>
+      <p data-t="changes"></p>
+    </section>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Language ----------
+   Hebrew or English, chosen on the home screen (`brass-lang`; ?lang=en|he for a link). Never mixed: every
+   word on screen comes from TEXT (elements carry data-t / data-t-html / data-t-title / data-t-aria), and
+   English names notes by letter (C D E, B♭). COMMON holds what every page says (microphone, pause, buttons). */
+const LANG = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get("lang");
+    if (q === "en" || q === "he") return q;
+    return localStorage.getItem("brass-lang") === "en" ? "en" : "he";
+  } catch (_) { return "he"; }
+})();
+const COMMON = {
+  he: {
+    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
+    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
+    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
+    trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
+    diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+  },
+  en: {
+    listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
+    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
+    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
+    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
+    trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
+    diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+  }
+};
+const T = (key, ...args) => {
+  const v = (TEXT[LANG] && TEXT[LANG][key]) ?? COMMON[LANG][key] ?? (TEXT.he && TEXT.he[key]) ?? COMMON.he[key] ?? key;
+  return typeof v === "function" ? v(...args) : v;
+};
+function applyText() {
+  const root = document.documentElement;
+  root.lang = LANG;
+  root.dir = LANG === "he" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(n => { n.textContent = T(n.dataset.t); });
+  document.querySelectorAll("[data-t-html]").forEach(n => { n.innerHTML = T(n.dataset.tHtml); });
+  document.querySelectorAll("[data-t-title]").forEach(n => { n.title = T(n.dataset.tTitle); });
+  document.querySelectorAll("[data-t-aria]").forEach(n => { n.setAttribute("aria-label", T(n.dataset.tAria)); });
+  if (TEXT[LANG] && TEXT[LANG].pageTitle) document.title = T("pageTitle");
+}
+
+// Every statement here must stay true to the code: the Analytics block above (what PostHog gets),
+// the microphone block in the mic games (analyser only, never recorded or sent) and localStorage.
+// Change the code → change this page and its date.
+const MAIL = `<a href="mailto:hello@tonebee.app">hello@tonebee.app</a>`;
+const TEXT = {
+  he: {
+    pageTitle: "פרטיות · טונבי",
+    title: "פרטיות",
+    updated: "עודכן ב־26 באוקטובר 2026",
+    intro: "טונבי הוא אוסף משחקים לשיעורי כלי נשיפה. אין בו הרשמה, חשבונות או פרסומות. כאן כתוב בדיוק איזה מידע יוצא מהמכשיר, ואיזה לא.",
+    shortTitle: "בקצרה",
+    s1: "המיקרופון מקשיב רק בתוך המכשיר. הקול לא מוקלט ולא נשלח לשום מקום.",
+    s2: "לא אוספים שמות, חשבונות או שום דבר שמקלידים.",
+    s3: "סופרים, בלי שמות ובלי עוגיות (cookies), אילו משחקים נפתחים.",
+    s4: "ההגדרות נשמרות במכשיר שלכם.",
+    micTitle: "המיקרופון",
+    micBody: "חלק מהמשחקים מקשיבים דרך המיקרופון, כדי לשמוע אם יצא צליל ואיזה תו. הקול מנותח בתוך הדפדפן, במכשיר עצמו, רגע אחרי רגע. <b>הוא לא מוקלט, לא נשמר ולא נשלח</b>: לא אלינו ולא לאף אחד אחר. המיקרופון נפתח רק אחרי לחיצה במשחק ואישור בדפדפן, ונסגר כשיוצאים מהמשחק או עוברים ללשונית או לאפליקציה אחרת.",
+    statsTitle: "ספירה אנונימית",
+    statsBody: "כדי לדעת באילו משחקים משתמשים ולתקן תקלות, אנחנו סופרים כניסות בעזרת PostHog, שירות לניתוח שימוש שהשרתים שלו בארצות הברית. בכל פתיחה של עמוד נשלחים: שם העמוד, הכלי והשפה שנבחרו, אם האפליקציה מותקנת במסך הבית, ומאיזה קישור של מורה הגיעו (אם יש כזה). נספרות גם לחיצות על כלים ושירים ש\"בדרך\", וכשיש תקלה בקוד נשלחת הודעת השגיאה הטכנית.",
+    statsMore: "כמו כל אתר, PostHog רואה גם פרטים טכניים כלליים: סוג הדפדפן והמכשיר, גודל המסך וכתובת האינטרנט (IP), שממנה הוא מעריך מדינה ועיר. <b>בלי עוגיות:</b> הוא שומר באחסון המקומי של הדפדפן (localStorage) מספר אקראי, כדי שמכשיר שחוזר ייספר פעם אחת. אין הקלטת מסך, אין מעקב אחרי לחיצות ואין מפות חום. אנחנו לא מוכרים מידע ולא משתמשים בו לפרסום. האתר עצמו מוגש דרך Cloudflare, שכמו כל אחסון אתרים רואה את הבקשות לעמודים.",
+    refTitle: "קישורי מורים",
+    refBody: "מורים יכולים לשתף קישור שמתחיל ב־<span class=\"ltr\">tonebee.app/?t=</span> ואחריו מילה, בדרך כלל השם שלהם או של בית הספר. המילה נשמרת במכשיר ומצורפת לספירה, כדי שנדע כמה משחקים הגיעו דרך כל מורה. היא מזהה את הקישור של המורה, לא את הילד.",
+    deviceTitle: "מה נשמר במכשיר",
+    deviceBody: "השפה, הכלי, התווים שנבחרו והגדרות המשחקים נשמרים בדפדפן שלכם, באחסון המקומי שלו (localStorage). חוץ מהשפה והכלי, שמצורפים לספירה, הם לא יוצאים מהמכשיר. כדי לעבוד גם בלי אינטרנט, האפליקציה שומרת במכשיר גם עותק של הקבצים שלה. כדי למחוק הכול, מוחקים את נתוני האתר בהגדרות הדפדפן (זה מוחק גם את המספר האקראי).",
+    kidsTitle: "ילדים",
+    kidsBody: "טונבי נבנה לילדים בני 9 עד 12, לשיעורי נגינה. אנחנו לא מבקשים ולא אוספים שמות, גילים, כתובות מייל, תמונות, הקלטות או כל דבר שמקלידים, ואין במשחקים מקום להקליד. אין חשבונות, צ'אט, פרסומות או רכישות.",
+    contactTitle: "יצירת קשר",
+    contactBody: `שאלות, או בקשה למחוק מידע: ${MAIL}. אם תכתבו לנו, נשתמש בכתובת המייל שלכם רק כדי לענות.`,
+    changes: "אם משהו כאן ישתנה, נעדכן את העמוד ואת התאריך שבראשו."
+  },
+  en: {
+    pageTitle: "Privacy · Tonebee",
+    title: "Privacy",
+    updated: "Updated 26 October 2026",
+    intro: "Tonebee is a set of games for brass lessons. There is no sign-up, no accounts and no ads. This page says exactly what information leaves the device, and what doesn't.",
+    shortTitle: "In short",
+    s1: "The microphone listens only on the device. Sound is never recorded or sent anywhere.",
+    s2: "No names, no accounts, nothing typed is collected.",
+    s3: "We count which games are opened, with no names and no cookies.",
+    s4: "Settings are saved on your device.",
+    micTitle: "The microphone",
+    micBody: "Some games listen through the microphone to hear whether a sound was played, and which note. The sound is analysed inside the browser, on the device itself, moment by moment. <b>It is never recorded, stored or sent</b>: not to us and not to anyone else. The microphone opens only after a tap in a game and the browser's permission, and closes when you leave the game or switch to another tab or app.",
+    statsTitle: "Anonymous counts",
+    statsBody: "To learn which games are used and to fix problems, we count visits with PostHog, an analytics service whose servers are in the United States. Each time a page opens, it sends: the page's name, the instrument and language chosen, whether the app is installed on the home screen, and which teacher's link it came from (if any). Taps on instruments and songs that are \"on their way\" are counted too, and when the code hits an error, the technical error message is sent.",
+    statsMore: "Like any website, PostHog also sees general technical details: the type of browser and device, the screen size, and the internet (IP) address, from which it estimates the country and city. <b>No cookies:</b> it keeps a random number in the browser (in localStorage) so a returning device counts once. No screen recordings, no click tracking, no heatmaps. We don't sell information or use it for advertising. The site itself is served through Cloudflare, which, like any web host, sees the requests for its pages.",
+    refTitle: "Teacher links",
+    refBody: "Teachers can share a link that starts with <span class=\"ltr\">tonebee.app/?t=</span> followed by a word, usually their own name or their school's. The word is saved on the device and added to the counts, so we can see how many players came through each teacher. It identifies the teacher's link, not the child.",
+    deviceTitle: "What stays on the device",
+    deviceBody: "The language, the instrument, the chosen notes and the game settings are saved in your browser (in localStorage). Apart from the language and instrument, which go with the counts, they never leave the device. To work offline, the app also keeps a copy of its own files on the device. To erase everything, clear the site's data in the browser settings (this also erases the random number).",
+    kidsTitle: "Children",
+    kidsBody: "Tonebee is made for children aged 9 to 12 in music lessons. We don't ask for or collect names, ages, email addresses, photos, recordings or anything typed, and the games have nowhere to type. There are no accounts, chat, ads or purchases.",
+    contactTitle: "Contact",
+    contactBody: `Questions, or a request to delete information: ${MAIL}. If you write to us, we use your email address only to reply.`,
+    changes: "If anything here changes, we'll update this page and the date at the top."
+  }
+};
+
+applyText();
+
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

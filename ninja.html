@@ -522,6 +522,8 @@ function loadSamples(inst) {
 }
 
 async function startMic() {
+  if (fresh) return location.reload();          // after a lost mic every way back in (button, a tap, ▶) is a fresh page
+  keepAwake(true);
   ensureCtx();
   loadSamples(state.inst);
   if (params.get("test")) return startTestTone();
@@ -592,6 +594,7 @@ function startTestTone() {
 }
 
 function fail(message) {
+  keepAwake(false);
   state.listening = false;
   state.phase = "idle";
   $("card").hidden = true;
@@ -604,6 +607,14 @@ function fail(message) {
 
 function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
 addEventListener("pagehide", stopMic);
+// The screen stays on while the game listens: a phone that locks itself (an iPhone after 30 s untouched, a paused
+// game) takes the mic with it. The browser lets go by itself when the page is hidden.
+let wake = null, wantAwake = false;
+function keepAwake(on) {
+  wantAwake = on;
+  if (!on) { if (wake) wake.release().catch(() => {}); wake = null; }
+  else if ((!wake || wake.released) && navigator.wakeLock) navigator.wakeLock.request("screen").then(w => { if (wantAwake) wake = w; else w.release(); }).catch(() => {});
+}
 // iPhone/iPad: back from the background, or the mic cut off by iOS (a call, Siri, another app, the lock screen), WebKit can
 // keep the audio engine deaf until the page is opened again, which in the installed app meant closing it. So the way back
 // is a fresh page: one tap on the button, settings kept (they live in localStorage).
@@ -612,6 +623,7 @@ function needFresh(message, why) {
   tbTrack("audio_recover", { why });
   if (micStream) stopMic();
   fresh = true;
+  if (paused) setPaused(false);                 // the pause screen would cover the way back
   fail(message);
   $("startBtn").textContent = T("resume");
 }
@@ -621,8 +633,6 @@ document.addEventListener("pointerup", () => {
   if (!state.listening || !ctx || ctx.state !== "interrupted") return;
   setTimeout(() => { if (state.listening && ctx && ctx.state === "interrupted") needFresh(T("micFailed"), "interrupted"); }, 1500);
 }, true);
-// Runs before the button's other handlers (capture on the target).
-$("startBtn").addEventListener("click", e => { if (fresh) { e.stopImmediatePropagation(); location.reload(); } }, true);
 
 function sampleFor(written) {
   const concert = written - INSTRUMENTS[state.inst].toWritten;

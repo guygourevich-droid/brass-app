@@ -372,8 +372,8 @@ const audioLine = () => {
    it passes landmarks on the way: birds, a plane, clouds, a satellite, an astronaut, the Moon, Saturn...
    Each level is how far the flight goes (4, 8, 12 or 16 seconds; the last level is as far as you can).
    No pitch: any steady tone counts, so this works for every instrument. Each second lights a star.
-   When the note stops, the rocket waits a moment and floats back on a parachute: nothing falls, breaks
-   or turns red. Arriving celebrates once and waits there until the room is quiet. */
+   When the note stops, even for a breath, the rocket waits a moment and floats back on a parachute: nothing falls,
+   breaks or turns red. Arriving celebrates once and waits there until the room is quiet. */
 
 const $ = id => document.getElementById(id);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -431,6 +431,8 @@ function ensureCtx() {
 }
 
 async function startMic() {
+  if (fresh) return location.reload();          // after a lost mic every way back in (button, a tap, ▶) is a fresh page
+  keepAwake(true);
   ensureCtx();                                  // created inside the click, before any await
   if (new URLSearchParams(location.search).get("test")) return startTestTone();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -502,6 +504,7 @@ function startTestTone() {
 }
 
 function fail(message) {
+  keepAwake(false);
   state.listening = false;
   $("overlay").hidden = false;
   $("overlayText").textContent = message;
@@ -517,6 +520,14 @@ function stopMic() {
   $("micDot").classList.remove("on");
 }
 addEventListener("pagehide", stopMic);
+// The screen stays on while the game listens: a phone that locks itself (an iPhone after 30 s untouched, a paused
+// game) takes the mic with it. The browser lets go by itself when the page is hidden.
+let wake = null, wantAwake = false;
+function keepAwake(on) {
+  wantAwake = on;
+  if (!on) { if (wake) wake.release().catch(() => {}); wake = null; }
+  else if ((!wake || wake.released) && navigator.wakeLock) navigator.wakeLock.request("screen").then(w => { if (wantAwake) wake = w; else w.release(); }).catch(() => {});
+}
 // iPhone/iPad: back from the background, or the mic cut off by iOS (a call, Siri, another app, the lock screen), WebKit can
 // keep the audio engine deaf until the page is opened again, which in the installed app meant closing it. So the way back
 // is a fresh page: one tap on the button, settings kept (they live in localStorage).
@@ -525,6 +536,7 @@ function needFresh(message, why) {
   tbTrack("audio_recover", { why });
   if (micStream) stopMic();
   fresh = true;
+  if (paused) setPaused(false);                 // the pause screen would cover the way back
   fail(message);
   $("startBtn").textContent = T("resume");
 }
@@ -534,8 +546,6 @@ document.addEventListener("pointerup", () => {
   if (!state.listening || !ctx || ctx.state !== "interrupted") return;
   setTimeout(() => { if (state.listening && ctx && ctx.state === "interrupted") needFresh(T("micFailed"), "interrupted"); }, 1500);
 }, true);
-// Runs before the button's other handlers (capture on the target).
-$("startBtn").addEventListener("click", e => { if (fresh) { e.stopImmediatePropagation(); location.reload(); } }, true);
 
 /* ---------- Is a note sounding? ---------- */
 
@@ -863,7 +873,10 @@ function update(dt) {
   const s = state, goal = LEVELS[s.level - 1];
   s.phaseT += dt;
   s.quietT = s.soundOn ? 0 : s.quietT + dt;
-  if (s.phase === "idle") { if (s.soundOn) { setPhase("play"); s.a = ONSET_MS / 1000; } }   // the note began at its onset
+  // One breath, one flight: a note that starts once the rocket is on its way down (a breath, then more) does not fly it
+  // again, and does not launch the next flight either. That needs a new note from the pad.
+  s.stale = s.soundOn && (s.stale || (s.phase !== "idle" && s.phase !== "play"));
+  if (s.phase === "idle") { if (s.soundOn && !s.stale) { setPhase("play"); s.a = ONSET_MS / 1000; } }   // the note began at its onset
   else if (s.phase === "play") {
     if (!s.soundOn) { tbTrack("long_note", { seconds: +s.a.toFixed(1), level: s.level, reached: s.a >= goal }); setPhase("rest"); }
     else {
@@ -879,8 +892,7 @@ function update(dt) {
       }
     }
   } else if (s.phase === "rest" || s.phase === "home") {
-    if (s.phase === "rest" && s.soundOn) setPhase("play");
-    else if (s.phase === "home" || s.phaseT > PAUSE_S) {
+    if (s.phase === "home" || s.phaseT > PAUSE_S) {
       s.a = Math.max(0, s.a - dt * Math.max(s.phase === "home" ? 4 : 2.5, s.a * 0.7));
       if (s.a === 0) { setPhase("idle"); s.flightBest = 0; scene.checks.forEach(c => { c.passed = false; }); }
     }
@@ -892,7 +904,7 @@ function update(dt) {
 function draw(dt) {
   state.smoothRms += (state.rms - state.smoothRms) * Math.min(1, dt * 12);
   const s = state, t = performance.now() / 1000, goal = LEVELS[s.level - 1];
-  const loud = s.soundOn && s.phase !== "home" ? Math.max(0.01, Math.min(1, s.smoothRms / 0.08)) : 0;
+  const loud = s.soundOn && (s.phase === "play" || s.phase === "won") ? Math.max(0.01, Math.min(1, s.smoothRms / 0.08)) : 0;
   const flying = s.phase === "play";
 
   // The sky darkens slowly with height: day, deeper blue, dusk, night.
@@ -1045,7 +1057,7 @@ let paused = false;
 function setPaused(p) {
   paused = p;
   $("pauseBox").hidden = !p;
-  if (!p) { last = 0; state.soundOn = false; }
+  if (!p) { last = 0; state.soundOn = false; state.zeroSince = 0; }    // the pause is not "no sound from the mic"
 }
 function frame(now) {
   if (paused) { requestAnimationFrame(frame); return; }
@@ -1061,7 +1073,7 @@ function frame(now) {
       `${T("diagVolume")}  ${"█".repeat(bars)}${"·".repeat(10 - bars)}\n` +
       `${T("diagPitch")}   ${state.freq ? state.freq.toFixed(0) + " Hz" : "—"}\n` +
       `${T("diagFloor")}   ${(20 * Math.log10(Math.max(state.noiseFloor, 1e-7))).toFixed(0)} dB · ${state.soundOn ? T("sound") : T("quiet")} · ${state.phase}\n` +
-      `v10`;
+      `v11`;
   }
   requestAnimationFrame(frame);
 }
