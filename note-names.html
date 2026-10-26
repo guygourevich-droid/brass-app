@@ -148,6 +148,32 @@
   }
   .seg[hidden] { display: none; }
   .card { direction: ltr; }               /* music reads left to right in every language */
+
+  /* The cover: how to play without words (first visit, or "?"), then one button. */
+  .cover { display: grid; justify-items: center; gap: 2.4vh; }
+  .cover-btns { display: flex; align-items: center; gap: 14px; }
+  .help-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--line, #e1e7ef); background: #fff; font: inherit; font-size: 26px; font-weight: 700; color: var(--muted, #66707d); cursor: pointer; }
+  .help-btn:hover { border-color: var(--accent, #1a7fe2); color: var(--accent, #1a7fe2); }
+  .demo { width: min(560px, 76vw); height: auto; max-height: 52vh; border-radius: 22px; box-shadow: 0 12px 34px rgba(31, 42, 68, .16); }
+  .demo[hidden] { display: none; }
+  .demo { direction: ltr; }   /* laid out like the game itself, which never mirrors with the language */
+  .d-waves path { animation: dPulse .5s infinite alternate; }
+  .d-w2 { animation-delay: .17s !important; } .d-w3 { animation-delay: .34s !important; }
+  @keyframes dPulse { from { opacity: .25; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .demo * { animation: none !important; } }
+
+  /* First visit (or "?" in the top bar): the card over the game. */
+  .cover-card { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(255, 255, 255, .88); padding: 3vh 4vw; }
+  .cover-card[hidden] { display: none; }
+  .play-btn { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
+  .play-btn:hover { filter: brightness(1.08); }
+
+  .d-head { fill: #1f2a44; animation: dHead 5s infinite; }
+  .d-ok { animation: dOk 5s infinite; }
+  .d-tap { transform-box: fill-box; transform-origin: center; opacity: 0; animation: dTap 5s infinite; }
+  @keyframes dTap { 0%, 38% { opacity: 0; transform: scale(.6); } 42% { opacity: 1; transform: scale(1); } 50%, 100% { opacity: 0; transform: scale(1.3); } }
+  @keyframes dOk { 0%, 43% { fill: #fff; stroke: #e1e7ef; } 46%, 92% { fill: #d6f2e2; stroke: #2fa36b; } 100% { fill: #fff; stroke: #e1e7ef; } }
+  @keyframes dHead { 0%, 43% { fill: #1f2a44; } 46%, 92% { fill: #2fa36b; } 100% { fill: #1f2a44; } }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -201,6 +227,7 @@
       <button id="nLetters" class="seg-btn" aria-pressed="false">C D E</button>
     </div>
     <label class="toggle" for="sound"><input id="sound" type="checkbox" checked><span data-t="sound"></span></label>
+    <button id="helpBtn" class="icon-btn" data-t-title="howTo" data-t-aria="howTo">?</button>
     <button id="fullscreen" class="icon-btn" data-t-title="fullscreen" data-t="fullscreenBtn"></button>
   </header>
 
@@ -223,6 +250,26 @@
   </footer>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
+<div class="cover-card" id="coverCard" hidden>
+  <div class="cover">
+    <svg class="demo ltr" id="demo" viewBox="0 0 480 300" aria-hidden="true">
+      <defs><clipPath id="dClip"><rect width="480" height="300" rx="22"/></clipPath></defs>
+      <g clip-path="url(#dClip)">
+        <rect width="480" height="300" fill="#fffaf0"/>
+        <g stroke="#1f2a44" stroke-width="2"><line x1="130" x2="350" y1="60" y2="60"/><line x1="130" x2="350" y1="80" y2="80"/><line x1="130" x2="350" y1="100" y2="100"/><line x1="130" x2="350" y1="120" y2="120"/><line x1="130" x2="350" y1="140" y2="140"/></g>
+        <text class="d-clef" x="140" y="120" font-size="80" fill="#1f2a44" style="font-family: Bravura">&#xE050;</text>
+        <text class="d-head" x="250" y="140" font-size="80" style="font-family: Bravura">&#xE0A4;</text>
+        <g font-size="28" font-weight="700" text-anchor="middle" style="font-family: var(--display, Rubik), sans-serif">
+          <rect x="102" y="190" width="80" height="58" rx="16" fill="#fff" stroke="#e1e7ef" stroke-width="3"/><text class="d-a0" x="142" y="229" fill="#1f2a44"></text>
+          <rect x="200" y="190" width="80" height="58" rx="16" fill="#fff" stroke="#e1e7ef" stroke-width="3"/><text class="d-a1" x="240" y="229" fill="#1f2a44"></text>
+          <rect class="d-ok" x="298" y="190" width="80" height="58" rx="16" fill="#fff" stroke="#e1e7ef" stroke-width="3"/><text class="d-a2" x="338" y="229" fill="#1f2a44"></text>
+        </g>
+        <g class="d-tap"><circle cx="352" cy="232" r="22" fill="none" stroke="#1a7fe2" stroke-width="5"/><circle cx="352" cy="232" r="8" fill="#1a7fe2"/></g>
+      </g>
+    </svg>
+    <button class="play-btn" id="playBtn" data-t-title="howTo" data-t-aria="howTo">▶</button>
+  </div>
+</div>
 <script>
 "use strict";
 
@@ -240,9 +287,9 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
-    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
-    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
+    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
@@ -251,9 +298,9 @@ const COMMON = {
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
-    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
-    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
-    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
+    keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
+    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
@@ -277,7 +324,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "תווים · טונבי", controls: "פקדי המורה", back: "חזרה ל-טונבי", tool: "/ תווים", mode: "מצב",
+    howTo: "איך משחקים", pageTitle: "תווים · טונבי", controls: "פקדי המורה", back: "חזרה ל-טונבי", tool: "/ תווים", mode: "מצב",
     learn: "מכירים את התווים", quiz: "איך קוראים לו?", level: "שלב", noteNames: "שמות התווים", sound: "צליל", fullscreenBtn: "⛶ מסך מלא",
     answers: "תשובות", levelN: n => `שלב ${n}`, levelTip: n => `שלב ${n}: ${n + 1} תווים`, levelNotes: list => `התווים בשלב הזה: ${list}`,
     playIt: name => `${name}: להשמיע`, isNew: "חדש", whichNote: "איזה תו זה?",
@@ -288,7 +335,7 @@ const TEXT = {
     names: ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"]
   },
   en: {
-    pageTitle: "Note Names · Tonebee", controls: "Teacher controls", back: "Back to Tonebee", tool: "/ Note Names", mode: "Mode",
+    howTo: "How to play", pageTitle: "Note Names · Tonebee", controls: "Teacher controls", back: "Back to Tonebee", tool: "/ Note Names", mode: "Mode",
     learn: "Meet the notes", quiz: "Name it", level: "Level", noteNames: "Note names", sound: "Sound", fullscreenBtn: "⛶ Full screen",
     answers: "Answers", levelN: n => `Level ${n}`, levelTip: n => `Level ${n}: ${n + 1} notes`, levelNotes: list => `The notes for this level: ${list}`,
     playIt: name => `${name}: play`, isNew: "new", whichNote: "Which note is this?",
@@ -684,6 +731,34 @@ try { const s = localStorage.getItem("brass-inst"); if (INSTRUMENTS[s]) state.in
 render();
 // Draw again once the music font has loaded, so clefs and notes never show as blank boxes.
 if (document.fonts && document.fonts.load) document.fonts.load("120px Bravura").then(() => render(), () => {});
+// How to play: a card shown by itself the first time this game is opened on this device, then from "?".
+(function cover() {
+  const key = "tonebee-seen-names", card = $("coverCard"), demo = $("demo");
+  let inst = "trumpet";
+  try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
+  demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
+  // the clef and the three answers follow the instrument: trombone reads bass clef
+  const bass = inst === "trombone", nm = T("names"), first = bass ? 2 : 0;
+  demo.querySelector(".d-clef").textContent = bass ? "\uE062" : "\uE050";
+  demo.querySelector(".d-clef").setAttribute("y", bass ? 80 : 120);
+  // the answer buttons run in reading order: in Hebrew the first name is on the right, and so the right answer (the third name) is on the left
+  const he = LANG === "he";
+  [0, 1, 2].forEach(i => { demo.querySelector(".d-a" + i).textContent = nm[first + (he ? 2 - i : i)]; });
+  if (he) {
+    const ok = demo.querySelector(".d-ok"), r0 = demo.querySelector("rect[x='102']");
+    r0.setAttribute("x", 298); ok.setAttribute("x", 102);
+    [0, 1, 2].forEach(i => { const t = demo.querySelector(".d-a" + i); t.parentNode.appendChild(t); });   // labels above the buttons
+    demo.querySelectorAll(".d-tap circle").forEach(c => c.setAttribute("cx", 156));
+  }
+  const show = on => { card.hidden = !on; if (on) $("playBtn").focus(); };
+  let seen = false;
+  try { seen = !!localStorage.getItem(key); } catch (_) {}
+  show(!seen);
+  $("playBtn").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
+  $("helpBtn").addEventListener("click", e => { e.stopPropagation(); show(true); });
+  // While the card is up, a key only closes it (Space must not start the game behind it).
+  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("playBtn").click(); } }, true);
+})();
 </script>
 </body>
 </html>

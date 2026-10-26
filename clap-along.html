@@ -154,7 +154,8 @@
 
   /* Transport */
   .transport { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 20px; border-top: 1px solid var(--line); }
-  .hint { color: var(--muted); font-size: 13px; }
+  .hint { display: none; }  /* shortcuts live in the pause box (Esc) */
+  .pause-keys kbd { font-family: var(--display); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: var(--console); color: var(--ink-2); }
   .hint kbd { font-family: var(--display); font-size: 12px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: var(--console); color: var(--ink-2); }
   .transport-btns { display: flex; gap: 12px; margin-inline-start: auto; }
   .btn {
@@ -209,6 +210,45 @@
   .pause-icon { font-size: clamp(80px, 22vh, 220px); line-height: 1; color: #1a7fe2; }
   .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
   .pause-stop { display: block; margin: 2.5vh auto 0; background: none; border: 0; font: inherit; font-size: clamp(16px, 2.6vh, 24px); color: #56616f; text-decoration: underline; cursor: pointer; min-height: 44px; }
+
+  /* Shortcuts live in the pause box (Esc), not on the game screen. */
+  .transport .keys { display: none; }
+  .pause-keys { margin: 22px auto 0; max-width: 40em; font-size: 15px; color: #66707d; line-height: 2.1; }
+  @media (hover: none) and (pointer: coarse) { .pause-keys { display: none; } }
+  #overlayText:empty { display: none; }
+
+  /* The cover: how to play without words (first visit, or "?"), then one button. */
+  .cover { display: grid; justify-items: center; gap: 2.4vh; }
+  .cover-btns { display: flex; align-items: center; gap: 14px; }
+  .help-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--line, #e1e7ef); background: #fff; font: inherit; font-size: 26px; font-weight: 700; color: var(--muted, #66707d); cursor: pointer; }
+  .help-btn:hover { border-color: var(--accent, #1a7fe2); color: var(--accent, #1a7fe2); }
+  .demo { width: min(560px, 76vw); height: auto; max-height: 52vh; border-radius: 22px; box-shadow: 0 12px 34px rgba(31, 42, 68, .16); }
+  .demo[hidden] { display: none; }
+  .demo { direction: ltr; }   /* laid out like the game itself, which never mirrors with the language */
+  .d-waves path { animation: dPulse .5s infinite alternate; }
+  .d-w2 { animation-delay: .17s !important; } .d-w3 { animation-delay: .34s !important; }
+  @keyframes dPulse { from { opacity: .25; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .demo * { animation: none !important; } }
+
+  /* First visit (or "?" in the top bar): the card over the game. */
+  .cover-card { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(255, 255, 255, .88); padding: 3vh 4vw; }
+  .cover-card[hidden] { display: none; }
+  .play-btn { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
+  .play-btn:hover { filter: brightness(1.08); }
+
+  .d-hands { transform: translate(380px, 140px); }
+  .d-dot { fill: #e4d8de; animation: 5s infinite; }
+  .d1 { animation-name: dD1; } .d2 { animation-name: dD2; } .d3 { animation-name: dD3; }
+  .d-waves { animation: dListen 5s infinite; }
+  .d-hl { animation: dHl 5s infinite; } .d-hr { animation: dHr 5s infinite; }
+  .d-burst { opacity: 0; animation: dBurst 5s infinite; }
+  @keyframes dListen { 0%, 6% { opacity: 0; } 8%, 11% { opacity: 1; } 13%, 17% { opacity: 0; } 19%, 22% { opacity: 1; } 24%, 28% { opacity: 0; } 30%, 33% { opacity: 1; } 35%, 100% { opacity: 0; } }
+  @keyframes dD1 { 0%, 7% { fill: #e4d8de; } 8%, 48% { fill: #1f2a44; } 50%, 92% { fill: #2fa36b; } 96%, 100% { fill: #e4d8de; } }
+  @keyframes dD2 { 0%, 18% { fill: #e4d8de; } 19%, 59% { fill: #1f2a44; } 61%, 92% { fill: #2fa36b; } 96%, 100% { fill: #e4d8de; } }
+  @keyframes dD3 { 0%, 29% { fill: #e4d8de; } 30%, 70% { fill: #1f2a44; } 72%, 92% { fill: #2fa36b; } 96%, 100% { fill: #e4d8de; } }
+  @keyframes dHl { 0%, 46%, 52%, 57%, 63%, 68%, 74%, 100% { transform: translateX(-14px); } 50%, 61%, 72% { transform: translateX(4px); } }
+  @keyframes dHr { 0%, 46%, 52%, 57%, 63%, 68%, 74%, 100% { transform: translateX(14px); } 50%, 61%, 72% { transform: translateX(-4px); } }
+  @keyframes dBurst { 0%, 49% { opacity: 0; } 50%, 53% { opacity: 1; } 55%, 60% { opacity: 0; } 61%, 64% { opacity: 1; } 66%, 71% { opacity: 0; } 72%, 75% { opacity: 1; } 77%, 100% { opacity: 0; } }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -256,6 +296,7 @@
     <label class="ctl" for="tempo"><span class="ctl-k note">♩ =</span><input id="tempo" type="range" min="50" max="120" step="1" value="80"><output id="tempoOut" for="tempo">80</output></label>
     <label class="ctl click-ctl" for="clickVol"><span class="ctl-k" data-t="click"></span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
     <label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span data-t="counts"></span></label>
+    <button id="helpBtn" class="icon-btn" data-t-title="howTo" data-t-aria="howTo">?</button>
     <button id="pauseBtn" class="icon-btn" data-t-title="pause">⏸</button>
     <button id="fullscreen" class="icon-btn" data-t-title="fullscreen" data-t="fullBtn"></button>
   </header>
@@ -290,7 +331,23 @@
   </footer>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
-<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button><button class="pause-stop" id="pauseStop" data-t="stop"></button></div></div>
+<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button><button class="pause-stop" id="pauseStop" data-t="stop"></button><p class="pause-keys" data-t-html="keys"></p></div></div>
+<div class="cover-card" id="coverCard" hidden>
+  <div class="cover">
+    <svg class="demo ltr" id="demo" viewBox="0 0 480 300" aria-hidden="true">
+      <defs><clipPath id="dClip"><rect width="480" height="300" rx="22"/></clipPath></defs>
+      <g clip-path="url(#dClip)">
+        <rect width="480" height="300" fill="#fff3f8"/>
+        <g class="d-speaker" transform="translate(96 140)"><path d="M -30 -18 L -12 -18 L 14 -40 L 14 40 L -12 18 L -30 18 Z" fill="#1f2a44"/></g>
+        <g class="d-waves" fill="none" stroke="#1f2a44" stroke-width="5" stroke-linecap="round" transform="translate(-30 -50)"><path class="d-w1" d="M 152 172 q 10 18 0 36"/><path class="d-w2" d="M 166 164 q 16 26 0 52"/></g>
+        <g class="d-hands"><g class="d-hl"><rect x="-44" y="-36" width="38" height="72" rx="19" fill="#f6c89f"/></g><g class="d-hr"><rect x="6" y="-36" width="38" height="72" rx="19" fill="#f0b98a"/></g>
+          <g class="d-burst" stroke="#f2b33d" stroke-width="5" stroke-linecap="round"><line x1="0" y1="-50" x2="0" y2="-66"/><line x1="-24" y1="-44" x2="-34" y2="-58"/><line x1="24" y1="-44" x2="34" y2="-58"/></g></g>
+        <g class="d-dots"><circle class="d-dot d1" cx="180" cy="240" r="15"/><circle class="d-dot d2" cx="240" cy="240" r="15"/><circle class="d-dot d3" cx="300" cy="240" r="15"/></g>
+      </g>
+    </svg>
+    <button class="play-btn" id="playBtn" data-t-title="howTo" data-t-aria="howTo">▶</button>
+  </div>
+</div>
 <script>
 "use strict";
 
@@ -308,9 +365,9 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
-    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
-    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
+    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
@@ -319,9 +376,9 @@ const COMMON = {
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
-    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
-    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
-    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
+    keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
+    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
@@ -345,7 +402,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "קצב · טונבי", tool: "/ קצב", back: "חזרה ל-טונבי", controls: "שליטה למורה",
+    howTo: "איך משחקים", pageTitle: "קצב · טונבי", tool: "/ קצב", back: "חזרה ל-טונבי", controls: "שליטה למורה",
     mode: "מצב", echo: "הד", quiz: "חידון שמיעה", level: "שלב", click: "מטרונום", counts: "ספירה", fullBtn: "⛶ מסך מלא",
     keys: "<kbd>Space</kbd> ניגון / הבא &nbsp; <kbd>R</kbd> שוב &nbsp; <kbd>F</kbd> מסך מלא &nbsp; <kbd>Esc</kbd> השהיה",
     levelN: n => `שלב ${n}`,
@@ -361,7 +418,7 @@ const TEXT = {
     stopped: "עצרנו. שוב, או הבא?", rhythm: (bars, beats) => `קצב, ${bars === 1 ? "תיבה אחת" : bars + " תיבות"} ב-${beats}/4`
   },
   en: {
-    pageTitle: "Clap-Along · Tonebee", tool: "/ Clap-Along", back: "Back to Tonebee", controls: "Teacher controls",
+    howTo: "How to play", pageTitle: "Clap-Along · Tonebee", tool: "/ Clap-Along", back: "Back to Tonebee", controls: "Teacher controls",
     mode: "Mode", echo: "Echo", quiz: "Ear quiz", level: "Level", click: "Click", counts: "Counts", fullBtn: "⛶ Full screen",
     keys: "<kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen &nbsp; <kbd>Esc</kbd> Pause",
     levelN: n => `Level ${n}`,
@@ -1091,6 +1148,21 @@ setPhase("ready");
 document.getElementById("pauseBtn").addEventListener("click", () => setPaused(true));
 document.getElementById("pauseBox").addEventListener("click", e => { if (e.target.id !== "pauseStop") setPaused(false); });
 document.getElementById("pauseStop").addEventListener("click", e => { e.stopPropagation(); setPaused(false); stopRound(); setPhase("done"); setCue("⏸", T("stopped")); });
+// How to play: a card shown by itself the first time this game is opened on this device, then from "?".
+(function cover() {
+  const key = "tonebee-seen-clap", card = $("coverCard"), demo = $("demo");
+  let inst = "trumpet";
+  try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
+  demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
+  const show = on => { card.hidden = !on; if (on) $("playBtn").focus(); };
+  let seen = false;
+  try { seen = !!localStorage.getItem(key); } catch (_) {}
+  show(!seen);
+  $("playBtn").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
+  $("helpBtn").addEventListener("click", e => { e.stopPropagation(); show(true); });
+  // While the card is up, a key only closes it (Space must not start the game behind it).
+  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("playBtn").click(); } }, true);
+})();
 </script>
 </body>
 </html>

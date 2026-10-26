@@ -92,6 +92,11 @@
   .resume-btn { margin-top: 2vh; background: #1a7fe2; color: #fff; border: 0; border-radius: 999px; font: inherit; font-weight: 700; font-size: clamp(22px, 4vh, 40px); padding: .5em 1.4em; cursor: pointer; min-height: 56px; }
   /* Touch screens have no keyboard: no key hints. */
   @media (hover: none) and (pointer: coarse) { .keys { display: none; } }
+  /* Shortcuts live in the pause box (Esc), not on the game screen. */
+  .transport .keys { display: none; }
+  .pause-keys { margin: 22px auto 0; max-width: 40em; font-size: 15px; color: #66707d; line-height: 2.1; }
+  @media (hover: none) and (pointer: coarse) { .pause-keys { display: none; } }
+  #overlayText:empty { display: none; }
   /* Phone upright: the picture is drawn wide, so suggest turning the phone. */
   .turn { display: none; }
   @media (orientation: portrait) and (max-width: 600px) { .overlay .turn { display: block; margin: 22px 0 0; font-size: 16px; font-weight: 500; opacity: .75; } }
@@ -105,6 +110,28 @@
     .icon-btn { min-width: 40px; min-height: 40px; padding: 0 8px; }
     .seg-btn { padding: 0 10px; }
   }
+
+  /* The cover: how to play without words (first visit, or "?"), then one button. */
+  .cover { display: grid; justify-items: center; gap: 2.4vh; }
+  .cover-btns { display: flex; align-items: center; gap: 14px; }
+  .help-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--line, #e1e7ef); background: #fff; font: inherit; font-size: 26px; font-weight: 700; color: var(--muted, #66707d); cursor: pointer; }
+  .help-btn:hover { border-color: var(--accent, #1a7fe2); color: var(--accent, #1a7fe2); }
+  .demo { width: min(560px, 76vw); height: auto; max-height: 52vh; border-radius: 22px; box-shadow: 0 12px 34px rgba(31, 42, 68, .16); }
+  .demo[hidden] { display: none; }
+  .demo { direction: ltr; }   /* laid out like the game itself, which never mirrors with the language */
+  .d-waves path { animation: dPulse .5s infinite alternate; }
+  .d-w2 { animation-delay: .17s !important; } .d-w3 { animation-delay: .34s !important; }
+  @keyframes dPulse { from { opacity: .25; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .demo * { animation: none !important; } }
+
+  .d-bee { transform: translate(300px, 150px); animation: dBee 5s infinite; }
+  .d-waves { animation: dBuzz 5s infinite; }
+  .d-bloom { transform-box: fill-box; transform-origin: center; animation: dBloom 5s infinite; }
+  .d-player > g:first-child { animation: dShake .12s infinite alternate; }
+  @keyframes dBee { 0%, 8% { transform: translate(190px, 200px); } 24% { transform: translate(240px, 150px); } 38% { transform: translate(295px, 178px); } 54% { transform: translate(350px, 136px); } 70%, 92% { transform: translate(398px, 160px); } 100% { transform: translate(190px, 200px); } }
+  @keyframes dBuzz { 0%, 6% { opacity: 0; } 9%, 68% { opacity: 1; } 72%, 100% { opacity: 0; } }
+  @keyframes dBloom { 0%, 68% { transform: scale(.45); } 76%, 92% { transform: scale(1.15); } 100% { transform: scale(.45); } }
+  @keyframes dShake { from { transform: translate(86px, 200px) rotate(-12deg); } to { transform: translate(86px, 201.5px) rotate(-11deg); } }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -169,14 +196,36 @@
   <main class="stage" id="stage">
     <svg class="scene" id="scene" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMid meet" role="img" data-t-aria="scene"></svg>
     <div class="overlay" id="overlay">
-      <div>
+      <div class="cover">
+        <svg class="demo" id="demo" viewBox="0 0 480 300" aria-hidden="true" hidden>
+          <defs><clipPath id="dClip"><rect width="480" height="300" rx="22"/></clipPath></defs>
+          <g clip-path="url(#dClip)">
+            <rect width="480" height="300" fill="#eaf6ff"/>
+            <rect y="252" width="480" height="48" fill="#8fd16a"/><rect y="252" width="480" height="8" fill="#7cc35a"/>
+            <g transform="translate(410 252)"><line x1="0" y1="0" x2="0" y2="-62" stroke="#2f9e66" stroke-width="5"/>
+              <g transform="translate(0 -70)"><g class="d-bloom" fill="#ff8fb1"><ellipse cy="-16" rx="9" ry="15"/><ellipse cy="16" rx="9" ry="15"/><ellipse cx="-16" rx="15" ry="9"/><ellipse cx="16" rx="15" ry="9"/></g><circle r="9" fill="#f2a900"/></g></g>
+            <!-- just the mouthpiece: buzzing is without the instrument -->
+            <g class="d-player"><g transform="translate(86 200) rotate(-12)">
+              <path d="M -46 -30 C -20 -26 -6 -12 6 -8 L 66 -5 L 66 5 L 6 8 C -6 12 -20 26 -46 30 Z" fill="#e9b949"/>
+              <ellipse cx="-46" cy="0" rx="9" ry="30" fill="#c99628"/><ellipse cx="-46" cy="0" rx="5" ry="21" fill="#7a5a14"/>
+              <rect x="56" y="-7" width="14" height="14" rx="3" fill="#c99628"/></g>
+              <g class="d-waves" fill="none" stroke="#1f2a44" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <path class="d-w1" d="M 30 150 l 8 -8 l 8 8 l 8 -8 l 8 8"/><path class="d-w2" d="M 26 252 l 8 -8 l 8 8 l 8 -8 l 8 8"/><path class="d-w3" d="M 160 168 l 8 -8 l 8 8 l 8 -8 l 8 8"/></g></g>
+            <g class="d-bee"><g transform="scale(.42)"><ellipse cx="-8" cy="-40" rx="26" ry="40" fill="#fff3dc" opacity=".8"/>
+              <image href="icons/sprites/bee.webp" x="-82" y="-84" width="160" height="131"/>
+              <ellipse cx="8" cy="-44" rx="26" ry="42" fill="#fff8ec" opacity=".85"/></g></g>
+          </g>
+        </svg>
         <p id="overlayText" data-t="startPrompt"></p>
-        <button class="big-btn" id="startBtn" data-t="start"></button>
+        <div class="cover-btns">
+          <button class="big-btn" id="startBtn" data-t="start"></button>
+          <button class="help-btn" id="helpBtn" data-t-title="howTo" data-t-aria="howTo">?</button>
+        </div>
         <p class="turn" data-t="turn"></p>
       </div>
     </div>
     <button class="big-btn next-btn" id="nextBtn" hidden></button>
-    <div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button></div></div>
+    <div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button><p class="pause-keys" data-t-html="keys"></p></div></div>
     <div class="diag" id="diag" hidden></div>
   </main>
 
@@ -204,9 +253,9 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
-    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
-    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
+    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
@@ -215,9 +264,9 @@ const COMMON = {
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
-    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
-    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
-    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
+    keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
+    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
@@ -241,7 +290,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "זמזום · טונבי", step: "שלב", st1: "מזמזמים", st2: "אותו צליל", st3: "ארוך ויציב", st4: "סירנה",
+    howTo: "איך משחקים", pageTitle: "זמזום · טונבי", step: "שלב", st1: "מזמזמים", st2: "אותו צליל", st3: "ארוך ויציב", st4: "סירנה",
     howLong: "כמה זמן", siren: "סירנה", sir2: "מסלול: טון", sir4: "מסלול: טרצה", sir7: "מסלול: קווינטה", free: "חופשי",
     hear: "לשמוע את הזמזום (T)", scene: "דבורה שעפה עם הזמזום",
     keys: "<kbd>T</kbd> לשמוע · <kbd>Space</kbd> הבא · <kbd>Esc</kbd> השהיה · <kbd>1</kbd>–<kbd>4</kbd> שלב · <kbd>R</kbd> כיול",
@@ -249,7 +298,7 @@ const TEXT = {
     nextRoute: "עוד מסלול ←", nextFlower: "פרח הבא ←", buzzing: "זמזום"
   },
   en: {
-    pageTitle: "Buzzing · Tonebee", step: "Step", st1: "Buzz", st2: "Match the note", st3: "Long and steady", st4: "Sirens",
+    howTo: "How to play", pageTitle: "Buzzing · Tonebee", step: "Step", st1: "Buzz", st2: "Match the note", st3: "Long and steady", st4: "Sirens",
     howLong: "How long", siren: "Siren", sir2: "Route: a step", sir4: "Route: a third", sir7: "Route: a fifth", free: "Free",
     hear: "Hear the buzz (T)", scene: "A bee flying on the buzz",
     keys: "<kbd>T</kbd> hear it · <kbd>Space</kbd> next · <kbd>Esc</kbd> pause · <kbd>1</kbd>–<kbd>4</kbd> step · <kbd>R</kbd> recalibrate",
@@ -614,19 +663,10 @@ function buildScene() {
 
 function bee(parent) {
   const g = el("g", {}, parent);
-  scene.wingBack = el("ellipse", { cx: -8, cy: -40, rx: 26, ry: 40, fill: "#dff1ff", opacity: .75, stroke: "#9fc8ee", "stroke-width": 3 }, g);
-  el("ellipse", { rx: 58, ry: 40, fill: "#ffc81a", stroke: "#3b2a10", "stroke-width": 4 }, g);
-  [-18, 6, 30].forEach(x => el("path", { d: `M ${x - 7} -38 Q ${x + 4} 0 ${x - 7} 38 L ${x + 7} 38 Q ${x + 18} 0 ${x + 7} -38 Z`, fill: "#3b2a10" }, g));
-  el("path", { d: "M -56 0 L -78 -6 L -78 6 Z", fill: "#3b2a10" }, g);
-  el("circle", { cx: 50, cy: -6, r: 26, fill: "#ffc81a", stroke: "#3b2a10", "stroke-width": 4 }, g);
-  el("circle", { cx: 58, cy: -12, r: 6, fill: "#15181d" }, g);
-  el("circle", { cx: 60, cy: -14, r: 2, fill: "#fff" }, g);
-  el("path", { d: "M 50 6 Q 60 14 70 4", fill: "none", stroke: "#15181d", "stroke-width": 3.5, "stroke-linecap": "round" }, g);
-  el("path", { d: "M 44 -28 Q 40 -50 30 -58", fill: "none", stroke: "#3b2a10", "stroke-width": 3.5 }, g);
-  el("path", { d: "M 56 -30 Q 60 -52 70 -58", fill: "none", stroke: "#3b2a10", "stroke-width": 3.5 }, g);
-  el("circle", { cx: 30, cy: -58, r: 5, fill: "#3b2a10" }, g);
-  el("circle", { cx: 70, cy: -58, r: 5, fill: "#3b2a10" }, g);
-  scene.wingFront = el("ellipse", { cx: 8, cy: -44, rx: 26, ry: 42, fill: "#eef8ff", opacity: .85, stroke: "#9fc8ee", "stroke-width": 3 }, g);
+  // Body: Gemini-drawn sprite in the tiles' house style (ops/brand/sprites/); the wings stay drawn here so they can flap.
+  scene.wingBack = el("ellipse", { cx: -8, cy: -40, rx: 26, ry: 40, fill: "#fff3dc", opacity: .8 }, g);
+  el("image", { href: "icons/sprites/bee.webp", x: -82, y: -84, width: 160, height: 131 }, g);
+  scene.wingFront = el("ellipse", { cx: 8, cy: -44, rx: 26, ry: 42, fill: "#fff8ec", opacity: .85 }, g);
   scene.buzzLines = el("g", { opacity: 0, stroke: "#56616f", "stroke-width": 4, "stroke-linecap": "round", fill: "none" }, g);
   [[-96, -24], [-104, 0], [-96, 24]].forEach(([x, y]) => el("path", { d: `M ${x} ${y} q -8 -6 -16 0 q -8 6 -16 0` }, scene.buzzLines));
   return g;
@@ -1034,6 +1074,19 @@ for (let i = 1; i <= 4; i++) $("st" + i).addEventListener("click", () => setStep
 $("hold4").addEventListener("click", () => setHold(4));
 $("hold8").addEventListener("click", () => setHold(8));
 [["sirFree", 0], ["sir2", 2], ["sir4", 4], ["sir7", 7]].forEach(([id, v]) => $(id).addEventListener("click", () => setSiren(v)));
+// How to play: shown by itself the first time this game is opened on this device, then only from "?".
+(function cover() {
+  const key = "tonebee-seen-buzz", demo = $("demo");
+  let inst = "trumpet";
+  try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
+  demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
+  let seen = false;
+  try { seen = !!localStorage.getItem(key); } catch (_) {}
+  // (an <svg> has no .hidden property: toggle the attribute)
+  demo.toggleAttribute("hidden", seen);
+  $("helpBtn").addEventListener("click", e => { e.stopPropagation(); demo.toggleAttribute("hidden"); });
+  $("startBtn").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} demo.toggleAttribute("hidden", true); });
+})();
 $("startBtn").addEventListener("click", e => { e.stopPropagation(); startMic(); });
 $("overlay").addEventListener("click", startMic);
 $("tone").addEventListener("click", playModel);

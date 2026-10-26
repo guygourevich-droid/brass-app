@@ -105,6 +105,11 @@
   .seg[hidden] { display: none; }
   /* Touch screens have no keyboard: no key hints. */
   @media (hover: none) and (pointer: coarse) { .keys { display: none; } }
+  /* Shortcuts live in the pause box (Esc), not on the game screen. */
+  .transport .keys { display: none; }
+  .pause-keys { margin: 22px auto 0; max-width: 40em; font-size: 15px; color: #66707d; line-height: 2.1; }
+  @media (hover: none) and (pointer: coarse) { .pause-keys { display: none; } }
+  #overlayText:empty { display: none; }
   /* Phone upright: the picture is drawn wide, so suggest turning the phone. */
   .turn { display: none; }
   @media (orientation: portrait) and (max-width: 600px) { .overlay .turn { display: block; margin: 22px 0 0; font-size: 16px; font-weight: 500; opacity: .75; } }
@@ -118,6 +123,26 @@
     .icon-btn { min-width: 40px; min-height: 40px; padding: 0 8px; }
     .seg-btn { padding: 0 10px; }
   }
+
+  /* The cover: how to play without words (first visit, or "?"), then one button. */
+  .cover { display: grid; justify-items: center; gap: 2.4vh; }
+  .cover-btns { display: flex; align-items: center; gap: 14px; }
+  .help-btn { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--line, #e1e7ef); background: #fff; font: inherit; font-size: 26px; font-weight: 700; color: var(--muted, #66707d); cursor: pointer; }
+  .help-btn:hover { border-color: var(--accent, #1a7fe2); color: var(--accent, #1a7fe2); }
+  .demo { width: min(560px, 76vw); height: auto; max-height: 52vh; border-radius: 22px; box-shadow: 0 12px 34px rgba(31, 42, 68, .16); }
+  .demo[hidden] { display: none; }
+  .demo { direction: ltr; }   /* laid out like the game itself, which never mirrors with the language */
+  .d-waves path { animation: dPulse .5s infinite alternate; }
+  .d-w2 { animation-delay: .17s !important; } .d-w3 { animation-delay: .34s !important; }
+  @keyframes dPulse { from { opacity: .25; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .demo * { animation: none !important; } }
+
+  .d-monkey { transform: translateY(232px); animation: dClimb 5s infinite; }
+  .d-waves { animation: dSteps 5s infinite; }
+  .d-banana { transform-box: fill-box; transform-origin: center; animation: dBanana 5s infinite; }
+  @keyframes dClimb { 0%, 10% { transform: translateY(232px); } 18%, 28% { transform: translateY(174px); } 36%, 46% { transform: translateY(114px); } 54%, 88% { transform: translateY(56px); } 100% { transform: translateY(232px); } }
+  @keyframes dSteps { 0%, 9% { opacity: 0; } 11%, 17% { opacity: 1; } 21%, 27% { opacity: 0; } 29%, 35% { opacity: 1; } 39%, 45% { opacity: 0; } 47%, 53% { opacity: 1; } 57%, 100% { opacity: 0; } }
+  @keyframes dBanana { 0%, 56% { transform: scale(1); opacity: 1; } 64% { transform: scale(1.5) rotate(-20deg); opacity: 1; } 72%, 94% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -176,9 +201,31 @@
     <svg class="scene" id="scene" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" data-t-aria="scene"></svg>
 
     <div class="overlay" id="overlay">
-      <div>
+      <div class="cover">
+        <svg class="demo" id="demo" viewBox="0 0 480 300" aria-hidden="true" hidden>
+          <defs><clipPath id="dClip"><rect width="480" height="300" rx="22"/></clipPath></defs>
+          <g clip-path="url(#dClip)">
+            <rect width="480" height="300" fill="#fff7ea"/>
+            <rect y="270" width="480" height="30" fill="#c7e6a8"/>
+            <g stroke-linecap="round"><line x1="310" x2="310" y1="40" y2="282" stroke="#9a6a35" stroke-width="8"/><line x1="410" x2="410" y1="40" y2="282" stroke="#9a6a35" stroke-width="8"/>
+              <g stroke="#c58b4a" stroke-width="7"><line x1="310" x2="410" y1="80" y2="80"/><line x1="310" x2="410" y1="140" y2="140"/><line x1="310" x2="410" y1="200" y2="200"/><line x1="310" x2="410" y1="258" y2="258"/></g></g>
+            <g class="d-banana"><image href="icons/sprites/banana.webp" x="244" y="44" width="56" height="36"/></g>
+            <g class="d-monkey"><g transform="translate(360 0)">
+              <path d="M -16 -2 L -30 -26 M 16 -2 L 30 -26" stroke="#a35a37" stroke-width="8" stroke-linecap="round"/>
+              <image href="icons/sprites/monkey-head.webp" x="-32" y="-22" width="64" height="44"/></g></g>
+            <g class="d-player">
+              <image class="d-inst" href="icons/inst/trumpet.png" x="34" y="160" width="96" height="96"/>
+              <g class="d-waves" fill="none" stroke="#1f2a44" stroke-width="5" stroke-linecap="round">
+                <path class="d-w1" d="M 142 196 q 10 12 0 24"/><path class="d-w2" d="M 156 188 q 16 20 0 40"/><path class="d-w3" d="M 170 180 q 22 28 0 56"/>
+              </g>
+            </g>
+          </g>
+        </svg>
         <p id="overlayText" data-t="startPrompt"></p>
-        <button class="big-btn" id="startBtn" data-t="start"></button>
+        <div class="cover-btns">
+          <button class="big-btn" id="startBtn" data-t="start"></button>
+          <button class="help-btn" id="helpBtn" data-t-title="howTo" data-t-aria="howTo">?</button>
+        </div>
         <p class="turn" data-t="turn"></p>
       </div>
     </div>
@@ -223,7 +270,7 @@
     <span class="keys" data-t-html="keys"></span>
   </footer>
 </div>
-<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button></div></div>
+<div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button><p class="pause-keys" data-t-html="keys"></p></div></div>
 <script>
 "use strict";
 
@@ -241,9 +288,9 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
-    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
-    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
+    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
@@ -252,9 +299,9 @@ const COMMON = {
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
-    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
-    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
-    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
+    keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
+    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
@@ -278,7 +325,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    pageTitle: "סולם · טונבי", kind: "סוג הסולם", kindScale: "דו רה מי", kindOpen: "פתוחים",
+    howTo: "איך משחקים", pageTitle: "סולם · טונבי", kind: "סוג הסולם", kindScale: "דו רה מי", kindOpen: "פתוחים",
     kindScaleTip: "הצלילים שהכיתה מכירה", kindOpenTip: "צלילים פתוחים, בלי אצבעות", mode: "מצב", explore: "חופשי", aim: "🍌 בננה",
     hear: "לשמוע את הצליל (T)", settings: "הגדרות (S)", scene: "סולם הצלילים", settingsLabel: "הגדרות", ladder: "הסולם",
     lowest: "שלב תחתון", highest: "שלב עליון", classNotes: "הצלילים שהכיתה מכירה (משותף עם צליל נכון, נינג'ה ושירים):",
@@ -289,7 +336,7 @@ const TEXT = {
     keys: "<kbd>Space</kbd> תור חדש · <kbd>↑</kbd><kbd>↓</kbd> בננה · <kbd>M</kbd> מצב · <kbd>T</kbd> להשמיע · <kbd>S</kbd> הגדרות · <kbd>R</kbd> כיול · <kbd>D</kbd> בדיקה"
   },
   en: {
-    pageTitle: "Ladder · Tonebee", kind: "Ladder", kindScale: "Step by step", kindOpen: "Open notes",
+    howTo: "How to play", pageTitle: "Ladder · Tonebee", kind: "Ladder", kindScale: "Step by step", kindOpen: "Open notes",
     kindScaleTip: "The notes the class knows", kindOpenTip: "Open notes, no valves", mode: "Mode", explore: "Explore", aim: "🍌 Banana",
     hear: "Hear the note (T)", settings: "Settings (S)", scene: "The note ladder", settingsLabel: "Settings", ladder: "The ladder",
     lowest: "Lowest rung", highest: "Highest rung", classNotes: "The notes the class knows (shared with Right Note, Note Ninja and Songs):",
@@ -844,8 +891,7 @@ function buildScene() {
   scene.ring = el("circle", { r: 46, fill: "none", stroke: "#1b8f58", "stroke-width": 10, "stroke-linecap": "round",
     "stroke-dasharray": 2 * Math.PI * 46, "stroke-dashoffset": 2 * Math.PI * 46, opacity: 0 }, svg);
   scene.banana = el("g", {}, svg);
-  el("path", { d: "M -34 -6 C -26 22 18 30 38 -2 C 30 6 -6 14 -26 -14 Z", fill: "#ffd23f", stroke: "#c99a00", "stroke-width": 3, "stroke-linejoin": "round" }, scene.banana);
-  el("path", { d: "M -26 -14 L -32 -22 L -36 -18 L -34 -6", fill: "#7a5a1e" }, scene.banana);
+  el("image", { href: "icons/sprites/banana.webp", x: -42, y: -27, width: 84, height: 54 }, scene.banana);
 
   scene.arrow = el("path", { fill: "#1a7fe2", opacity: 0 }, svg);
   buildMonkey(svg);
@@ -861,7 +907,7 @@ function buildScene() {
    Origin is the middle of the rung it holds. Hands grip the rung; on the grass the arms hang down. */
 
 const monkey = { y: GROUND, from: GROUND, to: GROUND, moveStart: 0, moveMs: 1 };
-const FUR = "#8a5a32", FACE = "#f0cfa6", DARK = "#5e3a1c";
+const FUR = "#a35a37", FACE = "#fcf0da", DARK = "#6e3d22";   // the head sprite's colours
 
 function buildMonkey(svg) {
   const m = el("g", {}, svg);
@@ -877,13 +923,8 @@ function buildMonkey(svg) {
   scene.handR = el("circle", { r: 10, fill: DARK }, m);
   const head = el("g", {}, m);
   scene.head = head;
-  [-1, 1].forEach(s => { el("circle", { cx: 36 * s, cy: 18, r: 13, fill: FUR }, head); el("circle", { cx: 36 * s, cy: 18, r: 7, fill: FACE }, head); });
-  el("circle", { cx: 0, cy: 16, r: 34, fill: FUR }, head);
-  el("path", { d: "M -26 18 C -26 0 -10 -2 0 6 C 10 -2 26 0 26 18 C 26 38 14 44 0 44 C -14 44 -26 38 -26 18 Z", fill: FACE }, head);
-  el("circle", { cx: -10, cy: 14, r: 5, fill: "#15181d" }, head);
-  el("circle", { cx: 10, cy: 14, r: 5, fill: "#15181d" }, head);
-  el("circle", { cx: -8.5, cy: 12.5, r: 1.6, fill: "#fff" }, head);
-  el("circle", { cx: 11.5, cy: 12.5, r: 1.6, fill: "#fff" }, head);
+  // Head: Gemini-drawn sprite in the tiles' house style (ops/brand/sprites/); arms, legs and the mouth stay drawn so they move.
+  el("image", { href: "icons/sprites/monkey-head.webp", x: -52, y: -20, width: 104, height: 72 }, head);
   scene.mouth = el("path", { d: "M -9 30 Q 0 37 9 30", fill: "none", stroke: DARK, "stroke-width": 3, "stroke-linecap": "round" }, head);
 }
 
@@ -1211,6 +1252,19 @@ function toggleFullscreen() {
 /* ---------- Wiring ---------- */
 
 const flag = (id, fn) => $(id).addEventListener("click", () => { fn(); save(); rebuild(); });
+// How to play: shown by itself the first time this game is opened on this device, then only from "?".
+(function cover() {
+  const key = "tonebee-seen-ladder", demo = $("demo");
+  let inst = "trumpet";
+  try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
+  demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
+  let seen = false;
+  try { seen = !!localStorage.getItem(key); } catch (_) {}
+  // (an <svg> has no .hidden property: toggle the attribute)
+  demo.toggleAttribute("hidden", seen);
+  $("helpBtn").addEventListener("click", e => { e.stopPropagation(); demo.toggleAttribute("hidden"); });
+  $("startBtn").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} demo.toggleAttribute("hidden", true); });
+})();
 $("startBtn").addEventListener("click", startMic);
 $("overlay").addEventListener("click", e => { if (e.target === $("overlay") || e.target.tagName === "P" || e.target.tagName === "DIV") startMic(); });
 $("tone").addEventListener("click", () => playReference());

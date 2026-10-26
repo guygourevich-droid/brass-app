@@ -51,7 +51,7 @@
 </script>
 <style>
   :root {
-    --paper: #ffffff;
+    --paper: #fffdf8;
     --ink: #15181d;
     --ink-2: #3b434e;
     --muted: #66707d;
@@ -59,6 +59,8 @@
     --console: #f2f5f9;
     --blue: #1a7fe2;
     --brass-deep: #8f5b0e;
+    --navy: #1f2a44;
+    --honey: #f2b33d;
     --font: "Rubik", "Lexend", "Arial Hebrew", "Segoe UI", system-ui, sans-serif;
     color-scheme: light;
   }
@@ -68,39 +70,44 @@
   button { font: inherit; color: inherit; }
   :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
 
-  .wrap { max-width: 1040px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 48px); padding-block: clamp(28px, 6vh, 64px); display: grid; gap: clamp(28px, 5vh, 48px); }
+  .wrap { max-width: 1180px; min-height: 100vh; min-height: 100dvh; margin: 0 auto; padding-inline: clamp(16px, 3vw, 40px); padding-block: clamp(18px, 4vh, 40px); display: grid; grid-template-rows: auto 1fr auto auto; gap: clamp(18px, 3.5vh, 32px); }
+  main { align-self: center; }
 
-  .masthead { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
-  .masthead img { width: clamp(56px, 8vw, 76px); height: auto; border-radius: 22%; }
-  .masthead h1 { margin: 0; font-weight: 700; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.01em; line-height: 1.05; }
-  .masthead p { margin: 4px 0 0; color: var(--muted); font-size: clamp(15px, 1.8vw, 18px); }
-  /* Who is playing: the instrument and the language, one tap to change them. */
-  .me { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 16px 6px 8px; cursor: pointer; min-height: 52px; }
-  .me:hover { border-color: var(--blue); }
+  /* Header: the wordmark (tone|bee, טון|בי — the second half in honey) and who is playing. */
+  .masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { margin: 0; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: clamp(30px, 4.4vw, 42px); line-height: 1; letter-spacing: -0.01em; }
+  .brand img { width: clamp(48px, 6vw, 60px); height: auto; border-radius: 22%; }
+  .wm { color: var(--navy); }
+  .wm .bee { color: var(--honey); }
+  :lang(en) .wm { font-family: "Lexend", var(--font); }
+  .me { display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 18px 5px 6px; cursor: pointer; min-height: 52px; font-size: 18px; }
+  .me:hover { border-color: var(--navy); }
   .me img { width: 40px; height: 40px; }
   .me b { font-weight: 700; }
-  .me span { color: var(--muted); }
 
-  .section-k { margin: 0 0 12px; font-size: 13px; letter-spacing: .08em; color: var(--brass-deep); font-weight: 700; }
-  .tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+  /* Games: one square tile each, picture and name, nothing else. Five across on a projector, so all ten fit without scrolling. */
+  .tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(12px, 1.6vw, 20px); }
   .tool {
-    display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center;
-    padding: 20px 22px; border: 2px solid var(--line); border-radius: 18px;
-    color: inherit; text-decoration: none; background: var(--paper);
-    transition: border-color .15s, transform .15s;
+    display: grid; grid-template-rows: auto auto; border-radius: 24px; overflow: hidden;
+    background: var(--tile); color: var(--navy); text-decoration: none;
+    box-shadow: 0 4px 0 rgba(31, 42, 68, .10); transition: transform .15s, box-shadow .15s;
   }
-  .tool:hover { border-color: var(--blue); }
-  .tool:active { transform: scale(.99); }
-  .tool svg { width: clamp(110px, 18vw, 150px); height: auto; display: block; }
-  .tool h2 { margin: 0; font-weight: 700; font-size: clamp(22px, 2.6vw, 26px); display: flex; align-items: baseline; gap: 10px; }
-  .num { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--console); color: var(--brass-deep); font-size: .72em; font-weight: 700; }
-  .tool p { margin: 4px 0 10px; color: var(--ink-2); max-width: 44ch; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--console); color: var(--ink-2); }
+  .tool:hover { transform: translateY(-3px); box-shadow: 0 7px 0 rgba(31, 42, 68, .12); }
+  .tool:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(31, 42, 68, .10); }
+  /* Tile pictures: drawn by Gemini in one house style (ops/brand/tiles/), on the tile's own colour. */
+  .tool img { width: 100%; height: auto; aspect-ratio: 1; display: block; }
+  .name { text-align: center; font-weight: 700; font-size: clamp(18px, 1.9vw, 24px); line-height: 1.15; padding: 0 8px 14px; margin-top: -6px; }
 
-  .install { border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); font-size: 15px; max-width: 70ch; }
+  /* Install hint: phones and tablets only, never on the projector, gone once installed. */
+  .install { margin: 0; color: var(--muted); font-size: 15px; text-align: center; }
   .install b { color: var(--ink-2); }
+  @media (hover: hover) and (pointer: fine) { .install { display: none; } }
   @media (display-mode: standalone) { .install { display: none; } }
+  .foot { text-align: center; font-size: 14px; margin-top: -8px; }
+  .foot a { color: var(--muted); display: inline-block; padding-block: 10px; }
+  .foot a:hover { color: var(--navy); }
+  @media (max-width: 1000px) { .tools { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 760px) { .tools { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
   /* First visit (and "change"): the language, then the instrument. */
   .setup { position: fixed; inset: 0; z-index: 10; background: linear-gradient(180deg, #e8f4ff 0%, #ffffff 60%); overflow-y: auto; display: flex; padding: 24px 16px; }
@@ -127,18 +134,14 @@
   .soon { white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--brass-deep); background: #fff3d6; border-radius: 999px; padding: 1px 10px; }
   .back { margin-top: 22px; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 16px; min-height: 44px; }
 
-  /* Phones: each tile is the picture and the name on one line, the sentence under them; no chips. */
+  /* Phones: two tiles across. */
   @media (max-width: 600px) {
-    .wrap { gap: 22px; padding-block: 20px 28px; }
-    .masthead { gap: 12px 14px; }
-    .me { margin-inline-start: 0; }
-    .tools { gap: 12px; }
-    .tool { grid-template-columns: 96px 1fr; gap: 8px 14px; padding: 14px 16px; }
-    .tool > div { display: contents; }
-    .tool svg { width: 96px; }
-    .tool h2 { font-size: 22px; align-self: center; }
-    .tool p { grid-column: 1 / -1; margin: 0; font-size: 15px; }
-    .chips { display: none; }
+    .wrap { gap: 18px; padding-block: 16px 24px; }
+    .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .tool { border-radius: 20px; }
+    .name { font-size: 19px; }
+    .me { font-size: 16px; padding-inline-end: 14px; min-height: 46px; }
+    .me img { width: 34px; height: 34px; }
     .inst { padding: 10px 8px; font-size: 18px; }
     .inst img { width: min(104px, 26vw); height: auto; }
   }
@@ -192,217 +195,57 @@
 <body>
 <div class="wrap">
   <header class="masthead">
-    <img src="icons/icon-192.png" alt="">
-    <div>
-      <h1 data-t="brand">Tonebee</h1>
-      <p data-t="tagline"></p>
-    </div>
-    <button class="me" id="me" data-t-title="change"><img id="meIcon" alt="" width="40" height="40"><b id="meInst"></b><span id="meLang"></span></button>
+    <h1 class="brand"><img src="icons/icon-192.png" alt=""><span class="wm" id="wordmark"><span class="tone"></span><span class="bee"></span></span></h1>
+    <button class="me" id="me" data-t-title="change" data-t-aria="change"><img id="meIcon" alt="" width="40" height="40"><b id="meInst"></b></button>
   </header>
 
   <main>
-    <h2 class="section-k" data-t="games"></h2>
-    <div class="tools">
-      <a class="tool" href="ramzor.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <rect x="60" y="2" width="80" height="80" rx="16" fill="#2b323c"/>
-          <polygon points="86,10 114,10 128,24 128,40 114,54 86,54 72,40 72,24" fill="#ef4136" transform="translate(0,-2) scale(1)"/>
-          <polygon points="100,34 118,66 82,66" fill="#f0a81e" opacity=".35"/>
-          <circle cx="100" cy="70" r="9" fill="#22b268" opacity=".35"/>
-        </svg>
-        <div>
-          <h2><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+    <nav class="tools" data-t-aria="games">
+      <a class="tool" href="ramzor.html" style="--tile: #fdd1c5">
+        <img src="icons/tiles/ramzor.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="balloon-breath.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <defs><linearGradient id="tileRim"><stop offset="0" stop-color="#ff6f9a"/><stop offset=".5" stop-color="#ffc23a"/><stop offset="1" stop-color="#3a8fe0"/></linearGradient></defs>
-          <circle cx="84" cy="38" r="30" fill="#d6ecff" fill-opacity=".5" stroke="url(#tileRim)" stroke-width="3"/>
-          <ellipse cx="73" cy="26" rx="8" ry="4" transform="rotate(-40 73 26)" fill="#fff"/>
-          <circle cx="128" cy="40" r="13" fill="none" stroke="#7a5cf0" stroke-width="5"/>
-          <line x1="134" y1="52" x2="152" y2="82" stroke="#7a5cf0" stroke-width="5" stroke-linecap="round"/>
-          <circle cx="36" cy="22" r="11" fill="#d6ecff" fill-opacity=".5" stroke="url(#tileRim)" stroke-width="2"/>
-          <g stroke="#9fb6cc" stroke-width="3" fill="none" stroke-linecap="round"><path d="M 192 36 c -6 -4 -12 4 -18 0"/><path d="M 190 48 c -6 -4 -12 4 -18 0"/></g>
-        </svg>
-        <div>
-          <h2><span class="num">1</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="balloon-breath.html" style="--tile: #cfe9fd">
+        <img src="icons/tiles/breath.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="buzz-along.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <path d="M 10 60 C 40 20 70 70 100 40" fill="none" stroke="#f2b705" stroke-width="3" stroke-dasharray="1 7" stroke-linecap="round"/>
-          <g transform="translate(118 38) scale(.32)">
-            <ellipse cx="8" cy="-44" rx="26" ry="42" fill="#eef8ff" stroke="#9fc8ee" stroke-width="5"/>
-            <ellipse rx="58" ry="40" fill="#ffc81a" stroke="#3b2a10" stroke-width="5"/>
-            <path d="M -25 -38 Q -14 0 -25 38 L -11 38 Q 0 0 -11 -38 Z M -1 -38 Q 10 0 -1 38 L 13 38 Q 24 0 13 -38 Z" fill="#3b2a10"/>
-            <circle cx="50" cy="-6" r="26" fill="#ffc81a" stroke="#3b2a10" stroke-width="5"/>
-            <circle cx="58" cy="-12" r="7" fill="#15181d"/>
-          </g>
-          <g transform="translate(172 40)"><g fill="#ff8fb1"><ellipse cy="-11" rx="6" ry="10"/><ellipse cy="11" rx="6" ry="10"/><ellipse cx="-11" rx="10" ry="6"/><ellipse cx="11" rx="10" ry="6"/></g><circle r="6" fill="#f2a900"/></g>
-          <line x1="172" y1="50" x2="172" y2="84" stroke="#2f9e66" stroke-width="3"/>
-        </svg>
-        <div>
-          <h2><span class="num">2</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="buzz-along.html" style="--tile: #daefcf">
+        <img src="icons/tiles/buzz.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="sound-game.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <circle cx="40" cy="22" r="12" fill="#ffd25a"/>
-          <circle cx="160" cy="16" r="3" fill="#f2b705"/><circle cx="136" cy="34" r="2" fill="#f2b705"/><circle cx="178" cy="44" r="2.5" fill="#f2b705"/>
-          <g transform="translate(100,62) scale(.32)">
-            <path d="M -21 -8 Q -28 34 0 86 Q 28 34 21 -8 Z" fill="#ff9f1c"/>
-            <path d="M -40 -62 L -74 -12 L -74 6 L -40 -22 Z" fill="#ff6f59"/>
-            <path d="M 40 -62 L 74 -12 L 74 6 L 40 -22 Z" fill="#ff6f59"/>
-            <path d="M 0 -170 C 42 -132 48 -72 40 -22 L -40 -22 C -48 -72 -42 -132 0 -170 Z" fill="#f4f6fa" stroke="#c6d0dc" stroke-width="3"/>
-            <path d="M 0 -170 C 22 -152 32 -130 36 -112 L -36 -112 C -32 -130 -22 -152 0 -170 Z" fill="#ff6f59"/>
-            <circle cy="-76" r="18" fill="#8fd3ff" stroke="#1a7fe2" stroke-width="6"/>
-          </g>
-        </svg>
-        <div>
-          <h2><span class="num">3</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="sound-game.html" style="--tile: #cad8f0">
+        <img src="icons/tiles/long.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="right-note.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <g stroke="#15181d" stroke-width="1.6">
-            <line x1="20" x2="196" y1="18" y2="18"/><line x1="20" x2="196" y1="30" y2="30"/>
-            <line x1="20" x2="196" y1="42" y2="42"/><line x1="20" x2="196" y1="54" y2="54"/>
-            <line x1="20" x2="196" y1="66" y2="66"/>
-          </g>
-          <ellipse cx="78" cy="48" rx="13" ry="9.5" transform="rotate(-20 78 48)" fill="#1a7fe2"/>
-          <ellipse cx="150" cy="30" rx="13" ry="9.5" transform="rotate(-20 150 30)" fill="none" stroke="#15181d" stroke-width="4"/>
-          <path d="M 108 44 L 122 30 L 115 30 L 115 16 L 101 16 L 101 30 L 94 30 Z" fill="#1a7fe2"/>
-        </svg>
-        <div>
-          <h2><span class="num">4</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="right-note.html" style="--tile: #dcdefe">
+        <img src="icons/tiles/right.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="horn-ladder.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <line x1="70" x2="70" y1="2" y2="84" stroke="#9a6a35" stroke-width="5" stroke-linecap="round"/>
-          <line x1="130" x2="130" y1="2" y2="84" stroke="#9a6a35" stroke-width="5" stroke-linecap="round"/>
-          <g stroke="#c58b4a" stroke-width="4" stroke-linecap="round">
-            <line x1="70" x2="130" y1="14" y2="14"/><line x1="70" x2="130" y1="30" y2="30"/>
-            <line x1="70" x2="130" y1="44" y2="44"/><line x1="70" x2="130" y1="58" y2="58"/><line x1="70" x2="130" y1="76" y2="76"/>
-          </g>
-          <circle cx="100" cy="50" r="13" fill="#8a5a32"/>
-          <path d="M 91 51 C 91 45 96 44 100 47 C 104 44 109 45 109 51 C 109 58 104 60 100 60 C 96 60 91 58 91 51 Z" fill="#f0cfa6"/>
-          <circle cx="96" cy="50" r="1.8" fill="#15181d"/><circle cx="104" cy="50" r="1.8" fill="#15181d"/>
-          <path d="M 86 43 L 78 30 M 114 43 L 122 30" stroke="#8a5a32" stroke-width="5" stroke-linecap="round"/>
-          <path d="M 40 26 C 43 36 56 38 62 28 C 59 31 49 33 44 23 Z" fill="#ffd23f" stroke="#c99a00" stroke-width="1.5"/>
-        </svg>
-        <div>
-          <h2><span class="num">5</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="horn-ladder.html" style="--tile: #fddfbd">
+        <img src="icons/tiles/ladder.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="ninja.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <g stroke="#15181d" stroke-width="1.6">
-            <line x1="96" x2="196" y1="22" y2="22"/><line x1="96" x2="196" y1="32" y2="32"/>
-            <line x1="96" x2="196" y1="42" y2="42"/><line x1="96" x2="196" y1="52" y2="52"/>
-            <line x1="96" x2="196" y1="62" y2="62"/>
-          </g>
-          <circle cx="152" cy="42" r="21" fill="none" stroke="#1a7fe2" stroke-width="4" stroke-dasharray="100 132" transform="rotate(-90 152 42)"/>
-          <ellipse cx="152" cy="42" rx="10" ry="7.5" transform="rotate(-20 152 42)" fill="#1b8f58"/>
-          <line x1="128" y1="58" x2="176" y2="26" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-          <g transform="translate(46,82)">
-            <rect x="-11" y="-44" width="22" height="30" rx="9" fill="#2b3445"/>
-            <rect x="-11" y="-28" width="22" height="4" fill="#7a5cf0"/>
-            <rect x="-9" y="-16" width="7" height="16" rx="3" fill="#2b3445"/><rect x="2" y="-16" width="7" height="16" rx="3" fill="#2b3445"/>
-            <circle cx="0" cy="-56" r="13" fill="#2b3445"/>
-            <rect x="-10" y="-61" width="20" height="8" rx="4" fill="#f0cfa6"/>
-            <rect x="-13" y="-67" width="26" height="4" rx="2" fill="#7a5cf0"/>
-            <circle cx="-4" cy="-57" r="1.8" fill="#15181d"/><circle cx="4" cy="-57" r="1.8" fill="#15181d"/>
-            <line x1="-14" y1="-16" x2="14" y2="-68" stroke="#cfd8e3" stroke-width="2.5"/>
-          </g>
-        </svg>
-        <div>
-          <h2><span class="num">6</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="ninja.html" style="--tile: #dbddfd">
+        <img src="icons/tiles/ninja.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="songs.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <g stroke="#15181d" stroke-width="1.6">
-            <line x1="4" x2="196" y1="18" y2="18"/><line x1="4" x2="196" y1="28" y2="28"/>
-            <line x1="4" x2="196" y1="38" y2="38"/><line x1="4" x2="196" y1="48" y2="48"/>
-            <line x1="4" x2="196" y1="58" y2="58"/>
-            <line x1="100" x2="100" y1="18" y2="58"/>
-          </g>
-          <rect x="112" y="4" width="22" height="76" rx="6" fill="#1a7fe2" opacity=".15"/>
-          <text x="22" y="53" font-size="40" fill="#1b8f58" style="font-family: Bravura">&#xE1D5;</text>
-          <text x="52" y="48" font-size="40" fill="#1b8f58" style="font-family: Bravura">&#xE1D5;</text>
-          <text x="80" y="43" font-size="40" fill="#1b8f58" style="font-family: Bravura">&#xE1D5;</text>
-          <text x="114" y="38" font-size="40" fill="#1a7fe2" style="font-family: Bravura">&#xE1D6;</text>
-          <text x="148" y="43" font-size="40" fill="#15181d" style="font-family: Bravura">&#xE1D3;</text>
-        </svg>
-        <div>
-          <h2><span class="num">7</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="songs.html" style="--tile: #d2eddf">
+        <img src="icons/tiles/songs.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="note-names.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <g stroke="#15181d" stroke-width="1.6">
-            <line x1="4" x2="196" y1="18" y2="18"/>
-            <line x1="4" x2="196" y1="28" y2="28"/>
-            <line x1="4" x2="196" y1="38" y2="38"/>
-            <line x1="4" x2="196" y1="48" y2="48"/>
-            <line x1="4" x2="196" y1="58" y2="58"/>
-            <line x1="100" x2="130" y1="68" y2="68" stroke-width="2.2"/>
-          </g>
-          <text x="10" y="48" font-size="40" fill="#15181d" style="font-family: Bravura">&#xE050;</text>
-          <text x="106.5" y="68" font-size="40" fill="#1a7fe2" style="font-family: Bravura">&#xE0A2;</text>
-          <text x="166" y="80" font-size="22" font-weight="700" fill="#1a7fe2" text-anchor="middle" style="font-family: var(--display)">Do</text>
-        </svg>
-        <div>
-          <h2><span class="num">8</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="note-names.html" style="--tile: #fce6a3">
+        <img src="icons/tiles/names.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-      <a class="tool" href="clap-along.html">
-        <svg viewBox="0 0 200 84" aria-hidden="true">
-          <rect x="17" y="2" width="32" height="80" rx="5" fill="#ddebfa"/>
-          <line x1="4" x2="196" y1="60" y2="60" stroke="#15181d" stroke-width="2.5"/>
-          <line x1="4" x2="4" y1="42" y2="78" stroke="#15181d" stroke-width="2.5"/>
-          <line x1="196" x2="196" y1="42" y2="78" stroke="#15181d" stroke-width="3.5"/>
-          <g fill="#15181d">
-            <ellipse cx="33" cy="60" rx="9" ry="6.5" transform="rotate(-20 33 60)"/>
-            <ellipse cx="85" cy="60" rx="9" ry="6.5" transform="rotate(-20 85 60)"/>
-            <ellipse cx="119" cy="60" rx="9" ry="6.5" transform="rotate(-20 119 60)"/>
-            <ellipse cx="165" cy="60" rx="9" ry="6.5" transform="rotate(-20 165 60)"/>
-            <rect x="40.5" y="18" width="2.6" height="41"/>
-            <rect x="92.5" y="18" width="2.6" height="41"/>
-            <rect x="126.5" y="18" width="2.6" height="41"/>
-            <rect x="172.5" y="18" width="2.6" height="41"/>
-            <rect x="92.5" y="18" width="36.6" height="7"/>
-          </g>
-        </svg>
-        <div>
-          <h2><span class="num">9</span><span data-name></span></h2>
-          <p></p>
-          <div class="chips"></div>
-        </div>
+      <a class="tool" href="clap-along.html" style="--tile: #fcd9e9">
+        <img src="icons/tiles/clap.webp" alt="" width="480" height="480">
+        <span class="name" data-name></span>
       </a>
-    </div>
+    </nav>
   </main>
 
   <p class="install" data-t-html="install"></p>
+  <!-- privacy link: back with privacy.html once it goes live -->
 </div>
 
 <div class="setup" id="setup" hidden>
@@ -439,9 +282,9 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "התחלה", tryAgain: "לנסות שוב", startPrompt: "נלחץ ונתחיל להקשיב",
-    keepListening: "נלחץ ונמשיך להקשיב", onlyOnline: "המשחק עם המיקרופון עובד רק דרך הקישור באינטרנט",
-    micDenied: "אין אישור למיקרופון", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס בתוכנה אחרת",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
+    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
@@ -450,9 +293,9 @@ const COMMON = {
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
-    mic: "Microphone", test: "Test", start: "Start", tryAgain: "Try again", startPrompt: "Tap to start listening",
-    keepListening: "Tap to keep listening", onlyOnline: "The microphone games only work from the web link",
-    micDenied: "The microphone wasn't allowed", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
+    keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
+    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
@@ -478,46 +321,44 @@ const $ = id => document.getElementById(id);
 
 const TEXT = {
   he: {
-    tagline: "משחקים פשוטים לשיעורי כלי נשיפה למתחילים",
     change: "החלפת כלי או שפה", langName: "עברית",
-    games: "משחקים",
-    install: "<b>להתקנה כאפליקציה:</b> באייפון ובאייפד: שיתוף ← <b>הוספה למסך הבית</b>. באנדרואיד: ⋮ ← <b>הוספה למסך הבית</b>. אחר כך עובד גם בלי אינטרנט.",
+    games: "משחקים", privacy: "פרטיות",
+    install: "<b>להתקנה:</b> שיתוף ← הוספה למסך הבית",
     instTitle: "על מה אתם מנגנים?", soon: "בקרוב", backLang: "‹ שפה",
     soonAsk: n => `${n} בדרך!`, soonMail: "רוצים שנודיע לכם? כתבו לנו",
     soonSubject: n => `טונבי: ${n}`, soonBody: n => `שלום, אשמח לשמוע כשיהיה אפשר לנגן בטונבי על ${n}.`,
     sax: "סקסופון", flute: "חליל צד", clarinet: "קלרינט", recorder: "חלילית",
-    mic: "🎤 מיקרופון", tileDo: "דו",
-    t_ramzor: "רמזור", d_ramzor: "אדום עוצרים, צהוב נושמים, ירוק מנגנים.", c_ramzor: [],
-    t_breath: "נשימה", d_breath: "נושפים לאט, והבועה גדלה.", c_breath: [],
-    t_buzz: "זמזום", d_buzz: "מזמזמים בפומית, והדבורה עפה.", c_buzz: ["@mic"],
-    t_long: "צליל ארוך", d_long: "צליל ארוך מטיס חללית לחלל.", c_long: ["@mic"],
-    t_right: "צליל נכון", d_right: "מנגנים את התו שעל החמשה.", c_right: ["@mic"],
-    t_ladder: "סולם", d_ladder: "הקוף מטפס לצליל שמנגנים.", c_ladder: ["@mic"],
-    t_ninja: "נינג'ה", d_ninja: "מנגנים את התו, והנינג'ה חותך.", c_ninja: ["@mic"],
-    t_songs: "שירים", d_songs: "שירים שלמים, גם עם להקה.", c_songs: ["@mic"],
-    t_names: "תווים", d_names: "מכירים את התווים בשמם.", c_names: [],
-    t_clap: "קצב", d_clap: "שומעים קצב ומוחאים בחזרה.", c_clap: []
+    tileDo: "דו", wordmark: ["טוֹנְ", "בִּי"],   // with niqqud: otherwise it is not clear how to read it
+    t_ramzor: "רמזור",
+    t_breath: "נשימה",
+    t_buzz: "זמזום",
+    t_long: "צליל ארוך",
+    t_right: "צליל נכון",
+    t_ladder: "סולם",
+    t_ninja: "נינג'ה",
+    t_songs: "שירים",
+    t_names: "תווים",
+    t_clap: "קצב"
   },
   en: {
-    tagline: "Simple games for beginner brass lessons",
     change: "Change instrument or language", langName: "English",
-    games: "Games",
-    install: "<b>Install as an app:</b> iPhone and iPad: Share → <b>Add to Home Screen</b>. Android: ⋮ → <b>Add to Home Screen</b>. Then it works offline too.",
+    games: "Games", privacy: "Privacy",
+    install: "<b>Install:</b> Share → Add to Home Screen",
     instTitle: "What do you play?", soon: "Coming soon", backLang: "‹ Language",
     soonAsk: n => `${n} is on its way!`, soonMail: "Want us to tell you? Email us",
     soonSubject: n => `Tonebee: ${n}`, soonBody: n => `Hello, please let me know when I can play Tonebee on the ${n.toLowerCase()}.`,
     sax: "Saxophone", flute: "Flute", clarinet: "Clarinet", recorder: "Recorder",
-    mic: "🎤 Microphone", tileDo: "C",
-    t_ramzor: "Traffic Light", d_ramzor: "Red stop, yellow breathe, green play.", c_ramzor: [],
-    t_breath: "Breathing", d_breath: "Blow out slowly; the bubble grows.", c_breath: [],
-    t_buzz: "Buzzing", d_buzz: "Buzz on the mouthpiece; the bee flies.", c_buzz: ["@mic"],
-    t_long: "Long Note", d_long: "One long note flies a rocket to space.", c_long: ["@mic"],
-    t_right: "Right Note", d_right: "Play the note on the staff.", c_right: ["@mic"],
-    t_ladder: "Ladder", d_ladder: "The monkey climbs to your note.", c_ladder: ["@mic"],
-    t_ninja: "Note Ninja", d_ninja: "Play the note; the ninja slices it.", c_ninja: ["@mic"],
-    t_songs: "Songs", d_songs: "Whole songs, with a band too.", c_songs: ["@mic"],
-    t_names: "Note Names", d_names: "Meet the notes by name.", c_names: [],
-    t_clap: "Clap-Along", d_clap: "Hear a rhythm, clap it back.", c_clap: []
+    tileDo: "C", wordmark: ["tone", "bee"],
+    t_ramzor: "Traffic Light",
+    t_breath: "Breathing",
+    t_buzz: "Buzzing",
+    t_long: "Long Note",
+    t_right: "Right Note",
+    t_ladder: "Ladder",
+    t_ninja: "Note Ninja",
+    t_songs: "Songs",
+    t_names: "Note Names",
+    t_clap: "Clap-Along"
   }
 };
 
@@ -535,19 +376,12 @@ const TILES = { "ramzor.html": "ramzor", "balloon-breath.html": "breath", "buzz-
 
 function fillTiles() {
   document.querySelectorAll(".tool").forEach(a => {
-    const k = TILES[a.getAttribute("href")];
-    a.querySelector("[data-name]").textContent = T("t_" + k);
-    a.querySelector("p").textContent = T("d_" + k);
+    a.querySelector("[data-name]").textContent = T("t_" + TILES[a.getAttribute("href")]);
     a.querySelectorAll("svg text").forEach(t => { if (t.textContent.trim() === "Do" || t.dataset.do) { t.dataset.do = 1; t.textContent = T("tileDo"); } });
-    const chips = a.querySelector(".chips");
-    chips.textContent = "";
-    T("c_" + k).forEach(c => {
-      const s = document.createElement("span");
-      s.className = "chip";
-      s.textContent = c[0] === "@" ? T(c.slice(1)) : c;
-      chips.appendChild(s);
-    });
   });
+  const [tone, bee] = T("wordmark");
+  $("wordmark").firstElementChild.textContent = tone;
+  $("wordmark").lastElementChild.textContent = bee;
 }
 
 function fillMe() {
@@ -555,7 +389,6 @@ function fillMe() {
   try { const s = localStorage.getItem("brass-inst"); if (INSTRUMENTS.some(i => i.id === s && i.ready)) inst = s; } catch (_) {}
   $("meIcon").src = instPic(inst);
   $("meInst").textContent = instName(inst);
-  $("meLang").textContent = T("langName");
 }
 
 /* ---------- Setup: the language, then the instrument ---------- */

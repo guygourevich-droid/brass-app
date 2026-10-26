@@ -9,3 +9,5 @@ wrangler.jsonc
 node_modules
 .wrangler
 worker.js
+# not live until the operator name and address are in (Guy); remove this line then
+privacy.html
