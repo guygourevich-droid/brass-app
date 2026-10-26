@@ -1,6 +1,6 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "tonebee-v47";
+const CACHE = "tonebee-v48";
 const FILES = [
   "./",
   "index.html",
@@ -78,7 +78,16 @@ const FILES = [
   "icons/sprites/bee.webp",
   "icons/sprites/monkey-head.webp",
   "icons/sprites/banana.webp",
-  "icons/sprites/ninja.webp"
+  "icons/sprites/ninja.webp",
+  "icons/sprites/plane.webp",
+  "icons/sprites/cloud.webp",
+  "icons/sprites/house.webp",
+  "icons/sprites/tree.webp",
+  "icons/sprites/flower-0.webp",
+  "icons/sprites/flower-1.webp",
+  "icons/sprites/flower-2.webp",
+  "icons/sprites/flower-3.webp",
+  "icons/sprites/flower-4.webp"
 ];
 
 self.addEventListener("install", event => {

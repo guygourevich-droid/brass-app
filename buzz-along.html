@@ -713,8 +713,8 @@ function flower(parent, x, baseY, topY, colour, scale = 1) {
   const stem = el("path", { d: "", fill: "none", stroke: "#2f9e66", "stroke-width": 8 * scale, "stroke-linecap": "round" }, g);
   const leaf = el("path", { d: "", fill: "#3fae5c" }, g);
   const head = el("g", {}, g);
-  for (let i = 0; i < 8; i++) el("ellipse", { cx: 0, cy: -26, rx: 13, ry: 24, transform: `rotate(${i * 45})`, fill: colour }, head);
-  el("circle", { r: 16, fill: "#f2a900" }, head);
+  // Flower heads: Gemini-drawn in the tiles' house style, one per PETALS colour (icons/sprites/flower-<i>.webp)
+  el("image", { href: `icons/sprites/flower-${Math.max(0, PETALS.indexOf(colour))}.webp`, x: -48, y: -51, width: 96, height: 102 }, head);
   const f = { g, stem, leaf, head, x, baseY, topY, scale, open: 1 };
   placeFlower(f, topY);
   return f;

@@ -437,8 +437,7 @@ const TEXT = {
     mode: "מצב", echo: "הד", quiz: "חידון שמיעה", level: "שלב", click: "מטרונום", counts: "ספירה", fullBtn: "⛶ מסך מלא",
     keys: "<kbd>Space</kbd> ניגון / הבא &nbsp; <kbd>R</kbd> שוב &nbsp; <kbd>F</kbd> מסך מלא &nbsp; <kbd>Esc</kbd> השהיה",
     levelN: n => `שלב ${n}`,
-    levels: ["רבעים והפסקות רבע", "חצאים, חצאים עם נקודה ושלמים", "שמיניות", "שמינית בודדת והפסקת שמינית",
-      "רבע עם נקודה ושמינית", "סינקופה", "משקל 3/4", "3/4 עם רבע עם נקודה וסינקופה", "שש־עשריות (בונוס)"],
+    levels: ["רבעים והפסקות רבע", "שתי תיבות", "שמיניות", "משקל 3/4", "שמינית והפסקת שמינית", "הפסקת שמינית ושמינית", "רבע עם נקודה ושמינית", "סינקופה", "שש־עשריות"],
     letters: ["א", "ב", "ג"], answer: l => `תשובה ${l}`,
     // Counting under the notes: beat numbers, "ו" between beats (1 ו 2 ו); semiquaver steps get a quiet dot.
     and: "ו", e: "·", a: "·",
@@ -453,8 +452,7 @@ const TEXT = {
     mode: "Mode", echo: "Echo", quiz: "Ear quiz", level: "Level", click: "Click", counts: "Counts", fullBtn: "⛶ Full screen",
     keys: "<kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen &nbsp; <kbd>Esc</kbd> Pause",
     levelN: n => `Level ${n}`,
-    levels: ["Quarter notes & quarter rests", "Half notes, dotted half notes & whole notes", "Eighth notes", "Single eighth notes & eighth rests",
-      "Dotted quarter + eighth note", "Syncopation", "3/4 time", "3/4 with dotted quarters & syncopation", "Sixteenth notes (bonus)"],
+    levels: ["Quarter notes & quarter rests", "Two measures", "Eighth notes", "3/4 time", "Eighth + eighth rest", "Off-beat eighths", "Dotted quarter + eighth", "Syncopation", "Sixteenth notes"],
     letters: ["A", "B", "C"], answer: l => `Answer ${l}`,
     and: "&", e: "e", a: "a",
     play: "▶ Play", next: "Next ▶", again: "↻ Again", replay: "↻ Replay",
@@ -509,25 +507,19 @@ const STARTS = {
   3: { h: [0, 4], hr: [], dh: [0], w: [], dqe: [0, 4], syn: [0, 4] }
 };
 
+// Clapping can't hold a sound, so no half, dotted-half or whole notes (Guy, 2026-10-26). One new idea per level
+// (progression checked with Gemini): quarters, two measures, eighths, 3/4, eighth + rest, off-beat eighth, dotted quarter,
+// syncopation, sixteenths.
 const LEVELS = [
-  { name: "Quarter notes & quarter rests", beats: 4, bars: 1, bpm: 80,
-    pool: { q: 6, qr: 2.2 }, need: ["qr"] },
-  { name: "Half notes, dotted half notes & whole notes", beats: 4, bars: 1, bpm: 80,
-    pool: { q: 5, qr: 1.6, h: 4, hr: 1.4, dh: 1.8, w: 0.4 }, need: ["h", "hr", "dh", "w"] },
-  { name: "Eighth notes", beats: 4, bars: 1, bpm: 80,
-    pool: { q: 4, qr: 1.4, h: 1.8, hr: 0.6, dh: 0.6, ee: 5 }, need: ["ee"] },
-  { name: "Single eighth notes & eighth rests", beats: 4, bars: 1, bpm: 80,
-    pool: { q: 3.5, qr: 1, h: 1.4, hr: 0.4, dh: 0.4, ee: 3, re: 3, er: 1.4 }, need: ["re", "er"] },
-  { name: "Dotted quarter + eighth note", beats: 4, bars: 2, bpm: 80,
-    pool: { q: 3, qr: 1, h: 1.4, hr: 0.4, dh: 0.4, ee: 3, re: 1.2, er: 0.6, dqe: 4 }, need: ["dqe"] },
-  { name: "Syncopation", beats: 4, bars: 2, bpm: 80,
-    pool: { q: 3, qr: 1, h: 1, hr: 0.3, ee: 3, re: 1, er: 0.5, dqe: 2, syn: 4 }, need: ["syn"] },
-  { name: "3/4 time", beats: 3, bars: 1, bpm: 80,
-    pool: { q: 4, qr: 1.2, h: 2.5, dh: 1.2, ee: 3, re: 1.2, er: 0.6 }, need: ["h", "dh", "ee", "re", "er"] },
-  { name: "3/4 with dotted quarters & syncopation", beats: 3, bars: 2, bpm: 80,
-    pool: { q: 3, qr: 1, h: 1.5, dh: 0.6, ee: 3, re: 1, er: 0.5, dqe: 3, syn: 3 }, need: ["dqe", "syn"] },
-  { name: "Sixteenth notes (bonus)", beats: 4, bars: 2, bpm: 60,
-    pool: { q: 3, qr: 1, h: 1.2, ee: 3, re: 0.8, dqe: 1, ssss: 4 }, need: ["ssss"] }
+  { name: "Quarter notes & quarter rests", beats: 4, bars: 1, bpm: 85, pool: { q: 6, qr: 2.2 }, need: ["qr"] },
+  { name: "Two measures", beats: 4, bars: 2, bpm: 90, pool: { q: 6, qr: 2.2 }, need: ["qr"] },
+  { name: "Eighth notes", beats: 4, bars: 2, bpm: 80, pool: { q: 4, qr: 1.4, ee: 5 }, need: ["ee"] },
+  { name: "3/4 time", beats: 3, bars: 2, bpm: 90, pool: { q: 4, qr: 1.2, ee: 3 }, need: [] },
+  { name: "Eighth + eighth rest", beats: 4, bars: 2, bpm: 80, pool: { q: 3.5, qr: 1, ee: 3, er: 3 }, need: ["er"] },
+  { name: "Off-beat eighths", beats: 4, bars: 2, bpm: 75, pool: { q: 3, qr: 1, ee: 3, er: 1, re: 3 }, need: ["re"] },
+  { name: "Dotted quarter + eighth", beats: 4, bars: 2, bpm: 75, pool: { q: 3, qr: 1, ee: 3, re: 1, er: 0.6, dqe: 4 }, need: ["dqe"] },
+  { name: "Syncopation", beats: 4, bars: 2, bpm: 80, pool: { q: 3, qr: 1, ee: 3, re: 1, er: 0.5, dqe: 1.5, syn: 4 }, need: ["syn"] },
+  { name: "Sixteenth notes", beats: 4, bars: 2, bpm: 60, pool: { q: 3, qr: 1, ee: 3, re: 0.8, dqe: 1, ssss: 4 }, need: ["ssss"] }
 ];
 
 function allowedAt(id, pos, beats) {
@@ -1052,7 +1044,7 @@ function finishRound() {
   state.round = null;
   clearHighlight();
   setPhase("done");
-  if (state.mode === "echo") { tbTrack("round_end", { mode: "echo", level: state.level }); setCue("👍", T("nice"), true); }
+  if (state.mode === "echo") { tbTrack("round_end", { mode: "echo", level: state.li + 1 }); setCue("👍", T("nice"), true); }
   else if (state.quiz.picked === null) setCue("🤔", T("whichOne"), true);
   else setCue(...state.quiz.result, false);
 }
@@ -1061,7 +1053,7 @@ function answer(i) {
   const q = state.quiz;
   if (state.mode !== "quiz" || !q || !q.heard || q.picked !== null || i < 0 || i > 2) return;
   q.picked = i;
-  tbTrack("answer", { correct: i === q.answer, level: state.level });
+  tbTrack("answer", { correct: i === q.answer, level: state.li + 1 });
   q.options.forEach((_, j) => { $("qrow" + j).disabled = true; });
   $("qrow" + q.answer).classList.add("correct");
   if (i === q.answer) {

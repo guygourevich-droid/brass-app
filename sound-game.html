@@ -702,16 +702,12 @@ function buildScene() {
 
 function house(p, x, y, s = 1) {
   const g = el("g", { transform: `translate(${x} ${y}) scale(${s})` }, p);
-  el("rect", { x: -40, y: -60, width: 80, height: 60, fill: "#fff1dc" }, g);
-  el("path", { d: "M -50 -58 L 0 -100 L 50 -58 Z", fill: "#e2643a" }, g);
-  el("rect", { x: -10, y: -34, width: 20, height: 34, fill: "#a0663b" }, g);
-  el("rect", { x: 16, y: -48, width: 16, height: 14, fill: "#8fd3ff" }, g);
+  // Gemini-drawn in the tiles' house style (ops/brand/sprites/), standing on y = 0
+  el("image", { href: "icons/sprites/house.webp", x: -52, y: -92, width: 104, height: 92 }, g);
 }
 function tree(p, x, y, s) {
   const g = el("g", { transform: `translate(${x} ${y}) scale(${s})` }, p);
-  el("rect", { x: -7, y: -40, width: 14, height: 40, fill: "#8a5a2b" }, g);
-  el("circle", { cy: -64, r: 34, fill: "#3f9e4d" }, g);
-  el("circle", { cx: -20, cy: -48, r: 22, fill: "#4fb35c" }, g);
+  el("image", { href: "icons/sprites/tree.webp", x: -47, y: -104, width: 95, height: 104 }, g);
 }
 
 // Everything on the way. Places (sun, moon, planets, stars) have a face that smiles once passed.
@@ -761,13 +757,10 @@ function thing(parent, kind, x, y, scale = 1, variant = 0) {
     r.wing = el("path", { d: "M -6 -4 C 0 -40 24 -44 30 -34 C 18 -26 12 -14 6 -2 Z", fill: "#3b434e" }, g);
   } else if (kind === "plane" || kind === "plane-far") {
     if (kind === "plane-far") g.setAttribute("transform", `translate(${x} ${y}) scale(.6)`);
-    el("path", { d: "M -90 0 C -90 -14 -70 -18 -40 -18 L 70 -18 C 90 -18 100 -8 100 0 C 100 8 90 12 70 12 L -70 12 C -86 12 -90 8 -90 0 Z", fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3 }, g);
-    el("path", { d: "M -10 -2 L -40 40 L -20 40 L 30 -2 Z", fill: "#1a7fe2" }, g);
-    el("path", { d: "M -84 -10 L -100 -46 L -80 -46 L -60 -14 Z", fill: "#ff6f59" }, g);
-    for (let i = 0; i < 5; i++) el("circle", { cx: -30 + i * 20, cy: -6, r: 5, fill: "#8fd3ff" }, g);
+    el("image", { href: "icons/sprites/plane.webp", x: -100, y: -62, width: 200, height: 117 }, g);
   } else if (kind === "cloud" || kind === "cloud-high") {
-    const c = el("g", { opacity: kind === "cloud" ? .95 : .55, transform: kind === "cloud" ? "scale(1.3)" : "scale(1.5 .7)" }, g);
-    [[-50, 8, 34], [-10, -10, 44], [40, 6, 34], [0, 18, 36]].forEach(([cx, cy, rr]) => el("circle", { cx, cy, r: rr, fill: "#fff" }, c));
+    const c = el("g", { opacity: kind === "cloud" ? .95 : .55, transform: kind === "cloud" ? "scale(1.3)" : "scale(1.1)" }, g);
+    el("image", { href: "icons/sprites/cloud.webp", x: -82, y: -50, width: 164, height: 100 }, c);
   } else if (kind === "astronaut") {
     r.spin = el("g", {}, g);
     el("rect", { x: -26, y: -10, width: 52, height: 60, rx: 18, fill: "#f4f6fa", stroke: "#c6d0dc", "stroke-width": 3 }, r.spin);
