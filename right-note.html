@@ -513,7 +513,7 @@ async function startMic() {
   $("micDot").classList.add("on");
   $("micText").textContent = T("listening");
   micStream.getAudioTracks().forEach(t => {
-    t.addEventListener("ended", () => fail(T("micGone")));
+    t.addEventListener("ended", () => needFresh(T("micGone")));
     t.addEventListener("mute", () => { $("micText").textContent = T("muted"); });
     t.addEventListener("unmute", () => { $("micText").textContent = T("listening"); });
   });
@@ -550,7 +550,24 @@ function fail(message) {
 
 function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
 addEventListener("pagehide", stopMic);
-document.addEventListener("visibilitychange", () => { if (document.hidden) stopMic(); });
+// iPhone/iPad: back from the background, or the mic cut off by iOS (a call, Siri, another app, the lock screen), WebKit can
+// keep the audio engine deaf until the page is opened again, which in the installed app meant closing it. So the way back
+// is a fresh page: one tap on the button, settings kept (they live in localStorage).
+let fresh = false;
+function needFresh(message) {
+  if (micStream) stopMic();
+  fresh = true;
+  fail(message);
+  $("startBtn").textContent = T("resume");
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) needFresh(T("keepListening")); });
+// "interrupted" is iOS's own state (a pause uses "suspended"): if a tap does not wake it, it is stuck.
+document.addEventListener("pointerup", () => {
+  if (!state.listening || !ctx || ctx.state !== "interrupted") return;
+  setTimeout(() => { if (state.listening && ctx && ctx.state === "interrupted") needFresh(T("micFailed")); }, 1500);
+}, true);
+// Runs before the button's other handlers (capture on the target).
+$("startBtn").addEventListener("click", e => { if (fresh) { e.stopImmediatePropagation(); location.reload(); } }, true);
 
 function playReference() {
   const c = ensureCtx(), t = c.currentTime + 0.05, hz = concertHz(state.target);
@@ -594,7 +611,7 @@ function analyse() {
   // A real microphone in a room is never exactly silent: say so instead of waiting forever.
   if (state.rms === 0 && micStream) {
     if (!state.zeroSince) state.zeroSince = performance.now();
-    else if (performance.now() - state.zeroSince > 3000) $("micText").textContent = T("noMicSound");
+    else if (performance.now() - state.zeroSince > 3000) needFresh(T("noMicSound"));
   } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = T("listening"); }
   state.noiseFloor = state.rms < state.noiseFloor ? state.rms * 0.2 + state.noiseFloor * 0.8 : state.noiseFloor * 0.999 + state.rms * 0.001;
   const gate = Math.max(state.noiseFloor * Math.pow(10, 12 / 20), 0.0015);
