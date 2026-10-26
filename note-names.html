@@ -319,15 +319,15 @@ const LANG = (() => {
 })();
 const COMMON = {
   he: {
-    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
     mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "מסובבים את הטלפון לרוחב"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
@@ -338,7 +338,7 @@ const COMMON = {
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "Turn your phone sideways"
   }
 };
 const T = (key, ...args) => {
@@ -357,14 +357,14 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    howTo: "איך משחקים", settings: "הגדרות (S)", pageTitle: "תווים · טונבי", controls: "פקדי המורה", back: "חזרה ל-טונבי", tool: "/ תווים", mode: "מצב",
+    howTo: "איך משחקים", settings: "הגדרות (S)", pageTitle: "תווים · טונבי", controls: "שליטה למורה", back: "חזרה ל-טונבי", tool: "/ תווים", mode: "מצב",
     learn: "מכירים את התווים", quiz: "איך קוראים לו?", level: "שלב", noteNames: "שמות התווים", sound: "צליל", fullscreenBtn: "⛶ מסך מלא",
     answers: "תשובות", levelN: n => `שלב ${n}`, levelTip: n => `שלב ${n}: ${n + 1} תווים`, levelNotes: list => `התווים בשלב הזה: ${list}`,
     playIt: name => `${name}: להשמיע`, isNew: "חדש", whichNote: "איזה תו זה?",
     tipFirstTrombone: f => `<b>${f}</b> יושב על הקו השני מלמטה.`, tipFirst: f => `<b>${f}</b> יושב על קו קטן משלו מתחת לחמשה.`,
     tips: ["<b>קו או רווח?</b> מסתכלים טוב לפני שעונים.", "<b>מוצאים תו שמכירים,</b> ואז עולים או יורדים.", "<b>אומרים ביחד,</b> ואז בודקים את התשובה."],
     score: (s, b) => `ברצף: <b>${s}</b> · שיא: ${b}`, playThem: "▶ להשמיע", next: "הבא ◀", nameIt: "איך קוראים לו? ◀", hearIt: "🔊 לשמוע",
-    info: { trumpet: "חצוצרה בסי במול · תווים כתובים במפתח סול · הצליל נשמע טון אחד נמוך יותר", trombone: "טרומבון · מפתח פה · נשמע בדיוק כמו שכתוב", horn: "קרן בפה · תווים כתובים במפתח סול · הצליל נשמע קווינטה נמוך יותר" },
+    info: { trumpet: "חצוצרה בסי במול · מפתח סול · נשמעת טון שלם נמוך מהכתוב", trombone: "טרומבון · מפתח פָה · נשמע בדיוק כמו שכתוב", horn: "קרן בפָה · מפתח סול · נשמעת קווינטה נמוך מהכתוב" },
     names: ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"]
   },
   en: {
@@ -375,7 +375,7 @@ const TEXT = {
     tipFirstTrombone: f => `<b>${f}</b> sits on the second line from the bottom.`, tipFirst: f => `<b>${f}</b> sits on its own little line below the staff.`,
     tips: ["<b>Line or space?</b> Look carefully before you answer.", "<b>Find a note you know,</b> then step up or down.", "<b>Say it together</b>, then check the answer."],
     score: (s, b) => `In a row: <b>${s}</b> · Best: ${b}`, playThem: "▶ Play them", next: "Next ▶", nameIt: "Name it ▶", hearIt: "🔊 Hear it",
-    info: { trumpet: "Trumpet in B♭ · written notes, treble clef · the sound is concert pitch, a tone lower", trombone: "Trombone · bass clef · concert pitch, no transposition", horn: "Horn in F · written notes, treble clef · the sound is concert pitch, a 5th lower" },
+    info: { trumpet: "Trumpet in B♭ · treble clef · sounds a whole step lower than written", trombone: "Trombone · bass clef · sounds as written", horn: "Horn in F · treble clef · sounds a fifth lower than written" },
     names: ["C", "D", "E", "F", "G", "A", "B"]
   }
 };
@@ -406,16 +406,16 @@ const TREBLE_FIRST_NOTES = [note(0, 4), note(1, 4), note(2, 4), note(3, 4), note
 const INSTRUMENTS = {
   trumpet: {
     label: "Trumpet", clef: "treble", transpose: -2, notes: TREBLE_FIRST_NOTES,
-    info: "Trumpet in B♭ · written notes, treble clef · the sound is concert pitch, a tone lower"
+    info: "Trumpet in B♭ · treble clef · sounds a whole step lower than written"
   },
   trombone: {
     label: "Trombone", clef: "bass", transpose: 0,
     notes: [note(6, 2, -1), note(0, 3), note(1, 3), note(2, 3, -1), note(3, 3), note(4, 3), note(5, 3), note(6, 3, -1)],
-    info: "Trombone · bass clef · concert pitch, no transposition"
+    info: "Trombone · bass clef · sounds as written"
   },
   horn: {
     label: "Horn", clef: "treble", transpose: -7, notes: TREBLE_FIRST_NOTES,
-    info: "Horn in F · written notes, treble clef · the sound is concert pitch, a 5th lower"
+    info: "Horn in F · treble clef · sounds a fifth lower than written"
   }
 };
 const LEVEL_COUNT = 7;

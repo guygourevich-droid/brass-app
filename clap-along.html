@@ -395,15 +395,15 @@ const LANG = (() => {
 })();
 const COMMON = {
   he: {
-    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
     mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "מסובבים את הטלפון לרוחב"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
@@ -414,7 +414,7 @@ const COMMON = {
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "Turn your phone sideways"
   }
 };
 const T = (key, ...args) => {
@@ -453,15 +453,15 @@ const TEXT = {
     mode: "Mode", echo: "Echo", quiz: "Ear quiz", level: "Level", click: "Click", counts: "Counts", fullBtn: "⛶ Full screen",
     keys: "<kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen &nbsp; <kbd>Esc</kbd> Pause",
     levelN: n => `Level ${n}`,
-    levels: ["Crotchets & crotchet rests", "Minims, dotted minims & semibreves", "Quavers", "Single quavers & quaver rests",
-      "Dotted crotchet + quaver", "Syncopation", "3/4 time", "3/4 with dotted crotchets & syncopation", "Semiquavers (bonus)"],
+    levels: ["Quarter notes & quarter rests", "Half notes, dotted half notes & whole notes", "Eighth notes", "Single eighth notes & eighth rests",
+      "Dotted quarter + eighth note", "Syncopation", "3/4 time", "3/4 with dotted quarters & syncopation", "Sixteenth notes (bonus)"],
     letters: ["A", "B", "C"], answer: l => `Answer ${l}`,
     and: "&", e: "e", a: "a",
     play: "▶ Play", next: "Next ▶", again: "↻ Again", replay: "↻ Replay",
     pressPlay: "Press Play", pressPlayQuiz: "Press Play, then pick A, B or C",
     getReady: "Get ready…", listen: "Listen", clapBack: "Clap it back!", nice: "Nice! Again, or Next?",
     whichOne: "Which rhythm was it? A, B or C", yes: l => `Yes! It was ${l}.`, itWas: l => `It was ${l}. Press Replay to hear it again.`,
-    stopped: "Stopped. Again, or Next?", rhythm: (bars, beats) => `Rhythm, ${bars} bar${bars > 1 ? "s" : ""} of ${beats}/4`
+    stopped: "Stopped. Again, or Next?", rhythm: (bars, beats) => `Rhythm, ${bars} measure${bars > 1 ? "s" : ""} of ${beats}/4`
   }
 };
 applyText();
@@ -510,23 +510,23 @@ const STARTS = {
 };
 
 const LEVELS = [
-  { name: "Crotchets & crotchet rests", beats: 4, bars: 1, bpm: 80,
+  { name: "Quarter notes & quarter rests", beats: 4, bars: 1, bpm: 80,
     pool: { q: 6, qr: 2.2 }, need: ["qr"] },
-  { name: "Minims, dotted minims & semibreves", beats: 4, bars: 1, bpm: 80,
+  { name: "Half notes, dotted half notes & whole notes", beats: 4, bars: 1, bpm: 80,
     pool: { q: 5, qr: 1.6, h: 4, hr: 1.4, dh: 1.8, w: 0.4 }, need: ["h", "hr", "dh", "w"] },
-  { name: "Quavers", beats: 4, bars: 1, bpm: 80,
+  { name: "Eighth notes", beats: 4, bars: 1, bpm: 80,
     pool: { q: 4, qr: 1.4, h: 1.8, hr: 0.6, dh: 0.6, ee: 5 }, need: ["ee"] },
-  { name: "Single quavers & quaver rests", beats: 4, bars: 1, bpm: 80,
+  { name: "Single eighth notes & eighth rests", beats: 4, bars: 1, bpm: 80,
     pool: { q: 3.5, qr: 1, h: 1.4, hr: 0.4, dh: 0.4, ee: 3, re: 3, er: 1.4 }, need: ["re", "er"] },
-  { name: "Dotted crotchet + quaver", beats: 4, bars: 2, bpm: 80,
+  { name: "Dotted quarter + eighth note", beats: 4, bars: 2, bpm: 80,
     pool: { q: 3, qr: 1, h: 1.4, hr: 0.4, dh: 0.4, ee: 3, re: 1.2, er: 0.6, dqe: 4 }, need: ["dqe"] },
   { name: "Syncopation", beats: 4, bars: 2, bpm: 80,
     pool: { q: 3, qr: 1, h: 1, hr: 0.3, ee: 3, re: 1, er: 0.5, dqe: 2, syn: 4 }, need: ["syn"] },
   { name: "3/4 time", beats: 3, bars: 1, bpm: 80,
     pool: { q: 4, qr: 1.2, h: 2.5, dh: 1.2, ee: 3, re: 1.2, er: 0.6 }, need: ["h", "dh", "ee", "re", "er"] },
-  { name: "3/4 with dotted crotchets & syncopation", beats: 3, bars: 2, bpm: 80,
+  { name: "3/4 with dotted quarters & syncopation", beats: 3, bars: 2, bpm: 80,
     pool: { q: 3, qr: 1, h: 1.5, dh: 0.6, ee: 3, re: 1, er: 0.5, dqe: 3, syn: 3 }, need: ["dqe", "syn"] },
-  { name: "Semiquavers (bonus)", beats: 4, bars: 2, bpm: 60,
+  { name: "Sixteenth notes (bonus)", beats: 4, bars: 2, bpm: 60,
     pool: { q: 3, qr: 1, h: 1.2, ee: 3, re: 0.8, dqe: 1, ssss: 4 }, need: ["ssss"] }
 ];
 

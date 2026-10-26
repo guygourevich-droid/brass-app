@@ -107,7 +107,7 @@
   .foot a { color: var(--muted); display: inline-block; padding-block: 10px; }
   .foot a:hover { color: var(--navy); }
   @media (max-width: 1000px) { .tools { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  @media (max-width: 760px) { .tools { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 760px), (max-width: 1000px) and (orientation: portrait) { .tools { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
   /* First visit (and "change"): the language, then the instrument. */
   .setup { position: fixed; inset: 0; z-index: 10; background: linear-gradient(180deg, #e8f4ff 0%, #ffffff 60%); overflow-y: auto; display: flex; padding: 24px 16px; }
@@ -281,10 +281,10 @@ const LANG = (() => {
 })();
 const COMMON = {
   he: {
-    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
     mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",

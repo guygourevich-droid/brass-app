@@ -320,15 +320,15 @@ const LANG = (() => {
 })();
 const COMMON = {
   he: {
-    listening: "מקשיב", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
+    listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
     mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "צריך לאשר את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "📱 לרוחב זה גדול יותר"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "מסובבים את הטלפון לרוחב"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
@@ -339,7 +339,7 @@ const COMMON = {
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "📱 Turn sideways for a bigger picture"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "Turn your phone sideways"
   }
 };
 const T = (key, ...args) => {
@@ -362,7 +362,7 @@ const TEXT = {
     whichSong: "איזה שיר?", needNotes: "כדי לנגן שיר צריך עוד צלילים", chooseNotes: "⚙ לבחור צלילים", settingsLabel: "הגדרות",
     whichNotes: "אילו צלילים?", sameAs: "אותה בחירה כמו בצליל נכון ובנינג'ה. מוצגים רק שירים שמשתמשים בצלילים האלה.",
     noteName: "שם הצליל", repeated: "צליל חוזר", close: "סגירה", mode: "מצב", follow: "לומדים", inTime: "בקצב", tempo: "קצב",
-    backing: "ליווי", band: "🥁 להקה", bandTip: "תופים, בס ואקורדים", guide: "🎺 עם המנגינה", guideTip: "המנגינה מתנגנת יחד עם הילד (בקצב)",
+    backing: "ליווי", band: "🥁 להקה", bandTip: "תופים, בס ואקורדים", guide: "🎺 עם המנגינה", guideTip: "המנגינה מתנגנת יחד איתכם (בקצב)",
     bars: "תיבות", fromBar: "מתיבה", toBar: "עד תיבה", listenTip: "להקשיב לשיר (H)", listen: "🎧 להקשיב", play: "▶ מנגנים",
     keys: "<kbd>Space</kbd> ניגון · <kbd>H</kbd> להקשיב · <kbd>M</kbd> מצב · <kbd>Esc</kbd> השהיה",
     wellDone: "כל הכבוד!", perfect: "מושלם!", veryGood: "יפה מאוד!", lockedNote: "שירים עם 🔒 צריכים עוד צלילים: מסמנים אותם בהגדרות ⚙",
@@ -374,8 +374,8 @@ const TEXT = {
     whichSong: "Which song?", needNotes: "To play a song you need a few more notes", chooseNotes: "⚙ Choose notes", settingsLabel: "Settings",
     whichNotes: "Which notes?", sameAs: "The same choice as in Right Note and Note Ninja. Only songs that use these notes can be played.",
     noteName: "Note name", repeated: "Repeated note", close: "Close", mode: "Mode", follow: "Note by note", inTime: "In time", tempo: "Tempo",
-    backing: "Backing", band: "🥁 Band", bandTip: "Drums, bass and chords", guide: "🎺 With the tune", guideTip: "The tune plays along with the child (in time)",
-    bars: "Bars", fromBar: "From bar", toBar: "To bar", listenTip: "Listen to the song (H)", listen: "🎧 Listen", play: "▶ Play",
+    backing: "Backing", band: "🥁 Band", bandTip: "Drums, bass and chords", guide: "🎺 With the tune", guideTip: "The tune plays along with you (in time)",
+    bars: "Measures", fromBar: "From measure", toBar: "To measure", listenTip: "Listen to the song (H)", listen: "🎧 Listen", play: "▶ Play",
     keys: "<kbd>Space</kbd> play · <kbd>H</kbd> listen · <kbd>M</kbd> mode · <kbd>Esc</kbd> pause",
     wellDone: "Well done!", perfect: "Perfect!", veryGood: "Very good!", lockedNote: "Songs with 🔒 need more notes: tick them in the settings ⚙",
     moreSongs: "🎵 More songs coming", moreAsk: "Want us to tell you? Email us", moreSubject: "Tonebee: new songs", moreBody: "Hello, please let me know when Tonebee has more songs.",

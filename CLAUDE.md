@@ -14,7 +14,7 @@ Music teacher's toolkit for brass and rhythm lessons: kids 9–12, projected in 
 - One tool = one self-contained HTML file at repo root + a tile in `index.html`.
 - New or renamed file → add it to `FILES` in `sw.js` and bump `CACHE`, or installed iPads keep serving the old copy.
 - Fonts are self-hosted in `fonts/`; never link Google Fonts.
-- British note names (crotchet, quaver…). In Hebrew, note names on screen default to fixed do-re-mi (דו רה מי…), with a C D E option; English always uses letters (C D E, B♭) and hides the choice.
+- On screen, English uses US school-band terms (quarter note, eighth note, measure), since the US is the main English market (2026-10-26; code comments may still say crotchet/quaver). In Hebrew, note names on screen default to fixed do-re-mi (דו רה מי…), with a C D E option; English always uses letters (C D E, B♭) and hides the choice.
 - Big, clear type — read from a projector. Clap-Along is clean white; the breathing, buzzing and note tools share a playful sky look.
 - Transposition matters: students always see their WRITTEN note (trumpet in B♭ and horn in F in treble clef, trombone in bass clef); sounds play at CONCERT pitch (trumpet −2, horn −7 semitones, trombone 0).
 - Discuss and agree what a new tool does with the teacher before building it.
