@@ -383,6 +383,9 @@ setLight("red", true);
   addEventListener("pagehide", send);
   document.addEventListener("visibilitychange", () => { if (document.hidden) send(); });
 })();
+
+// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it).
+if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
 </script>
 </body>
 </html>

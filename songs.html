@@ -162,8 +162,8 @@
   /* First visit (or "?" in the top bar): the card over the game. */
   .cover-card { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(255, 255, 255, .88); padding: 3vh 4vw; }
   .cover-card[hidden] { display: none; }
-  .play-btn { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
-  .play-btn:hover { filter: brightness(1.08); }
+  .cover-play { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
+  .cover-play:hover { filter: brightness(1.08); }
 
   .d-hl { animation: dHl 5s infinite; }
   .d-n { animation: 5s infinite; }
@@ -177,6 +177,17 @@
   @keyframes dN4 { 0%, 65% { fill: #1f2a44; } 67%, 94% { fill: #1b8f58; } 100% { fill: #1f2a44; } }
   @keyframes dSteps { 0%, 9% { opacity: 0; } 11%, 23% { opacity: 1; } 26% { opacity: 0; } 29%, 41% { opacity: 1; } 44% { opacity: 0; } 47%, 59% { opacity: 1; } 62% { opacity: 0; } 65%, 75% { opacity: 1; } 79%, 100% { opacity: 0; } }
   @keyframes dStar { 0%, 76% { opacity: 0; transform: translate(440px, 80px) scale(.3); } 82%, 94% { opacity: 1; transform: translate(440px, 66px) scale(1); } 100% { opacity: 0; } }
+
+  /* Brand (2026-10-26): the main action buttons are honey with navy text and a pressable bottom edge, like the logo's bee;
+     blue stays only where it means something in the game (the note you play, the hold ring). Selected options stay neutral. */
+  .big-btn, .resume-btn, .cover-play, .play-btn:not(.stop), .empty button, .btn.primary {
+    background: #f2b33d !important; color: #1f2a44 !important; box-shadow: 0 4px 0 #c98f22; }
+  .big-btn:hover, .resume-btn:hover, .cover-play:hover, .play-btn:not(.stop):hover, .empty button:hover, .btn.primary:hover {
+    background: #f6c055 !important; filter: none; }
+  .big-btn:active, .resume-btn:active, .cover-play:active, .play-btn:not(.stop):active, .empty button:active, .btn.primary:active {
+    transform: translateY(3px); box-shadow: 0 1px 0 #c98f22; }
+  .pause-icon { color: #1f2a44; }
+  .lvl[aria-pressed="true"] { background: #1f2a44 !important; border-color: #1f2a44 !important; color: #fff8ec !important; }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -290,7 +301,7 @@
             </g>
       </g>
     </svg>
-    <button class="play-btn" id="playBtn" data-t-title="howTo" data-t-aria="howTo">▶</button>
+    <button class="cover-play" id="coverPlay" data-t-title="howTo" data-t-aria="howTo">▶</button>
   </div>
 </div>
 <script>
@@ -1515,15 +1526,15 @@ document.getElementById("pauseStop").addEventListener("click", e => { e.stopProp
   let inst = "trumpet";
   try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
   demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
-  const show = on => { card.hidden = !on; if (on) $("playBtn").focus(); };
+  const show = on => { card.hidden = !on; if (on) $("coverPlay").focus(); };
   let seen = false;
   try { seen = !!localStorage.getItem(key); } catch (_) {}
   show(!seen);
   if (!seen) tbTrack("howto", { how: "auto" });
-  $("playBtn").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
+  $("coverPlay").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
   $("helpBtn").addEventListener("click", e => { e.stopPropagation(); show(true); tbTrack("howto", { how: "replay" }); });
   // While the card is up, a key only closes it (Space must not start the game behind it).
-  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("playBtn").click(); } }, true);
+  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("coverPlay").click(); } }, true);
 })();
 
 // Analytics: how long the game was really used (open and on screen; for mic games, also listening), sent on leaving.
@@ -1542,6 +1553,9 @@ document.getElementById("pauseStop").addEventListener("click", e => { e.stopProp
   addEventListener("pagehide", send);
   document.addEventListener("visibilitychange", () => { if (document.hidden) send(); });
 })();
+
+// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it).
+if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
 </script>
 </body>
 </html>

@@ -121,7 +121,7 @@
   .hide-counts .cnt { display: none; }
 
   .cue { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: clamp(110px, 20vh, 200px); justify-content: center; }
-  .cue-glyph { font-size: clamp(56px, 11vh, 124px); line-height: 1; font-family: var(--display); font-weight: 700; color: var(--blue); }
+  .cue-glyph { font-size: clamp(56px, 11vh, 124px); line-height: 1; font-family: var(--display); font-weight: 700; color: #f2b33d; }
   .cue-word { font-family: var(--display); font-weight: 600; font-size: clamp(18px, 3vh, 32px); color: var(--ink-2); text-align: center; text-wrap: balance; }
   .cue.pop .cue-glyph { animation: pop .32s cubic-bezier(.2,1.6,.4,1); }
   @keyframes pop { from { transform: scale(.6); opacity: .3; } to { transform: scale(1); opacity: 1; } }
@@ -233,8 +233,8 @@
   /* First visit (or "?" in the top bar): the card over the game. */
   .cover-card { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(255, 255, 255, .88); padding: 3vh 4vw; }
   .cover-card[hidden] { display: none; }
-  .play-btn { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
-  .play-btn:hover { filter: brightness(1.08); }
+  .cover-play { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
+  .cover-play:hover { filter: brightness(1.08); }
 
   .d-hands { transform: translate(380px, 140px); }
   .d-dot { fill: #e4d8de; animation: 5s infinite; }
@@ -249,6 +249,35 @@
   @keyframes dHl { 0%, 46%, 52%, 57%, 63%, 68%, 74%, 100% { transform: translateX(-14px); } 50%, 61%, 72% { transform: translateX(4px); } }
   @keyframes dHr { 0%, 46%, 52%, 57%, 63%, 68%, 74%, 100% { transform: translateX(14px); } 50%, 61%, 72% { transform: translateX(-4px); } }
   @keyframes dBurst { 0%, 49% { opacity: 0; } 50%, 53% { opacity: 1; } 55%, 60% { opacity: 0; } 61%, 64% { opacity: 1; } 66%, 71% { opacity: 0; } 72%, 75% { opacity: 1; } 77%, 100% { opacity: 0; } }
+
+  /* Brand (2026-10-26): the main action buttons are honey with navy text and a pressable bottom edge, like the logo's bee;
+     blue stays only where it means something in the game (the note you play, the hold ring). Selected options stay neutral. */
+  .big-btn, .resume-btn, .cover-play, .play-btn:not(.stop), .empty button, .btn.primary {
+    background: #f2b33d !important; color: #1f2a44 !important; box-shadow: 0 4px 0 #c98f22; }
+  .big-btn:hover, .resume-btn:hover, .cover-play:hover, .play-btn:not(.stop):hover, .empty button:hover, .btn.primary:hover {
+    background: #f6c055 !important; filter: none; }
+  .big-btn:active, .resume-btn:active, .cover-play:active, .play-btn:not(.stop):active, .empty button:active, .btn.primary:active {
+    transform: translateY(3px); box-shadow: 0 1px 0 #c98f22; }
+  .pause-icon { color: #1f2a44; }
+  .lvl[aria-pressed="true"] { background: #1f2a44 !important; border-color: #1f2a44 !important; color: #fff8ec !important; }
+
+  /* Top bar like the other games: the way home, the mode, then icons. Teacher controls (level, tempo…) open under ⚙. */
+  .home { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); text-decoration: none; font-family: var(--display); font-weight: 600; min-height: 44px; }
+  .home-icon { display: none; width: 30px; height: 30px; border-radius: 22%; }
+  .console .spacer { margin-inline-start: auto; }
+  .drawer { position: absolute; inset-inline: 0; z-index: 30; margin-inline: auto; width: min(760px, calc(100% - 24px)); background: #fff; border-radius: 0 0 22px 22px;
+    box-shadow: 0 18px 40px rgba(31, 42, 68, .18); padding: 18px clamp(16px, 3vw, 28px) 20px; display: grid; gap: 16px; }
+  .drawer[hidden] { display: none; }
+  .drawer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+  .drawer-k { font-weight: 700; color: var(--ink-2); min-width: 4em; }
+  .drawer .levels { gap: 8px; flex-wrap: wrap; max-width: 100%; }
+  .drawer-row:has(.levels) { flex-wrap: wrap; }
+  .drawer .lvl { min-width: 52px; min-height: 52px; font-size: 20px; }
+  @media (max-width: 600px) {
+    .home-word { display: none; }
+    .home-icon { display: block; }
+    .drawer .lvl { min-width: 46px; min-height: 46px; }
+  }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -287,19 +316,21 @@
 
 <div class="app" id="app">
   <header class="console" data-t-aria="controls">
-    <a class="brand" href="index.html" data-t-title="back"><span aria-hidden="true">‹</span> <span data-t="brand">Tonebee</span> <span class="brand-tool" data-t="tool"></span></a>
+    <a class="home" href="index.html" aria-label="Tonebee" data-t-aria="brand">‹<img class="home-icon" src="icons/icon-192.png" alt=""><span class="home-word"> <span data-t="brand">Tonebee</span></span></a>
     <div class="seg" role="group" data-t-aria="mode">
       <button id="modeEcho" class="seg-btn" aria-pressed="true" data-t="echo"></button>
       <button id="modeQuiz" class="seg-btn" aria-pressed="false" data-t="quiz"></button>
     </div>
-    <div class="levels" role="group" data-t-aria="level"><span class="levels-k" data-t="level"></span><span id="levels" class="levels"></span></div>
-    <label class="ctl" for="tempo"><span class="ctl-k note">♩ =</span><input id="tempo" type="range" min="50" max="120" step="1" value="80"><output id="tempoOut" for="tempo">80</output></label>
-    <label class="ctl click-ctl" for="clickVol"><span class="ctl-k" data-t="click"></span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label>
-    <label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span data-t="counts"></span></label>
+    <span class="spacer"></span>
+    <button id="settingsBtn" class="icon-btn" data-t-title="settings" data-t-aria="settings" aria-expanded="false">⚙</button>
     <button id="helpBtn" class="icon-btn" data-t-title="howTo" data-t-aria="howTo">?</button>
     <button id="pauseBtn" class="icon-btn" data-t-title="pause">⏸</button>
-    <button id="fullscreen" class="icon-btn" data-t-title="fullscreen" data-t="fullBtn"></button>
+    <button id="fullscreen" class="icon-btn" data-t-title="fullscreen">⛶</button>
   </header>
+  <section class="drawer" id="drawer" hidden data-t-aria="controls">
+      <div class="drawer-row"><span class="drawer-k" data-t="level"></span><span id="levels" class="levels"></span></div>
+      <div class="drawer-row"><label class="ctl" for="tempo"><span class="ctl-k note">♩ =</span><input id="tempo" type="range" min="50" max="120" step="1" value="80"><output id="tempoOut" for="tempo">80</output></label><label class="ctl click-ctl" for="clickVol"><span class="ctl-k" data-t="click"></span><input id="clickVol" type="range" min="0" max="100" step="1" value="55"></label><label class="toggle" for="showCounts"><input id="showCounts" type="checkbox" checked><span data-t="counts"></span></label></div>
+  </section>
 
   <main class="stage" id="stage">
     <div class="stage-head">
@@ -345,7 +376,7 @@
         <g class="d-dots"><circle class="d-dot d1" cx="180" cy="240" r="15"/><circle class="d-dot d2" cx="240" cy="240" r="15"/><circle class="d-dot d3" cx="300" cy="240" r="15"/></g>
       </g>
     </svg>
-    <button class="play-btn" id="playBtn" data-t-title="howTo" data-t-aria="howTo">▶</button>
+    <button class="cover-play" id="coverPlay" data-t-title="howTo" data-t-aria="howTo">▶</button>
   </div>
 </div>
 <script>
@@ -402,7 +433,7 @@ function applyText() {
 }
 const TEXT = {
   he: {
-    howTo: "איך משחקים", pageTitle: "קצב · טונבי", tool: "/ קצב", back: "חזרה ל-טונבי", controls: "שליטה למורה",
+    howTo: "איך משחקים", settings: "הגדרות (S)", pageTitle: "קצב · טונבי", tool: "/ קצב", back: "חזרה ל-טונבי", controls: "שליטה למורה",
     mode: "מצב", echo: "הד", quiz: "חידון שמיעה", level: "שלב", click: "מטרונום", counts: "ספירה", fullBtn: "⛶ מסך מלא",
     keys: "<kbd>Space</kbd> ניגון / הבא &nbsp; <kbd>R</kbd> שוב &nbsp; <kbd>F</kbd> מסך מלא &nbsp; <kbd>Esc</kbd> השהיה",
     levelN: n => `שלב ${n}`,
@@ -418,7 +449,7 @@ const TEXT = {
     stopped: "עצרנו. שוב, או הבא?", rhythm: (bars, beats) => `קצב, ${bars === 1 ? "תיבה אחת" : bars + " תיבות"} ב-${beats}/4`
   },
   en: {
-    howTo: "How to play", pageTitle: "Clap-Along · Tonebee", tool: "/ Clap-Along", back: "Back to Tonebee", controls: "Teacher controls",
+    howTo: "How to play", settings: "Settings (S)", pageTitle: "Clap-Along · Tonebee", tool: "/ Clap-Along", back: "Back to Tonebee", controls: "Teacher controls",
     mode: "Mode", echo: "Echo", quiz: "Ear quiz", level: "Level", click: "Click", counts: "Counts", fullBtn: "⛶ Full screen",
     keys: "<kbd>Space</kbd> Play / Next &nbsp; <kbd>R</kbd> Again &nbsp; <kbd>F</kbd> Full screen &nbsp; <kbd>Esc</kbd> Pause",
     levelN: n => `Level ${n}`,
@@ -1155,15 +1186,15 @@ document.getElementById("pauseStop").addEventListener("click", e => { e.stopProp
   let inst = "trumpet";
   try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
   demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
-  const show = on => { card.hidden = !on; if (on) $("playBtn").focus(); };
+  const show = on => { card.hidden = !on; if (on) $("coverPlay").focus(); };
   let seen = false;
   try { seen = !!localStorage.getItem(key); } catch (_) {}
   show(!seen);
   if (!seen) tbTrack("howto", { how: "auto" });
-  $("playBtn").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
+  $("coverPlay").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
   $("helpBtn").addEventListener("click", e => { e.stopPropagation(); show(true); tbTrack("howto", { how: "replay" }); });
   // While the card is up, a key only closes it (Space must not start the game behind it).
-  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("playBtn").click(); } }, true);
+  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("coverPlay").click(); } }, true);
 })();
 
 // Analytics: how long the game was really used (open and on screen; for mic games, also listening), sent on leaving.
@@ -1181,6 +1212,25 @@ document.getElementById("pauseStop").addEventListener("click", e => { e.stopProp
   };
   addEventListener("pagehide", send);
   document.addEventListener("visibilitychange", () => { if (document.hidden) send(); });
+})();
+
+// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it).
+if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
+
+// Teacher controls drawer (⚙, or S): opens under the top bar; Esc or a tap outside closes it.
+(function drawer() {
+  const d = $("drawer"), btn = $("settingsBtn");
+  const set = open => {
+    if (open) d.style.top = document.querySelector(".console").getBoundingClientRect().bottom + "px";
+    d.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+  };
+  btn.addEventListener("click", e => { e.stopPropagation(); set(d.hidden); });
+  document.addEventListener("click", e => { if (!d.hidden && !d.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.code === "KeyS" && e.target.tagName !== "INPUT") { e.preventDefault(); e.stopImmediatePropagation(); set(d.hidden); }
+    else if (e.key === "Escape" && !d.hidden) { e.preventDefault(); e.stopImmediatePropagation(); set(false); }
+  }, true);
 })();
 </script>
 </body>

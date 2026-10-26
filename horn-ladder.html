@@ -143,6 +143,22 @@
   @keyframes dClimb { 0%, 10% { transform: translateY(232px); } 18%, 28% { transform: translateY(174px); } 36%, 46% { transform: translateY(114px); } 54%, 88% { transform: translateY(56px); } 100% { transform: translateY(232px); } }
   @keyframes dSteps { 0%, 9% { opacity: 0; } 11%, 17% { opacity: 1; } 21%, 27% { opacity: 0; } 29%, 35% { opacity: 1; } 39%, 45% { opacity: 0; } 47%, 53% { opacity: 1; } 57%, 100% { opacity: 0; } }
   @keyframes dBanana { 0%, 56% { transform: scale(1); opacity: 1; } 64% { transform: scale(1.5) rotate(-20deg); opacity: 1; } 72%, 94% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  /* Upright phone: a wordless hint to turn sideways (a phone that tips over and back), no sentence. */
+  .turn.turn-hint { width: 46px; max-width: none; height: 46px; margin-inline: auto; padding: 0; border: 0; border-radius: 0; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='15' y='6' width='18' height='36' rx='4' fill='none' stroke='%231f2a44' stroke-width='3'/%3E%3Ccircle cx='24' cy='37' r='1.8' fill='%231f2a44'/%3E%3C/svg%3E"); font-size: 0; color: transparent; opacity: .65; animation: tipPhone 2.6s ease-in-out infinite; }
+  @keyframes tipPhone { 0%, 25% { transform: rotate(0); } 50%, 75% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+  @media (prefers-reduced-motion: reduce) { .turn.turn-hint { animation: none; transform: rotate(-90deg); } }
+
+  /* Brand (2026-10-26): the main action buttons are honey with navy text and a pressable bottom edge, like the logo's bee;
+     blue stays only where it means something in the game (the note you play, the hold ring). Selected options stay neutral. */
+  .big-btn, .resume-btn, .cover-play, .play-btn:not(.stop), .empty button, .btn.primary {
+    background: #f2b33d !important; color: #1f2a44 !important; box-shadow: 0 4px 0 #c98f22; }
+  .big-btn:hover, .resume-btn:hover, .cover-play:hover, .play-btn:not(.stop):hover, .empty button:hover, .btn.primary:hover {
+    background: #f6c055 !important; filter: none; }
+  .big-btn:active, .resume-btn:active, .cover-play:active, .play-btn:not(.stop):active, .empty button:active, .btn.primary:active {
+    transform: translateY(3px); box-shadow: 0 1px 0 #c98f22; }
+  .pause-icon { color: #1f2a44; }
+  .lvl[aria-pressed="true"] { background: #1f2a44 !important; border-color: #1f2a44 !important; color: #fff8ec !important; }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -226,7 +242,7 @@
           <button class="big-btn" id="startBtn" data-t="start"></button>
           <button class="help-btn" id="helpBtn" data-t-title="howTo" data-t-aria="howTo">?</button>
         </div>
-        <p class="turn" data-t="turn"></p>
+        <p class="turn turn-hint" role="img" data-t-aria="turn"></p>
       </div>
     </div>
 
@@ -1369,6 +1385,9 @@ fitScene();
   addEventListener("pagehide", send);
   document.addEventListener("visibilitychange", () => { if (document.hidden) send(); });
 })();
+
+// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it).
+if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
 </script>
 </body>
 </html>

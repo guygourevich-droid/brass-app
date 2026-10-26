@@ -130,8 +130,8 @@
   /* First visit (or "?" in the top bar): the card over the game. */
   .cover-card { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(255, 255, 255, .88); padding: 3vh 4vw; }
   .cover-card[hidden] { display: none; }
-  .play-btn { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
-  .play-btn:hover { filter: brightness(1.08); }
+  .cover-play { width: clamp(72px, 11vh, 96px); height: clamp(72px, 11vh, 96px); border-radius: 50%; border: 0; background: var(--accent, #1a7fe2); color: #fff; font-size: clamp(30px, 5vh, 42px); cursor: pointer; box-shadow: 0 6px 0 rgba(31, 42, 68, .18); padding-inline-start: .18em; }
+  .cover-play:hover { filter: brightness(1.08); }
 
   .d-tap { transform-box: fill-box; transform-origin: center; opacity: 0; animation: dTap 5s infinite; }
   .d-wand { animation: dDip 5s infinite; }
@@ -142,6 +142,22 @@
   @keyframes dDip { 0%, 10% { transform: translate(0, 0); } 18%, 22% { transform: translate(52px, 70px); } 32%, 100% { transform: translate(0, 0); } }
   @keyframes dBlowOn { 0%, 32% { opacity: 0; } 36%, 74% { opacity: 1; } 78%, 100% { opacity: 0; } }
   @keyframes dBubble { 0%, 33% { transform: scale(.2); opacity: 0; } 36% { transform: scale(.4); opacity: 1; } 74% { transform: scale(1); opacity: 1; } 94% { transform: translate(30px, -150px) scale(.9); opacity: 0; } 100% { opacity: 0; } }
+
+  /* Upright phone: a wordless hint to turn sideways (a phone that tips over and back), no sentence. */
+  .turn.turn-hint { width: 46px; max-width: none; height: 46px; margin-inline: auto; padding: 0; border: 0; border-radius: 0; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='15' y='6' width='18' height='36' rx='4' fill='none' stroke='%231f2a44' stroke-width='3'/%3E%3Ccircle cx='24' cy='37' r='1.8' fill='%231f2a44'/%3E%3C/svg%3E"); font-size: 0; color: transparent; opacity: .65; animation: tipPhone 2.6s ease-in-out infinite; }
+  @keyframes tipPhone { 0%, 25% { transform: rotate(0); } 50%, 75% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+  @media (prefers-reduced-motion: reduce) { .turn.turn-hint { animation: none; transform: rotate(-90deg); } }
+
+  /* Brand (2026-10-26): the main action buttons are honey with navy text and a pressable bottom edge, like the logo's bee;
+     blue stays only where it means something in the game (the note you play, the hold ring). Selected options stay neutral. */
+  .big-btn, .resume-btn, .cover-play, .play-btn:not(.stop), .empty button, .btn.primary {
+    background: #f2b33d !important; color: #1f2a44 !important; box-shadow: 0 4px 0 #c98f22; }
+  .big-btn:hover, .resume-btn:hover, .cover-play:hover, .play-btn:not(.stop):hover, .empty button:hover, .btn.primary:hover {
+    background: #f6c055 !important; filter: none; }
+  .big-btn:active, .resume-btn:active, .cover-play:active, .play-btn:not(.stop):active, .empty button:active, .btn.primary:active {
+    transform: translateY(3px); box-shadow: 0 1px 0 #c98f22; }
+  .pause-icon { color: #1f2a44; }
+  .lvl[aria-pressed="true"] { background: #1f2a44 !important; border-color: #1f2a44 !important; color: #fff8ec !important; }
 </style>
 <script>
   // Analytics (PostHog): anonymous counts only: which pages open, from whose teacher link, "tell me when" taps, script errors.
@@ -202,7 +218,7 @@
   <main class="stage" id="stage">
     <svg class="scene" id="scene" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMid meet" role="img" data-t-aria="scene"></svg>
     <div class="cue" aria-live="polite"><div class="cue-box"><span class="cue-word" id="cueWord"></span><span class="cue-count" id="cueCount"></span></div></div>
-    <div class="turn" data-t="turn"></div>
+    <div class="turn turn-hint" role="img" data-t-aria="turn"></div>
     <div class="pause" id="pauseBox" hidden><div class="pause-box"><div class="pause-icon">⏸</div><button class="resume-btn" id="resumeBtn" data-t="resume"></button><p class="pause-keys" data-t-html="keys"></p></div></div>
     <div class="diag" id="diag" hidden></div>
   </main>
@@ -228,7 +244,7 @@
         <g class="d-wand"><circle cx="240" cy="176" r="24" fill="none" stroke="#7a5cf0" stroke-width="7"/><line x1="252" y1="197" x2="290" y2="262" stroke="#7a5cf0" stroke-width="7" stroke-linecap="round"/></g></g>
       </g>
     </svg>
-    <button class="play-btn" id="playBtn" data-t-title="howTo" data-t-aria="howTo">▶</button>
+    <button class="cover-play" id="coverPlay" data-t-title="howTo" data-t-aria="howTo">▶</button>
   </div>
 </div>
 <script>
@@ -870,15 +886,15 @@ fitScene();
   let inst = "trumpet";
   try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
   demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
-  const show = on => { card.hidden = !on; if (on) $("playBtn").focus(); };
+  const show = on => { card.hidden = !on; if (on) $("coverPlay").focus(); };
   let seen = false;
   try { seen = !!localStorage.getItem(key); } catch (_) {}
   show(!seen);
   if (!seen) tbTrack("howto", { how: "auto" });
-  $("playBtn").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
+  $("coverPlay").addEventListener("click", () => { try { localStorage.setItem(key, "1"); } catch (_) {} show(false); });
   $("helpBtn").addEventListener("click", e => { e.stopPropagation(); show(true); tbTrack("howto", { how: "replay" }); });
   // While the card is up, a key only closes it (Space must not start the game behind it).
-  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("playBtn").click(); } }, true);
+  document.addEventListener("keydown", e => { if (!card.hidden) { e.preventDefault(); e.stopImmediatePropagation(); $("coverPlay").click(); } }, true);
 })();
 
 // Analytics: how long the game was really used (open and on screen; for mic games, also listening), sent on leaving.
@@ -897,6 +913,9 @@ fitScene();
   addEventListener("pagehide", send);
   document.addEventListener("visibilitychange", () => { if (document.hidden) send(); });
 })();
+
+// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it).
+if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
 </script>
 </body>
 </html>
