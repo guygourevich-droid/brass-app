@@ -1,6 +1,6 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "tonebee-v40";
+const CACHE = "tonebee-v41";
 const FILES = [
   "./",
   "index.html",
@@ -61,7 +61,8 @@ const FILES = [
   "fonts/atkinson-hyperlegible-700-latin.woff2",
   "icons/icon-192.png",
   "icons/icon-512.png",
-  "icons/apple-touch-icon.png"
+  "icons/apple-touch-icon.png",
+  "icons/favicon-32.png"
 ];
 
 self.addEventListener("install", event => {

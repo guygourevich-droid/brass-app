@@ -9,21 +9,22 @@
 <style>
   html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
   body {
-    font-family: "Rubik", system-ui, sans-serif; color: #15181d;
-    background: linear-gradient(180deg, #d9eeff 0%, #f4faff 55%, #ffffff 100%);
+    font-family: "Rubik", system-ui, sans-serif; color: #1F2A44;
+    background: #FFF8EC;
     display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 56px; padding: 0 90px; box-sizing: border-box;
   }
   h1 { margin: 0; font-size: 132px; font-weight: 700; line-height: 1; letter-spacing: -0.01em; }
-  h1 small { display: block; margin-top: 10px; font-size: 44px; font-weight: 600; color: #8f5b0e; letter-spacing: 0; }
-  p { margin: 30px 0 34px; font-size: 40px; line-height: 1.3; color: #3b434e; max-width: 16em; }
+  h1 small { display: block; text-align: right; margin-top: 12px; font-family: "Lexend", sans-serif; font-size: 48px; font-weight: 700; letter-spacing: 0; }
+  .bee { color: #F2B33D; }  /* brand wordmark: tone/טון in ink, bee/בי in honey */
+  p { margin: 30px 0 34px; font-size: 40px; line-height: 1.3; color: #3b4660; max-width: 16em; }
   .insts { display: flex; gap: 18px; }
   .insts img { width: 108px; height: 108px; }
-  .logo { width: 330px; height: 330px; border-radius: 22%; box-shadow: 0 18px 40px rgba(26, 127, 226, .18); }
+  .logo { width: 330px; height: 330px; border-radius: 22%; box-shadow: 0 18px 40px rgba(31, 42, 68, .22); }
 </style>
 </head>
 <body>
   <div>
-    <h1>טונבי<small>Tonebee</small></h1>
+    <h1>טון<span class="bee">בי</span><small dir="ltr">tone<span class="bee">bee</span></small></h1>
     <p>משחקים לשיעורי חצוצרה, טרומבון וקרן למתחילים</p>
     <div class="insts">
       <img src="../icons/inst/trumpet.png" alt="">
