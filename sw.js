@@ -1,6 +1,6 @@
 // Offline support. Saves every file below on the device the first time the app opens online.
 // When you add or rename a file: add it to FILES and bump the version in CACHE.
-const CACHE = "tonebee-v49";
+const CACHE = "tonebee-v50";
 const FILES = [
   "./",
   "index.html",
@@ -61,6 +61,7 @@ const FILES = [
   "fonts/atkinson-hyperlegible-700-latin.woff2",
   "icons/icon-192.png",
   "icons/icon-512.png",
+  "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
   "icons/favicon-32.png",
   "icons/tiles/ramzor.webp",
@@ -90,52 +91,64 @@ const FILES = [
   "icons/sprites/flower-4.webp"
 ];
 
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// One file into the new cache: from the internet, or else the copy an older version saved, so a file that fails
+// to download during an update is not lost when activate deletes the old cache.
+function fill(cache, f) {
+  return cache.add(f).catch(() => caches.match(f, { ignoreSearch: true }).then(old => old && cache.put(f, old)));
+}
+
 self.addEventListener("install", event => {
   // One missing file must not stop the whole update from installing.
-  event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(FILES.map(f => cache.add(f)))));
+  event.waitUntil(caches.open(CACHE).then(cache => Promise.allSettled(FILES.map(f => fill(cache, f)))));
   self.skipWaiting();
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys()
+    caches.open(CACHE)
+      // Whatever is still missing gets one more try (at most 5 s: pages wait for this), then the old caches go.
+      .then(cache => Promise.race([wait(5000), Promise.allSettled(FILES.map(f => cache.match(f).then(hit => hit || fill(cache, f))))]))
+      .then(() => caches.keys())
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
-// Try the internet first (so updates show up), give up after 3 seconds and use the saved copy.
-function fromNetwork(request) {
+// Gives up waiting after 3 seconds; the download itself goes on (and is still saved when it arrives).
+function within(promise, ms) {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(reject, 3000);
-    // "no-cache" asks the server whether the file changed instead of trusting the browser's
-    // 10-minute copy (GitHub Pages sends max-age=600), so a new version shows on the next load.
-    fetch(new Request(request.url, { cache: "no-cache", credentials: "same-origin" })).then(
+    const timer = setTimeout(reject, ms);
+    promise.then(
       response => { clearTimeout(timer); resolve(response); },
       error => { clearTimeout(timer); reject(error); }
     );
   });
 }
 
-// Store a copy, but never store a captive-portal page or an error over a good file.
-function keep(event, request, response) {
+// Store a copy, but never a captive-portal page or an error over a good file, and never into a cache that a newer
+// version has already deleted. One copy per file: the address without ?lang= / ?t= / ?next=.
+function keep(key, response) {
   if (!response || !response.ok || response.type !== "basic") return;
   const copy = response.clone();
-  event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
+  return caches.has(CACHE).then(ok => ok && caches.open(CACHE).then(cache => cache.put(key, copy))).catch(() => {});
 }
 
+// Try the internet first (so updates show up), give up after 3 seconds and use the saved copy. An error page
+// (404, 5xx) counts as no answer when there is a saved copy.
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET" || new URL(request.url).origin !== location.origin) return;
+  // "no-cache" asks the server whether the file changed instead of trusting the browser's own short-lived copy.
+  const net = fetch(new Request(request.url, { cache: "no-cache", credentials: "same-origin" }));
+  event.waitUntil(net.then(response => keep(request.url.split(/[?#]/)[0], response), () => {}));
+  const saved = () => caches.match(request, { ignoreSearch: true });
   event.respondWith(
-    fromNetwork(request)
-      .then(response => {
-        keep(event, request, response);
-        return response;
-      })
-      .catch(() =>
-        caches.match(request, { ignoreSearch: true })
-          .then(saved => saved || (request.mode === "navigate" ? caches.match("index.html") : fetch(request).then(late => { keep(event, request, late); return late; })))
-      )
+    within(net, 3000)
+      .then(response => response.ok ? response : saved().then(copy => copy || response))
+      .catch(() => saved()
+        .then(copy => copy || (request.mode === "navigate" ? caches.match("index.html") : null))
+        .then(copy => copy || net))
   );
 });

@@ -17,7 +17,7 @@
   (function () {
     var keep = /^(brass-|right-note-|ninja-|horn-ladder|breath$|buzz$|songs$|sound-game$)/;
     try {
-      if (/github\.io$/.test(location.hostname)) {
+      if (/github\.io$/.test(location.hostname) && navigator.onLine !== false) {   // offline, the old copy keeps working
         var d = {};
         for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (keep.test(k)) d[k] = localStorage.getItem(k); }
         var page = location.pathname.split("/").pop() || "index.html";
@@ -27,9 +27,15 @@
       var m = location.hash.match(/^#move=(.*)$/);
       if (m) {
         var s = JSON.parse(decodeURIComponent(m[1]));
-        for (var key in s) if (keep.test(key) && typeof s[key] === "string") localStorage.setItem(key, s[key]);
+        // Only what this device doesn't have yet: an old home-screen icon opens with #move every time.
+        for (var key in s) if (keep.test(key) && typeof s[key] === "string" && localStorage.getItem(key) === null) localStorage.setItem(key, s[key]);
         history.replaceState(null, "", location.pathname + location.search);
       }
+      // A link straight to a game on a new device: language and instrument first (home), then back to the game.
+      var here = location.pathname.split("/").pop();
+      if (/^(balloon-breath|buzz-along|sound-game|right-note|horn-ladder|ninja|songs|note-names)\.html$/.test(here)
+        && !localStorage.getItem("brass-inst") && !/[?&]test=/.test(location.search))
+        location.replace("index.html?next=" + encodeURIComponent(here + location.search));
     } catch (_) {}
   })();
   // English pages lay out left to right from the first paint (the language block fills in the words).
@@ -103,6 +109,12 @@
   /* Phones: one compact top bar; the way home is the app's icon. */
   .home-icon { display: none; }
   @media (max-width: 600px) {
+    /* Upright phone: the way home and the icons on the first line, the choices (levels, modes) centred on a line of
+       their own below, instead of wrapping wherever they happen to run out of room (two and three ragged rows). */
+    .console:has(> .seg)::after { content: ""; order: 1; flex-basis: 100%; height: 0; }
+    .console > .seg { order: 2; }
+    .console > .seg:first-of-type { margin-inline-start: auto; }
+    .console > .seg:last-of-type { margin-inline-end: auto; }
     .console { gap: 6px 8px; padding: 6px 10px; }
     .home { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; font-size: 20px; }
     .home-word { display: none; }
@@ -113,6 +125,8 @@
     .cue-word.small { font-size: min(5vh, 6vw); }
     .cue-count { font-size: min(10vh, 12vw); }
   }
+  @media (max-width: 400px) { #fullscreen { display: none; } }   /* the smallest phones: no room, and iPhones can't anyway */
+  @media (max-width: 400px), (max-height: 500px) { .console { column-gap: 8px; padding-inline: 8px; } .seg-btn { font-size: 15px; padding: 0 8px; } }   /* English choices are wider */
 
   /* The cover: how to play without words (first visit, or "?"), then one button. */
   .cover { display: grid; justify-items: center; gap: 2.4vh; }
@@ -264,10 +278,21 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "מנסים שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    micBlocked: "המיקרופון חסום", micAsk: "מאשרים מיקרופון ומתחילים", micHow: "איך פותחים:",
+    helpAndroid: ["לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים"],
+    helpAndroidApp: ["פותחים את tonebee.app ב־Chrome", "לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים", "חוזרים לטונבי"],
+    helpAndroidSystem: ["הגדרות הטלפון ← אפליקציות ← Chrome", "הרשאות ← מיקרופון ← מאפשרים"],
+    helpQuick: ["מושכים את המסך מלמעלה למטה", "גישה למיקרופון ← מפעילים"],
+    helpInApp: ["⋯ למעלה ← פתיחה בדפדפן", "בדפדפן לוחצים שוב ▶"],
+    helpSamsung: ["☰ ← הגדרות ← אתרים והורדות", "הרשאות אתרים ← מיקרופון ← tonebee.app ← מאפשרים"],
+    helpIos: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את Safari ופותחים מחדש"],
+    helpIosApp: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את טונבי ופותחים מחדש"],
+    helpDesktop: ["לוחצים על הסמל שליד הכתובת", "מיקרופון ← מאפשרים"],
+    helpParent: "לא נפתח? מבקשים מהורה לאשר (Family Link / זמן מסך)",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
@@ -277,8 +302,19 @@ const COMMON = {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
     mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
     keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
-    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    micBlocked: "Microphone is blocked", micAsk: "Tap Allow so we can hear you", micHow: "How to fix:",
+    helpAndroid: ["Tap the icon next to the address", "Permissions → Microphone → On"],
+    helpAndroidApp: ["Open tonebee.app in Chrome", "Tap the icon next to the address", "Permissions → Microphone → On", "Come back to Tonebee"],
+    helpAndroidSystem: ["Phone Settings → Apps → Chrome", "Permissions → Microphone → Allow"],
+    helpQuick: ["Swipe down from top of screen", "Microphone access → Turn on"],
+    helpInApp: ["Tap ⋯ → Open in browser", "Tap ▶ again"],
+    helpSamsung: ["☰ → Settings → Sites and downloads", "Site permissions → Microphone → tonebee.app → Allow"],
+    helpIos: ["Settings → Apps → Safari", "Microphone → Allow", "Close Safari and reopen"],
+    helpIosApp: ["Settings → Apps → Safari", "Microphone → Allow", "Close Tonebee and reopen"],
+    helpDesktop: ["Click the icon next to the address", "Microphone → Allow"],
+    helpParent: "Still blocked? Ask a parent to allow it (Family Link / Screen Time)",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",

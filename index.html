@@ -31,7 +31,7 @@
   (function () {
     var keep = /^(brass-|right-note-|ninja-|horn-ladder|breath$|buzz$|songs$|sound-game$)/;
     try {
-      if (/github\.io$/.test(location.hostname)) {
+      if (/github\.io$/.test(location.hostname) && navigator.onLine !== false) {   // offline, the old copy keeps working
         var d = {};
         for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (keep.test(k)) d[k] = localStorage.getItem(k); }
         var page = location.pathname.split("/").pop() || "index.html";
@@ -41,9 +41,15 @@
       var m = location.hash.match(/^#move=(.*)$/);
       if (m) {
         var s = JSON.parse(decodeURIComponent(m[1]));
-        for (var key in s) if (keep.test(key) && typeof s[key] === "string") localStorage.setItem(key, s[key]);
+        // Only what this device doesn't have yet: an old home-screen icon opens with #move every time.
+        for (var key in s) if (keep.test(key) && typeof s[key] === "string" && localStorage.getItem(key) === null) localStorage.setItem(key, s[key]);
         history.replaceState(null, "", location.pathname + location.search);
       }
+      // A link straight to a game on a new device: language and instrument first (home), then back to the game.
+      var here = location.pathname.split("/").pop();
+      if (/^(balloon-breath|buzz-along|sound-game|right-note|horn-ladder|ninja|songs|note-names)\.html$/.test(here)
+        && !localStorage.getItem("brass-inst") && !/[?&]test=/.test(location.search))
+        location.replace("index.html?next=" + encodeURIComponent(here + location.search));
     } catch (_) {}
   })();
   // English pages lay out left to right from the first paint (the language block fills in the words).
@@ -80,7 +86,7 @@
   .wm { color: var(--navy); }
   .wm .bee { color: var(--honey); }
   :lang(en) .wm { font-family: "Lexend", var(--font); }
-  .me { display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 18px 5px 6px; cursor: pointer; min-height: 52px; font-size: 18px; }
+  .me { display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); background: #fff; border-radius: 999px; padding-block: 5px; padding-inline-start: 6px; padding-inline-end: 18px; cursor: pointer; min-height: 52px; font-size: 18px; }
   .me:hover { border-color: var(--navy); }
   .me img { width: 40px; height: 40px; }
   .me b { font-weight: 700; }
@@ -244,7 +250,7 @@
     </nav>
   </main>
 
-  <p class="install" data-t-html="install"></p>
+  <p class="install" id="install" data-t-html="install"></p>
   <!-- privacy link: back with privacy.html once it goes live -->
 </div>
 
@@ -282,25 +288,47 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "מנסים שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    micBlocked: "המיקרופון חסום", micAsk: "מאשרים מיקרופון ומתחילים", micHow: "איך פותחים:",
+    helpAndroid: ["לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים"],
+    helpAndroidApp: ["פותחים את tonebee.app ב־Chrome", "לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים", "חוזרים לטונבי"],
+    helpAndroidSystem: ["הגדרות הטלפון ← אפליקציות ← Chrome", "הרשאות ← מיקרופון ← מאפשרים"],
+    helpQuick: ["מושכים את המסך מלמעלה למטה", "גישה למיקרופון ← מפעילים"],
+    helpInApp: ["⋯ למעלה ← פתיחה בדפדפן", "בדפדפן לוחצים שוב ▶"],
+    helpSamsung: ["☰ ← הגדרות ← אתרים והורדות", "הרשאות אתרים ← מיקרופון ← tonebee.app ← מאפשרים"],
+    helpIos: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את Safari ופותחים מחדש"],
+    helpIosApp: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את טונבי ופותחים מחדש"],
+    helpDesktop: ["לוחצים על הסמל שליד הכתובת", "מיקרופון ← מאפשרים"],
+    helpParent: "לא נפתח? מבקשים מהורה לאשר (Family Link / זמן מסך)",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "מסובבים את הטלפון לרוחב"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
     mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
     keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
-    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    micBlocked: "Microphone is blocked", micAsk: "Tap Allow so we can hear you", micHow: "How to fix:",
+    helpAndroid: ["Tap the icon next to the address", "Permissions → Microphone → On"],
+    helpAndroidApp: ["Open tonebee.app in Chrome", "Tap the icon next to the address", "Permissions → Microphone → On", "Come back to Tonebee"],
+    helpAndroidSystem: ["Phone Settings → Apps → Chrome", "Permissions → Microphone → Allow"],
+    helpQuick: ["Swipe down from top of screen", "Microphone access → Turn on"],
+    helpInApp: ["Tap ⋯ → Open in browser", "Tap ▶ again"],
+    helpSamsung: ["☰ → Settings → Sites and downloads", "Site permissions → Microphone → tonebee.app → Allow"],
+    helpIos: ["Settings → Apps → Safari", "Microphone → Allow", "Close Safari and reopen"],
+    helpIosApp: ["Settings → Apps → Safari", "Microphone → Allow", "Close Tonebee and reopen"],
+    helpDesktop: ["Click the icon next to the address", "Microphone → Allow"],
+    helpParent: "Still blocked? Ask a parent to allow it (Family Link / Screen Time)",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "Turn your phone sideways"
   }
 };
 const T = (key, ...args) => {
@@ -324,6 +352,8 @@ const TEXT = {
     change: "החלפת כלי או שפה", langName: "עברית",
     games: "משחקים", privacy: "פרטיות",
     install: "<b>להתקנה:</b> שיתוף ← הוספה למסך הבית",
+    installAndroid: "<b>להתקנה:</b> ⋮ ← הוספה למסך הבית / התקנה",
+    installSamsung: "<b>להתקנה:</b> ☰ ← הוספת דף אל ← מסך הבית",
     instTitle: "על מה אתם מנגנים?", soon: "בקרוב", backLang: "‹ שפה",
     soonAsk: n => `${n} בדרך!`, soonMail: "רוצים שנודיע לכם? כתבו לנו",
     soonSubject: n => `טונבי: ${n}`, soonBody: n => `שלום, אשמח לשמוע כשיהיה אפשר לנגן בטונבי על ${n}.`,
@@ -344,6 +374,8 @@ const TEXT = {
     change: "Change instrument or language", langName: "English",
     games: "Games", privacy: "Privacy",
     install: "<b>Install:</b> Share → Add to Home Screen",
+    installAndroid: "<b>Install:</b> ⋮ → Add to Home screen",
+    installSamsung: "<b>Install:</b> ☰ → Add page to → Home screen",
     instTitle: "What do you play?", soon: "Coming soon", backLang: "‹ Language",
     soonAsk: n => `${n} is on its way!`, soonMail: "Want us to tell you? Email us",
     soonSubject: n => `Tonebee: ${n}`, soonBody: n => `Hello, please let me know when I can play Tonebee on the ${n.toLowerCase()}.`,
@@ -369,6 +401,8 @@ const INSTRUMENTS = [
 ];
 // Instrument pictures: icons/inst/<id>.png (cut from the picture sheet the teacher chose).
 const instPic = id => `icons/inst/${id}.png`;
+// Sent here from a game on a new device (?next=ninja.html…): back there once the instrument is chosen. Our pages only.
+const NEXT = (q => /^[a-z-]+\.html(\?[^#]*)?$/.test(q || "") ? q : "")(new URLSearchParams(location.search).get("next"));
 const instName = id => T(id);
 
 const TILES = { "ramzor.html": "ramzor", "balloon-breath.html": "breath", "buzz-along.html": "buzz", "sound-game.html": "long",
@@ -387,7 +421,11 @@ function fillTiles() {
 function fillMe() {
   let inst = "trumpet";
   try { const s = localStorage.getItem("brass-inst"); if (INSTRUMENTS.some(i => i.id === s && i.ready)) inst = s; } catch (_) {}
-  $("meIcon").src = instPic(inst);
+  // A new picture shows once it has loaded: until then the old one would stay up.
+  const img = $("meIcon");
+  img.onload = img.onerror = () => { img.style.visibility = ""; };
+  img.src = instPic(inst);
+  img.style.visibility = img.complete ? "" : "hidden";
   $("meInst").textContent = instName(inst);
 }
 
@@ -429,6 +467,7 @@ function showSetup(step) {
       b.setAttribute("aria-pressed", String(i.id === cur));
       b.addEventListener("click", () => {
         try { localStorage.setItem("brass-inst", i.id); } catch (_) {}
+        if (NEXT) return location.replace(NEXT.replace(/([?&])lang=[a-z]+&?/, "$1").replace(/[?&]$/, ""));   // the language just chosen wins
         $("setup").hidden = true;
         fillMe();
       });
@@ -440,7 +479,7 @@ function showSetup(step) {
 function chooseLang(l) {
   try { localStorage.setItem("brass-lang", l); } catch (_) {}
   // The whole page changes language and direction: simplest and surest is to load it again, on the instruments.
-  if (l !== LANG) location.replace(location.pathname + "?setup=inst");
+  if (l !== LANG) location.replace(location.pathname + "?setup=inst" + (NEXT ? "&next=" + encodeURIComponent(NEXT) : ""));
   else showSetup("inst");
 }
 
@@ -449,13 +488,15 @@ $("langEn").addEventListener("click", () => chooseLang("en"));
 $("backLang").addEventListener("click", () => showSetup("lang"));
 $("me").addEventListener("click", () => showSetup("lang"));
 
+// The install hint in the words of this browser's own menu (iPhone/iPad Safari: Share).
+$("install").dataset.tHtml = /SamsungBrowser/.test(navigator.userAgent) ? "installSamsung" : /Android/.test(navigator.userAgent) ? "installAndroid" : "install";
 applyText();
 fillTiles();
 fillMe();
 let chosen = false;
-try { chosen = !!localStorage.getItem("brass-lang"); } catch (_) {}
+try { chosen = !!localStorage.getItem("brass-lang") && !!localStorage.getItem("brass-inst"); } catch (_) {}
 const askFor = new URLSearchParams(location.search).get("setup");
-if (askFor === "inst") { history.replaceState(null, "", location.pathname); showSetup("inst"); }
+if (askFor === "inst") { history.replaceState(null, "", location.pathname + (NEXT ? "?next=" + encodeURIComponent(NEXT) : "")); showSetup("inst"); }
 else if (!chosen) showSetup("lang");
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});

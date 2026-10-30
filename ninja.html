@@ -17,7 +17,7 @@
   (function () {
     var keep = /^(brass-|right-note-|ninja-|horn-ladder|breath$|buzz$|songs$|sound-game$)/;
     try {
-      if (/github\.io$/.test(location.hostname)) {
+      if (/github\.io$/.test(location.hostname) && navigator.onLine !== false) {   // offline, the old copy keeps working
         var d = {};
         for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (keep.test(k)) d[k] = localStorage.getItem(k); }
         var page = location.pathname.split("/").pop() || "index.html";
@@ -27,9 +27,15 @@
       var m = location.hash.match(/^#move=(.*)$/);
       if (m) {
         var s = JSON.parse(decodeURIComponent(m[1]));
-        for (var key in s) if (keep.test(key) && typeof s[key] === "string") localStorage.setItem(key, s[key]);
+        // Only what this device doesn't have yet: an old home-screen icon opens with #move every time.
+        for (var key in s) if (keep.test(key) && typeof s[key] === "string" && localStorage.getItem(key) === null) localStorage.setItem(key, s[key]);
         history.replaceState(null, "", location.pathname + location.search);
       }
+      // A link straight to a game on a new device: language and instrument first (home), then back to the game.
+      var here = location.pathname.split("/").pop();
+      if (/^(balloon-breath|buzz-along|sound-game|right-note|horn-ladder|ninja|songs|note-names)\.html$/.test(here)
+        && !localStorage.getItem("brass-inst") && !/[?&]test=/.test(location.search))
+        location.replace("index.html?next=" + encodeURIComponent(here + location.search));
     } catch (_) {}
   })();
   // English pages lay out left to right from the first paint (the language block fills in the words).
@@ -115,12 +121,26 @@
   .pause-keys { margin: 22px auto 0; max-width: 40em; font-size: 15px; color: #66707d; line-height: 2.1; }
   @media (hover: none) and (pointer: coarse) { .pause-keys { display: none; } }
   #overlayText:empty { display: none; }
+  .mic-help { margin: 0 auto 2vh; max-width: 30ch; text-align: start; font-size: clamp(16px, 2.6vh, 24px); line-height: 1.45; }
+  .mic-help[hidden], .mic-ask[hidden] { display: none; }
+  .mic-help ol { margin: .3em 0; padding-inline-start: 1.3em; }
+  .mic-help li { margin: .25em 0; }
+  .overlay .mic-help p { margin: 0; max-width: none; font-size: 1em; line-height: 1.45; }
+  .overlay .mic-help .mic-how { font-weight: 700; }
+  .overlay .mic-help .mic-parent { margin-top: .7em; font-size: .85em; opacity: .75; }
+  .overlay p.mic-ask { margin: 1.5vh auto 0; font-size: clamp(14px, 2.2vh, 20px); opacity: .8; }
   /* Phone upright: the picture is drawn wide, so suggest turning the phone. */
   .turn { display: none; }
   @media (orientation: portrait) and (max-width: 600px) { .overlay .turn { display: block; margin: 22px 0 0; font-size: 16px; font-weight: 500; opacity: .75; } }
   /* Phones: one compact top bar; the way home is the app's icon. */
   .home-icon { display: none; }
   @media (max-width: 600px) {
+    /* Upright phone: the way home and the icons on the first line, the choices (levels, modes) centred on a line of
+       their own below, instead of wrapping wherever they happen to run out of room (two and three ragged rows). */
+    .console:has(> .seg)::after { content: ""; order: 1; flex-basis: 100%; height: 0; }
+    .console > .seg { order: 2; }
+    .console > .seg:first-of-type { margin-inline-start: auto; }
+    .console > .seg:last-of-type { margin-inline-end: auto; }
     .console { gap: 6px 8px; padding: 6px 10px; }
     .home { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; font-size: 20px; }
     .home-word { display: none; }
@@ -128,6 +148,8 @@
     .icon-btn { min-width: 40px; min-height: 40px; padding: 0 8px; }
     .seg-btn { padding: 0 10px; }
   }
+  @media (max-width: 400px) { #fullscreen { display: none; } }   /* the smallest phones: no room, and iPhones can't anyway */
+  @media (max-width: 400px), (max-height: 500px) { .console { column-gap: 8px; padding-inline: 8px; } .seg-btn { font-size: 15px; padding: 0 8px; } }   /* English choices are wider */
 
   /* The cover: how to play without words (first visit, or "?"), then one button. */
   .cover { display: grid; justify-items: center; gap: 2.4vh; }
@@ -241,10 +263,12 @@
           </g>
         </svg>
         <p id="overlayText" data-t="startPrompt"></p>
+        <div class="mic-help" id="micHelp" hidden><p class="mic-how" data-t="micHow"></p><ol id="micSteps"></ol><p class="mic-parent" data-t="helpParent"></p></div>
         <div class="cover-btns">
           <button class="big-btn" id="startBtn" data-t="start"></button>
           <button class="help-btn" id="helpBtn" data-t-title="howTo" data-t-aria="howTo">?</button>
         </div>
+        <p class="mic-ask" id="micAsk" data-t="micAsk" hidden></p>
         <p class="turn turn-hint" role="img" data-t-aria="turn"></p>
       </div>
     </div>
@@ -287,10 +311,21 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "מנסים שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    micBlocked: "המיקרופון חסום", micAsk: "מאשרים מיקרופון ומתחילים", micHow: "איך פותחים:",
+    helpAndroid: ["לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים"],
+    helpAndroidApp: ["פותחים את tonebee.app ב־Chrome", "לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים", "חוזרים לטונבי"],
+    helpAndroidSystem: ["הגדרות הטלפון ← אפליקציות ← Chrome", "הרשאות ← מיקרופון ← מאפשרים"],
+    helpQuick: ["מושכים את המסך מלמעלה למטה", "גישה למיקרופון ← מפעילים"],
+    helpInApp: ["⋯ למעלה ← פתיחה בדפדפן", "בדפדפן לוחצים שוב ▶"],
+    helpSamsung: ["☰ ← הגדרות ← אתרים והורדות", "הרשאות אתרים ← מיקרופון ← tonebee.app ← מאפשרים"],
+    helpIos: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את Safari ופותחים מחדש"],
+    helpIosApp: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את טונבי ופותחים מחדש"],
+    helpDesktop: ["לוחצים על הסמל שליד הכתובת", "מיקרופון ← מאפשרים"],
+    helpParent: "לא נפתח? מבקשים מהורה לאשר (Family Link / זמן מסך)",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
@@ -300,8 +335,19 @@ const COMMON = {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
     mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
     keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
-    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    micBlocked: "Microphone is blocked", micAsk: "Tap Allow so we can hear you", micHow: "How to fix:",
+    helpAndroid: ["Tap the icon next to the address", "Permissions → Microphone → On"],
+    helpAndroidApp: ["Open tonebee.app in Chrome", "Tap the icon next to the address", "Permissions → Microphone → On", "Come back to Tonebee"],
+    helpAndroidSystem: ["Phone Settings → Apps → Chrome", "Permissions → Microphone → Allow"],
+    helpQuick: ["Swipe down from top of screen", "Microphone access → Turn on"],
+    helpInApp: ["Tap ⋯ → Open in browser", "Tap ▶ again"],
+    helpSamsung: ["☰ → Settings → Sites and downloads", "Site permissions → Microphone → tonebee.app → Allow"],
+    helpIos: ["Settings → Apps → Safari", "Microphone → Allow", "Close Safari and reopen"],
+    helpIosApp: ["Settings → Apps → Safari", "Microphone → Allow", "Close Tonebee and reopen"],
+    helpDesktop: ["Click the icon next to the address", "Microphone → Allow"],
+    helpParent: "Still blocked? Ask a parent to allow it (Family Link / Screen Time)",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
@@ -521,23 +567,21 @@ function loadSamples(inst) {
   }));
 }
 
+let starting = false;
 async function startMic() {
   if (fresh) return location.reload();          // after a lost mic every way back in (button, a tap, ▶) is a fresh page
+  if (starting || micStream) return;            // a double tap, or Space behind the browser's question: still one mic
   keepAwake(true);
   ensureCtx();
   loadSamples(state.inst);
   if (params.get("test")) return startTestTone();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail(T("onlyOnline"));
+  starting = true;
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_OPTIONS });
   } catch (err) {
-    tbTrack("mic_error", { reason: (err && err.name) || "unknown" });
-    const n = err && err.name;
-    return fail(n === "NotAllowedError" ? T("micDenied")
-      : n === "NotFoundError" ? T("micNotFound")
-      : n === "NotReadableError" ? T("micBusy")
-      : T("micFailed"));
-  }
+    return micError(err);
+  } finally { starting = false; }
   // iPad switches the hardware to the microphone's rate; an audio engine made before that can stay deaf.
   const track = micStream.getAudioTracks()[0];
   const micRate = track && track.getSettings ? track.getSettings().sampleRate : 0;
@@ -600,13 +644,46 @@ function fail(message) {
   $("card").hidden = true;
   $("overlay").hidden = false;
   $("overlayText").textContent = message;
+  $("micAsk").hidden = true;
   $("startBtn").textContent = T("tryAgain");
   $("micDot").classList.remove("on");
   $("micText").textContent = T("noMic");
 }
 
+// The microphone said no. Chrome and Safari never ask twice: once a child taps Block (or a parent's controls, or the phone's
+// own setting for the browser, refuse), every try fails at once with no question on screen. Say where to switch it on, for
+// this phone, and make "try again" a fresh page (iOS can also get stuck with InvalidStateError until the page is reopened).
+async function micError(err) {
+  const name = (err && err.name) || "unknown", text = String(err && err.message);
+  let why = /system/i.test(text) ? "system" : /dismiss/i.test(text) ? "dismissed" : "", perm = "";
+  try { perm = (await navigator.permissions.query({ name: "microphone" })).state; } catch (_) {}
+  if (name === "NotAllowedError" && perm === "granted") why = "system";   // the site may, but the phone won't let the browser
+  tbTrack("mic_error", { reason: name, why, perm });
+  fresh = true;
+  fail(name === "NotAllowedError" ? T("micBlocked") : name === "NotFoundError" ? T("micNotFound")
+    : name === "NotReadableError" ? T("micBusy") : T("micFailed"));
+  if (name === "NotAllowedError") showMicHelp(why);
+}
+// Another app's built-in browser (Instagram, Facebook, TikTok…): its web view refuses the microphone without asking.
+const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|musical_ly|Bytedance|Snapchat|LinkedInApp|Barcelona|\bLine\/|; wv\)/.test(navigator.userAgent)
+  || !!(window.TelegramWebview || window.TelegramWebviewProxy);
+function showMicHelp(why) {
+  const ua = navigator.userAgent, app = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  const steps = IN_APP ? "helpInApp" : IS_IOS ? (app ? "helpIosApp" : "helpIos") : why === "silent" ? "helpQuick"
+    : /SamsungBrowser/.test(ua) ? "helpSamsung" : !/Android/.test(ua) ? "helpDesktop"
+    : why === "system" ? "helpAndroidSystem" : app ? "helpAndroidApp" : "helpAndroid";
+  $("micSteps").replaceChildren(...T(steps).map(s => { const li = document.createElement("li"); li.textContent = s; return li; }));
+  $("micHelp").hidden = false;
+  $("micAsk").hidden = true;
+  const demo = $("demo");
+  if (demo) demo.toggleAttribute("hidden", true);
+}
+// First time on this phone the browser is about to ask: kids tap whatever is nearest, so say which.
+if (navigator.permissions) navigator.permissions.query({ name: "microphone" }).then(p => { $("micAsk").hidden = p.state !== "prompt"; }, () => {});
+
 function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
 addEventListener("pagehide", stopMic);
+addEventListener("pageshow", e => { if (e.persisted) location.reload(); });   // back from the back/forward cache with the mic off
 // The screen stays on while the game listens: a phone that locks itself (an iPhone after 30 s untouched, a paused
 // game) takes the mic with it. The browser lets go by itself when the page is hidden.
 let wake = null, wantAwake = false;
@@ -626,8 +703,14 @@ function needFresh(message, why) {
   if (paused) setPaused(false);                 // the pause screen would cover the way back
   fail(message);
   $("startBtn").textContent = T("resume");
+  if (why === "silent" && /Android/.test(navigator.userAgent)) showMicHelp("silent");
 }
-document.addEventListener("visibilitychange", () => { if (document.hidden && micStream) needFresh(T("keepListening"), "background"); });
+// Elsewhere (Android, a laptop switching to the slides) the mic survives being hidden: pause, and keep the screen awake again
+// on the way back. A mic that did die shows up anyway as an ended track or 3 s of exact silence.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && micStream) { if (IS_IOS) needFresh(T("keepListening"), "background"); else if (!paused) setPaused(true); }
+  else if (!document.hidden && micStream) keepAwake(true);
+});
 // "interrupted" is iOS's own state (a pause uses "suspended"): if a tap does not wake it, it is stuck.
 document.addEventListener("pointerup", () => {
   if (!state.listening || !ctx || ctx.state !== "interrupted") return;
@@ -738,7 +821,8 @@ function analyse() {
   state.heard = false;
   if (!sounding || performance.now() - state.soundSince < 200) { state.clarity = 0; return; }
 
-  const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 8000)), n = Math.floor(raw.length / D), sr2 = sr / D;
+  // A 16 kHz copy: at 8 kHz trumpet G4 (written A4) fell between lag steps and was heard an octave low.
+  const sr = ctx.sampleRate, D = Math.max(1, Math.round(sr / 16000)), n = Math.floor(raw.length / D), sr2 = sr / D;
   if (!deci || deci.length !== n) deci = new Float32Array(n);
   for (let i = 0; i < n; i++) { let s = 0; for (let j = 0; j < D; j++) s += raw[i * D + j]; deci[i] = s / D; }
 

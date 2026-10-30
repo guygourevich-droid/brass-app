@@ -17,7 +17,7 @@
   (function () {
     var keep = /^(brass-|right-note-|ninja-|horn-ladder|breath$|buzz$|songs$|sound-game$)/;
     try {
-      if (/github\.io$/.test(location.hostname)) {
+      if (/github\.io$/.test(location.hostname) && navigator.onLine !== false) {   // offline, the old copy keeps working
         var d = {};
         for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (keep.test(k)) d[k] = localStorage.getItem(k); }
         var page = location.pathname.split("/").pop() || "index.html";
@@ -27,9 +27,15 @@
       var m = location.hash.match(/^#move=(.*)$/);
       if (m) {
         var s = JSON.parse(decodeURIComponent(m[1]));
-        for (var key in s) if (keep.test(key) && typeof s[key] === "string") localStorage.setItem(key, s[key]);
+        // Only what this device doesn't have yet: an old home-screen icon opens with #move every time.
+        for (var key in s) if (keep.test(key) && typeof s[key] === "string" && localStorage.getItem(key) === null) localStorage.setItem(key, s[key]);
         history.replaceState(null, "", location.pathname + location.search);
       }
+      // A link straight to a game on a new device: language and instrument first (home), then back to the game.
+      var here = location.pathname.split("/").pop();
+      if (/^(balloon-breath|buzz-along|sound-game|right-note|horn-ladder|ninja|songs|note-names)\.html$/.test(here)
+        && !localStorage.getItem("brass-inst") && !/[?&]test=/.test(location.search))
+        location.replace("index.html?next=" + encodeURIComponent(here + location.search));
     } catch (_) {}
   })();
   // English pages lay out left to right from the first paint (the language block fills in the words).
@@ -192,25 +198,47 @@ const LANG = (() => {
 const COMMON = {
   he: {
     listening: "מקשיבים", noMicSound: "אין קול מהמיקרופון", muted: "מושתק", tapScreen: "לגעת במסך", noMic: "ללא מיקרופון",
-    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "לנסות שוב", startPrompt: "",
+    mic: "מיקרופון", test: "בדיקה", start: "▶ מנגנים", tryAgain: "מנסים שוב", startPrompt: "",
     keepListening: "עצרנו לרגע", onlyOnline: "המיקרופון עובד רק באתר tonebee.app",
-    micDenied: "מאשרים את המיקרופון בדפדפן", micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
+    micNotFound: "לא נמצא מיקרופון", micBusy: "המיקרופון תפוס באפליקציה אחרת",
     micFailed: "לא הצלחנו לפתוח את המיקרופון", micGone: "המיקרופון נותק",
+    micBlocked: "המיקרופון חסום", micAsk: "מאשרים מיקרופון ומתחילים", micHow: "איך פותחים:",
+    helpAndroid: ["לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים"],
+    helpAndroidApp: ["פותחים את tonebee.app ב־Chrome", "לוחצים על הסמל שליד הכתובת", "הרשאות ← מיקרופון ← מפעילים", "חוזרים לטונבי"],
+    helpAndroidSystem: ["הגדרות הטלפון ← אפליקציות ← Chrome", "הרשאות ← מיקרופון ← מאפשרים"],
+    helpQuick: ["מושכים את המסך מלמעלה למטה", "גישה למיקרופון ← מפעילים"],
+    helpInApp: ["⋯ למעלה ← פתיחה בדפדפן", "בדפדפן לוחצים שוב ▶"],
+    helpSamsung: ["☰ ← הגדרות ← אתרים והורדות", "הרשאות אתרים ← מיקרופון ← tonebee.app ← מאפשרים"],
+    helpIos: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את Safari ופותחים מחדש"],
+    helpIosApp: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את טונבי ופותחים מחדש"],
+    helpDesktop: ["לוחצים על הסמל שליד הכתובת", "מיקרופון ← מאפשרים"],
+    helpParent: "לא נפתח? מבקשים מהורה לאשר (Family Link / זמן מסך)",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
     diagTitle: "בדיקת מיקרופון (D)", diagAudio: "אודיו", diagMic: "מיקרופון", diagLevel: "רמה", diagVolume: "עוצמה",
-    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט"
+    diagPitch: "צליל", diagCents: "דיוק", diagFloor: "רצפה", moving: "זז", still: "עומד", sound: "צליל", quiet: "שקט", turn: "מסובבים את הטלפון לרוחב"
   },
   en: {
     listening: "Listening", noMicSound: "No sound from the mic", muted: "Muted", tapScreen: "Tap the screen", noMic: "No microphone",
     mic: "Microphone", test: "Test", start: "▶ Play", tryAgain: "Try again", startPrompt: "",
     keepListening: "Paused", onlyOnline: "The microphone only works on tonebee.app",
-    micDenied: "Allow the microphone in your browser", micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
+    micNotFound: "No microphone found", micBusy: "Another app is using the microphone",
     micFailed: "Couldn't open the microphone", micGone: "The microphone was disconnected",
+    micBlocked: "Microphone is blocked", micAsk: "Tap Allow so we can hear you", micHow: "How to fix:",
+    helpAndroid: ["Tap the icon next to the address", "Permissions → Microphone → On"],
+    helpAndroidApp: ["Open tonebee.app in Chrome", "Tap the icon next to the address", "Permissions → Microphone → On", "Come back to Tonebee"],
+    helpAndroidSystem: ["Phone Settings → Apps → Chrome", "Permissions → Microphone → Allow"],
+    helpQuick: ["Swipe down from top of screen", "Microphone access → Turn on"],
+    helpInApp: ["Tap ⋯ → Open in browser", "Tap ▶ again"],
+    helpSamsung: ["☰ → Settings → Sites and downloads", "Site permissions → Microphone → tonebee.app → Allow"],
+    helpIos: ["Settings → Apps → Safari", "Microphone → Allow", "Close Safari and reopen"],
+    helpIosApp: ["Settings → Apps → Safari", "Microphone → Allow", "Close Tonebee and reopen"],
+    helpDesktop: ["Click the icon next to the address", "Microphone → Allow"],
+    helpParent: "Still blocked? Ask a parent to allow it (Family Link / Screen Time)",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
     diagTitle: "Microphone check (D)", diagAudio: "Audio", diagMic: "Mic", diagLevel: "Level", diagVolume: "Volume",
-    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet"
+    diagPitch: "Pitch", diagCents: "Cents", diagFloor: "Floor", moving: "running", still: "stopped", sound: "sound", quiet: "quiet", turn: "Turn your phone sideways"
   }
 };
 const T = (key, ...args) => {
@@ -255,14 +283,31 @@ const MIN_GAP_MS = 250; // a projected full-screen colour change must never repe
 
 const state = { light: "red", words: true, sound: true, hold: 0, lastChange: 0, holdTimer: 0, queued: 0 };
 
-/* ---------- Sound ---------- */
+/* ---------- Sound ----------
+   The engine is made on the first tap on the light or key, never on load (nor by the controls: turning the
+   sound off must not make one). iOS can leave it "interrupted" (a call, Siri, the app in the background) or
+   close it, and resume() alone may never bring it back: every such tap or key resumes a suspended engine, and
+   one that is closed or interrupted, or still not running a second after a resume, is replaced by a new one
+   in the same tap. */
 
 let ctx = null;
+function wake() {
+  if (!state.sound) return;
+  const c = ctx;
+  if (c && c.state !== "running") {
+    if (c.state === "closed" || c.state === "interrupted" || (c.tried && Date.now() - c.tried > 1000)) { try { c.close().catch(() => {}); } catch (_) {} ctx = null; }
+    else if (!c.tried) { c.tried = Date.now(); c.resume().then(() => { c.tried = 0; }, () => {}); }
+  }
+  if (!ctx) {
+    // iPad/iPhone: play even when the device is set to silent.
+    if (navigator.audioSession) navigator.audioSession.type = "playback";
+    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
+  }
+}
+
 function beep(colour) {
-  if (!state.sound || colour === "off") return;
+  if (!state.sound || !ctx || colour === "off") return;
   try {
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === "suspended") ctx.resume();
     const t = ctx.currentTime + 0.01;
     const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
     o.type = colour === "red" ? "sine" : "triangle";
@@ -334,7 +379,7 @@ function toggleFullscreen() {
 
 /* ---------- Wiring ---------- */
 
-$("stage").addEventListener("click", () => advance(1));
+$("stage").addEventListener("click", () => { wake(); advance(1); });
 $("hold-len").addEventListener("change", e => { state.hold = +e.target.value; });
 $("words").addEventListener("change", e => { state.words = e.target.checked; $("stage").classList.toggle("no-words", !state.words); });
 $("sound").addEventListener("change", e => { state.sound = e.target.checked; });
@@ -344,14 +389,17 @@ document.addEventListener("click", e => {
   const b = e.target.closest("button");
   if (b && e.detail) b.blur();
 });
+// A control the teacher has just set lets go of the focus too, so the clicker goes back to the light.
+["hold-len", "words", "sound"].forEach(id => $(id).addEventListener("change", e => e.target.blur()));
 
 /* Keys are read from e.code, so they keep working with a Hebrew keyboard layout.
-   A presentation clicker sends PageDown/PageUp or the arrows; its blank-screen button sends B or period. */
+   A presentation clicker sends PageDown/PageUp or the arrows; its blank-screen button sends B or period.
+   A focused control keeps only Space and Enter (they press it); the clicker's keys always reach the light. */
 document.addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
-  const t = e.target;
-  if (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT") return;
-  const c = e.code;
+  const t = e.target, c = e.code;
+  if ((c === "Space" || c === "Enter") && (t.tagName === "BUTTON" || t.tagName === "SELECT" || t.tagName === "INPUT")) return;
+  wake();
   if (c === "Space" || c === "Enter" || c === "PageDown" || c === "ArrowRight" || c === "ArrowDown") { e.preventDefault(); advance(1); }
   else if (c === "PageUp" || c === "ArrowLeft" || c === "ArrowUp") { e.preventDefault(); advance(-1); }
   else if (c === "Digit1" || c === "Numpad1") setLight("red");

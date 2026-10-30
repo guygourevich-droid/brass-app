@@ -1,7 +1,10 @@
 {
+  "id": "/index.html",
   "name": "Tonebee",
   "short_name": "Tonebee",
-  "description": "Simple tools for brass and rhythm lessons.",
+  "description": "Simple tools for brass and rhythm lessons",
+  "lang": "he",
+  "dir": "rtl",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -9,6 +12,7 @@
   "theme_color": "#ffffff",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
