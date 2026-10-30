@@ -259,6 +259,8 @@ async function staticChecks(b, srv) {
   }
   const badBars = sg.songs.filter(s => s.bars.some(x => Math.abs(x - 4) > 1e-9)).map(s => s.id);
   check(!badBars.length, G, "every song bar sums to 4 beats", badBars.join(" ") || `${sg.songs.length} songs`);
+  const unplayed = sg.songs.map(x => x.id).filter(id => !SONG_IDS.includes(id));
+  check(!unplayed.length, G, "every song is in the follow-mode playthrough (SONG_IDS)", unplayed.join(" ") || `${SONG_IDS.length} songs`);
   const maxStep = Math.max(...sg.songs.flatMap(s => s.steps));
   check(maxStep <= 8, G, "song steps exist on every instrument's list", `highest step ${maxStep}`);
   const asc = a => a.every((x, i) => !i || x > a[i - 1]);
@@ -757,7 +759,8 @@ function breathTasks(b, srv) {
 /* ======================================================================================== */
 /*  Songs (songs.html)                                                                       */
 /* ======================================================================================== */
-const SONG_IDS = ["steps", "hotcross", "auclair", "walk", "mary", "rhody", "echo", "yonatan", "ode", "jingle", "twinkle", "london"];
+const SONG_IDS = ["steps", "hotcross", "auclair", "walk", "mary", "rhody", "echo", "yonatan", "ode", "jingle", "twinkle", "london",
+  "oldman", "michael", "oldmac", "chanukah"];   // the static group fails if songs.html has one this list lacks
 async function songsPage(b, srv, inst, extra = {}) {
   const p = await open(b, srv, "songs.html", { inst, ls: { ["right-note-" + inst]: { chosen: extra.chosen || NOTES[inst] }, songs: { mode: extra.mode || "follow", tempo: extra.tempo || 60, band: true, guide: false, repeat: "attack" } } });
   return p;
@@ -793,7 +796,7 @@ function songsTasks(b, srv) {
   const G = "songs", tasks = [];
   for (const inst of INSTS) {
     // Follow mode, ideal: every song, every instrument.
-    for (const part of [SONG_IDS.slice(0, 6), SONG_IDS.slice(6)]) tasks.push({ game: G, name: `${inst} follow ideal`, fn: async () => {
+    for (const part of [SONG_IDS.slice(0, 6), SONG_IDS.slice(6, 11), SONG_IDS.slice(11)]) tasks.push({ game: G, name: `${inst} follow ideal`, fn: async () => {
       const p = await songsPage(b, srv, inst);
       await p.eval(FOLLOW_BOT({ reaction: 80 }));
       for (const id of part) {

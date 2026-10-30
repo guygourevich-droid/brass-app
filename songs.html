@@ -521,6 +521,7 @@ const SAMPLES = {
 };
 
 // Melodies as "step:beats", bars split by "|". All public domain or written for this app (`own`); all in 4/4.
+// `home` = the step the song is in, when it is not do (the band's chords follow it).
 const SONGS = [
   { id: "steps", title: "מדרגות", en: "Steps", own: true, music: "1 2 3:2 | 3 2 1:2 | 1 2 3 2 | 1:4 | 3 2 1:2 | 1 2 3:2 | 3 2 1 2 | 1:4" },
   { id: "hotcross", title: "לחמניות חמות", en: "Hot Cross Buns", music: "3 2 1:2 | 3 2 1:2 | 1 1 1 1 | 2 2 2 2 | 3 2 1:2" },
@@ -533,7 +534,15 @@ const SONGS = [
   { id: "ode", title: "האודה לשמחה", en: "Ode to Joy", music: "3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 3:1.5 2:0.5 2:2 | 3 3 4 5 | 5 4 3 2 | 1 1 2 3 | 2:1.5 1:0.5 1:2" },
   { id: "jingle", title: "פעמוני חג", en: "Jingle Bells", music: "3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4:1.5 4:0.5 | 4 3 3 3:0.5 3:0.5 | 3 2 2 3 | 2:2 5:2 | 3 3 3:2 | 3 3 3:2 | 3 5 1:1.5 2:0.5 | 3:4 | 4 4 4 4 | 4 3 3 3:0.5 3:0.5 | 5 5 4 2 | 1:4" },
   { id: "twinkle", title: "כוכב קטן", en: "Twinkle Twinkle Little Star", music: "1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2 | 5 5 4 4 | 3 3 2:2 | 5 5 4 4 | 3 3 2:2 | 1 1 5 5 | 6 6 5:2 | 4 4 3 3 | 2 2 1:2" },
-  { id: "london", title: "גשר לונדון", en: "London Bridge", music: "5:1.5 6:0.5 5 4 | 3 4 5:2 | 2 3 4:2 | 3 4 5:2 | 5:1.5 6:0.5 5 4 | 3 4 5:2 | 2:2 5:2 | 3:2 1:2" }
+  { id: "london", title: "גשר לונדון", en: "London Bridge", music: "5:1.5 6:0.5 5 4 | 3 4 5:2 | 2 3 4:2 | 3 4 5:2 | 5:1.5 6:0.5 5 4 | 3 4 5:2 | 2:2 5:2 | 3:2 1:2" },
+  // Added 2026-10-30, each checked note for note against two or more sources, melodies only (no later lyrics or arrangements):
+  // This Old Man: Sharp & Baring-Gould 1906 (no. 46), US form with "with a"; Michael: Slave Songs of the United States 1867
+  // (no. 31), the modern rhythm, not Saletan's 1954 adaptation; Old MacDonald: traditional (1917), on fa because it dips to
+  // the low sol; חנוכה חנוכה: German folk tune, the 1923 מחרוזת print (זמרשת 221), not the later Nardi/Sambursky melody.
+  { id: "oldman", title: "איש זקן", en: "This Old Man", music: "5 3 5:2 | 5 3 5:2 | 6 5 4 3 | 2 3 4 3:0.5 4:0.5 | 5 1 1:0.5 1:0.5 1 | 1:0.5 2:0.5 3:0.5 4:0.5 5:2 | 5 2 2 4 | 3 2 1:2" },
+  { id: "michael", title: "מייקל, חתור אל החוף", en: "Michael, Row the Boat Ashore", music: "1:2 3:2 | 5:1.5 3:0.5 5 6 | 5:2 3 5 | 6:4 | 5:2 3 5 | 5:1.5 3:0.5 4 3 | 2:2 1 2 | 3:2 2:2 | 1:4" },
+  { id: "oldmac", title: "לדוד משה הייתה חווה", en: "Old MacDonald Had a Farm", home: 4, music: "4 4 4 1 | 2 2 1:2 | 6 6 5 5 | 4:3 1 | 4 4 4 1 | 2 2 1:2 | 6 6 5 5 | 4:3 1:0.5 1:0.5 | 4 4 4 1:0.5 1:0.5 | 4 4 4:2 | 4:0.5 4:0.5 4 4:0.5 4:0.5 4 | 4:0.5 4:0.5 4:0.5 4:0.5 4 4 | 4 4 4 1 | 2 2 1:2 | 6 6 5 5 | 4:4" },
+  { id: "chanukah", title: "חנוכה חנוכה", en: "Chanukah, Chanukah", music: "5 3 5:2 | 5 3 5:2 | 3 5 8 7 | 6:4 | 4 2 4:2 | 4 2 4:2 | 2 4 7 6 | 5:4 | 5 3 5:2 | 5 3 5:2 | 3 5 8 7 | 6:4 | 7 7 7:2 | 7 7 7:2 | 7 5 6 7 | 8:4" }
 ];
 const BEATS = 4;
 
@@ -861,7 +870,7 @@ function click(at, strong) {
 
 const CHORDS = { I: [0, 4, 7], IV: [5, 9, 0], V: [7, 11, 2], vi: [9, 0, 4] };
 function harmony(song) {
-  const tonic = writtenOf(1), out = [];
+  const tonic = writtenOf(song.home || 1), out = [];
   for (let h = 0; h < song.bars * 2; h++) {
     const from = h * 2, to = from + 2, score = { I: 0, IV: 0, V: 0, vi: 0 };
     song.events.forEach(e => {
@@ -894,7 +903,7 @@ function noise(c) {
 // Beats `first`…`last` of the song, starting at audio time `at`.
 function playBand(at, first, last, withChords) {
   const c = ensureCtx(), beat = 60 / state.tempo, harm = harmony(state.song);
-  const tonic = writtenOf(1) - INSTRUMENTS[state.inst].toWritten;      // concert
+  const tonic = writtenOf(state.song.home || 1) - INSTRUMENTS[state.inst].toWritten;      // concert
   const out = c.createGain();
   out.gain.value = 0.5;
   out.connect(c.destination);
