@@ -348,6 +348,9 @@ const COMMON = {
     helpIos: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את Safari ופותחים מחדש"],
     helpIosApp: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את טונבי ופותחים מחדש"],
     helpDesktop: ["לוחצים על הסמל שליד הכתובת", "מיקרופון ← מאפשרים"],
+    helpNativeIos: ["לוחצים על ״פתיחת הגדרות״", "מיקרופון ← מפעילים", "חוזרים לטונבי"],
+    helpNativeAndroid: ["לוחצים על ״פתיחת הגדרות״", "הרשאות ← מיקרופון ← מאפשרים", "חוזרים לטונבי"],
+    openSettings: "פתיחת הגדרות",
     helpParent: "לא נפתח? מבקשים מהורה לאשר (Family Link / זמן מסך)",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
@@ -370,6 +373,9 @@ const COMMON = {
     helpIos: ["Settings → Apps → Safari", "Microphone → Allow", "Close Safari and reopen"],
     helpIosApp: ["Settings → Apps → Safari", "Microphone → Allow", "Close Tonebee and reopen"],
     helpDesktop: ["Click the icon next to the address", "Microphone → Allow"],
+    helpNativeIos: ["Tap “Open Settings”", "Microphone → Turn on", "Come back to Tonebee"],
+    helpNativeAndroid: ["Tap “Open Settings”", "Permissions → Microphone → Allow", "Come back to Tonebee"],
+    openSettings: "Open Settings",
     helpParent: "Still blocked? Ask a parent to allow it (Family Link / Screen Time)",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
@@ -855,8 +861,9 @@ if (document.fonts && document.fonts.load) document.fonts.load("120px Bravura").
   document.addEventListener("visibilitychange", () => { if (document.hidden) send(); });
 })();
 
-// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it).
-if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
+// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it). The store app is
+// full screen already, and in its web view the button changes nothing.
+if (window.Capacitor || !(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
 
 // Teacher controls drawer (⚙, or S): opens under the top bar; Esc or a tap outside closes it.
 (function drawer() {

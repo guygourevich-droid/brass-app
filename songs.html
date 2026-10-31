@@ -147,6 +147,9 @@
   .mic-help li { margin: .25em 0; }
   .overlay .mic-help p { margin: 0; max-width: none; font-size: 1em; line-height: 1.45; }
   .overlay .mic-help .mic-how { font-weight: 700; }
+  .mic-help .mic-settings { display: block; margin: .5em 0 0; padding: .35em 1em; font: inherit; font-weight: 700; color: inherit;
+    background: none; border: 2px solid currentColor; border-radius: 999px; cursor: pointer; }
+  .mic-help .mic-settings[hidden] { display: none; }
   .overlay .mic-help .mic-parent { margin-top: .7em; font-size: .85em; opacity: .75; }
   .overlay p.mic-ask { margin: 1.5vh auto 0; font-size: clamp(14px, 2.2vh, 20px); opacity: .8; }
   /* Phones: one compact top bar; the way home is the app's icon. */
@@ -270,7 +273,7 @@
     <div class="overlay" id="overlay" hidden>
       <div>
         <p id="overlayText" data-t="startPrompt"></p>
-        <div class="mic-help" id="micHelp" hidden><p class="mic-how" data-t="micHow"></p><ol id="micSteps"></ol><p class="mic-parent" data-t="helpParent"></p></div>
+        <div class="mic-help" id="micHelp" hidden><p class="mic-how" data-t="micHow"></p><ol id="micSteps"></ol><button class="mic-settings" id="micSettings" data-t="openSettings" hidden></button><p class="mic-parent" data-t="helpParent"></p></div>
         <button class="big-btn" id="startBtn" data-t="start"></button>
         <p class="mic-ask" id="micAsk" data-t="micAsk" hidden></p>
       </div>
@@ -359,6 +362,9 @@ const COMMON = {
     helpIos: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את Safari ופותחים מחדש"],
     helpIosApp: ["הגדרות ← יישומים ← Safari", "מיקרופון ← אפשר", "סוגרים את טונבי ופותחים מחדש"],
     helpDesktop: ["לוחצים על הסמל שליד הכתובת", "מיקרופון ← מאפשרים"],
+    helpNativeIos: ["לוחצים על ״פתיחת הגדרות״", "מיקרופון ← מפעילים", "חוזרים לטונבי"],
+    helpNativeAndroid: ["לוחצים על ״פתיחת הגדרות״", "הרשאות ← מיקרופון ← מאפשרים", "חוזרים לטונבי"],
+    openSettings: "פתיחת הגדרות",
     helpParent: "לא נפתח? מבקשים מהורה לאשר (Family Link / זמן מסך)",
     pause: "השהיה (Esc)", resume: "▶ ממשיכים", stop: "■ עצירה", fullscreen: "מסך מלא (F)", home: "‹ טונבי", brand: "טונבי",
     trumpet: "חצוצרה", trombone: "טרומבון", horn: "קרן", instrument: "כלי",
@@ -381,6 +387,9 @@ const COMMON = {
     helpIos: ["Settings → Apps → Safari", "Microphone → Allow", "Close Safari and reopen"],
     helpIosApp: ["Settings → Apps → Safari", "Microphone → Allow", "Close Tonebee and reopen"],
     helpDesktop: ["Click the icon next to the address", "Microphone → Allow"],
+    helpNativeIos: ["Tap “Open Settings”", "Microphone → Turn on", "Come back to Tonebee"],
+    helpNativeAndroid: ["Tap “Open Settings”", "Permissions → Microphone → Allow", "Come back to Tonebee"],
+    openSettings: "Open Settings",
     helpParent: "Still blocked? Ask a parent to allow it (Family Link / Screen Time)",
     pause: "Pause (Esc)", resume: "▶ Continue", stop: "■ Stop", fullscreen: "Full screen (F)", home: "‹ Tonebee", brand: "Tonebee",
     trumpet: "Trumpet", trombone: "Trombone", horn: "Horn", instrument: "Instrument",
@@ -755,22 +764,30 @@ async function micError(err) {
     : name === "NotReadableError" ? T("micBusy") : T("micFailed"));
   if (name === "NotAllowedError") showMicHelp(why);
 }
+// The Tonebee app from the App Store / Google Play (Capacitor): the phone itself asks for the mic, and a refusal is undone in
+// the phone's settings for Tonebee, which the app can open (store/ in the project).
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 // Another app's built-in browser (Instagram, Facebook, TikTok…): its web view refuses the microphone without asking.
-const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|musical_ly|Bytedance|Snapchat|LinkedInApp|Barcelona|\bLine\/|; wv\)/.test(navigator.userAgent)
-  || !!(window.TelegramWebview || window.TelegramWebviewProxy);
+// The Tonebee app is a web view too ("; wv)" on Android), but not one of those.
+const IN_APP = !NATIVE && (/FBAN|FBAV|FB_IAB|Instagram|musical_ly|Bytedance|Snapchat|LinkedInApp|Barcelona|\bLine\/|; wv\)/.test(navigator.userAgent)
+  || !!(window.TelegramWebview || window.TelegramWebviewProxy));
 function showMicHelp(why) {
   const ua = navigator.userAgent, app = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
-  const steps = IN_APP ? "helpInApp" : IS_IOS ? (app ? "helpIosApp" : "helpIos") : why === "silent" ? "helpQuick"
+  const steps = NATIVE ? (why === "silent" ? "helpQuick" : IS_IOS ? "helpNativeIos" : "helpNativeAndroid")
+    : IN_APP ? "helpInApp" : IS_IOS ? (app ? "helpIosApp" : "helpIos") : why === "silent" ? "helpQuick"
     : /SamsungBrowser/.test(ua) ? "helpSamsung" : !/Android/.test(ua) ? "helpDesktop"
     : why === "system" ? "helpAndroidSystem" : app ? "helpAndroidApp" : "helpAndroid";
   $("micSteps").replaceChildren(...T(steps).map(s => { const li = document.createElement("li"); li.textContent = s; return li; }));
   $("micHelp").hidden = false;
+  $("micSettings").hidden = !NATIVE || why === "silent";
   $("micAsk").hidden = true;
   const demo = $("demo");
   if (demo) demo.toggleAttribute("hidden", true);
 }
 // First time on this phone the browser is about to ask: kids tap whatever is nearest, so say which.
-if (navigator.permissions) navigator.permissions.query({ name: "microphone" }).then(p => { $("micAsk").hidden = p.state !== "prompt"; }, () => {});
+if (NATIVE) window.Capacitor.nativePromise("Tonebee", "micPermission").then(p => { $("micAsk").hidden = p.state !== "prompt"; }, () => {});
+else if (navigator.permissions) navigator.permissions.query({ name: "microphone" }).then(p => { $("micAsk").hidden = p.state !== "prompt"; }, () => {});
+$("micSettings").addEventListener("click", () => window.Capacitor.nativePromise("Tonebee", "openSettings").catch(() => {}));
 
 function stopMic() { if (micStream) micStream.getTracks().forEach(t => t.stop()); micStream = null; state.listening = false; }
 addEventListener("pagehide", stopMic);
@@ -1468,7 +1485,7 @@ function buildList() {
   later.children[0].textContent = T("moreSongs");
   later.children[1].textContent = T("moreAsk");
   later.addEventListener("click", () => tbTrack("notify_click", { what: "songs" }));
-  box.appendChild(later);
+  if (!window.Capacitor) box.appendChild(later);   // the store app: no links out without a parent (stores' kids rules)
   $("empty").hidden = open.length > 0;
   $("more").textContent = locked.length && open.length ? T("lockedNote") : "";
 }
@@ -1657,8 +1674,9 @@ document.getElementById("pauseStop").addEventListener("click", e => { e.stopProp
   document.addEventListener("visibilitychange", () => { if (document.hidden) send(); });
 })();
 
-// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it).
-if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
+// iPhone has no full screen for web pages: hide the button there (iPad, Android and computers keep it). The store app is
+// full screen already, and in its web view the button changes nothing.
+if (window.Capacitor || !(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { const fs = document.getElementById("fullscreen"); if (fs) fs.style.display = "none"; }
 </script>
 </body>
 </html>

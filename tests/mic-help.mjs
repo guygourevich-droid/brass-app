@@ -102,6 +102,28 @@ try {
     check(r.help && /גישה למיקרופון/.test(r.steps.join(" ")), `silent mic on Android → quick-settings steps (${r.title})`);
     p.close();
   }
+  // The store app (Capacitor): Tonebee's own settings page and a button to it, never "open in browser"; no ⛶, no install hint.
+  const NATIVE_STUB = `window.__calls = []; window.Capacitor = { isNativePlatform: () => true,
+    nativePromise: (p, m) => { window.__calls.push(m); return Promise.resolve(m === "micPermission" ? { state: "prompt" } : {}); } };`;
+  for (const [os, ua, step] of [["Android", UA.instagram.replace(/ Instagram.*/, ""), /הרשאות/], ["iOS", "Mozilla/5.0 (iPhone; CPU iPhone OS 26_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148", /^מיקרופון/]]) {
+    const p = await b.newPage({ ...VIEWPORTS.phone, ua });
+    await prep(p);
+    await p.send("Page.addScriptToEvaluateOnNewDocument", { source: NATIVE_STUB });
+    await b.denyMic(origin);
+    await p.goto(`${s.url}sound-game.html`);
+    check((await read(p)).ask, `store app ${os}: hint from the app's own permission`);
+    await p.eval("startMic()");
+    await sleep(500);
+    const r = await read(p);
+    const btn = await p.eval(`!document.getElementById('micSettings').hidden && getComputedStyle(document.getElementById('micSettings')).display !== 'none'`);
+    check(r.help && r.steps.length === 3 && /הגדרות/.test(r.steps[0]) && step.test(r.steps[1]) && btn, `store app ${os}: own settings steps + button (${r.steps.join(" | ")})`);
+    await p.click("#micSettings");
+    check((await p.eval("window.__calls")).includes("openSettings"), `store app ${os}: the button opens the phone's settings`);
+    check(await p.eval(`getComputedStyle(document.getElementById('fullscreen')).display === 'none'`), `store app ${os}: no ⛶`);
+    await p.goto(`${s.url}index.html`);
+    check(await p.eval(`!document.getElementById('install')`), `store app ${os}: no install hint`);
+    p.close();
+  }
   // A link straight to a game on a new device goes through setup, then back to the game.
   {
     const p = await b.newPage({ ...VIEWPORTS.phone, ua: UA.android });
