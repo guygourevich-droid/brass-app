@@ -41,6 +41,90 @@
   // English pages lay out left to right from the first paint (the language block fills in the words).
   try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
 </script>
+<!-- instruments: edit in index.html only, then `node tests/sync-instruments.mjs` copies it to every page -->
+<script>
+/* ---------- Instruments: the one list every page reads ----------
+   One entry per instrument, in the order of the setup screen. Notes are WRITTEN midi, what the child reads
+   (60 = C4, 62 = D4, 64 = E4, 65 = F4, 67 = G4, 69 = A4, 71 = B4, 72 = C5); sounds play at CONCERT pitch
+   (written = concert + toWritten).
+   ready    false = on the setup screen as "coming soon"
+   clef     "treble" | "bass"
+   key      the written key of the songs ("C", "G", "Bb"…, see KEY_SIG): its key signature, and do (step 1 of every
+            song) = the lowest note in `notes` with the key's name. Black keys are flats, except the key's own sharps.
+   hz       [low, high] concert Hz the note games listen between: about 0.8 × the lowest note and 2 × the highest,
+            so an overblown octave shows as a wrong note, not as the right one.
+   notes    the notes the teacher can tick (Right Note's picker, shared with Note Ninja, Songs and the Ladder);
+            keep them on or near the staff (treble: A3 to G5), where every game screen has room
+   def      ticked on a new device
+   open     notes with no valves (brass), marked "no fingers" in the picker
+   samples  recordings in sounds/<id>/, named by CONCERT pitch with flats: cents off equal temperament (playback
+            corrects it). A note more than 3 semitones from every recording plays a plain tone.
+   games    the home tiles it shows; a link to any other game goes home
+   Names are in index.html TEXT, pictures in icons/inst/<id>.png. Buzzing and the Ladder's open notes keep their
+   brass-only numbers in their own pages. */
+const INSTRUMENT_DATA = {
+  trumpet: {
+    ready: true, clef: "treble", toWritten: 2, key: "C", hz: [180, 1000],
+    notes: [60, 62, 64, 65, 67, 69, 71, 72], def: [60, 62, 64, 65, 67], open: [60, 67, 72],
+    samples: { Bb3: -10, C4: 16, D4: 13, Eb4: 3, F4: -3, G4: 11, A4: 7, Bb4: 8 },
+    games: "ramzor breath buzz long right ladder ninja songs names clap"
+  },
+  trombone: {
+    ready: true, clef: "bass", toWritten: 0, key: "Bb", hz: [80, 500],
+    notes: [46, 48, 50, 51, 53, 55, 57, 58], def: [46, 48, 50, 51, 53], open: [46, 53, 58],
+    samples: { Bb2: -5, C3: -7, D3: -16, Eb3: -24, F3: 2, G3: 1, A3: 1, Bb3: 10 },
+    games: "ramzor breath buzz long right ladder ninja songs names clap"
+  },
+  horn: {
+    ready: true, clef: "treble", toWritten: 7, key: "C", hz: [130, 800],
+    notes: [60, 62, 64, 65, 67, 69, 71, 72, 76], def: [60, 62, 64, 65, 67], open: [60, 67, 72, 76],
+    samples: { F2: -34, C3: 5, F3: 13, G3: 4, A3: -14, Bb3: 10, C4: -7, D4: 9, E4: 8, Eb4: 11, F4: 14, G4: 18, A4: 7, C5: 2 },
+    games: "ramzor breath buzz long right ladder ninja songs names clap"
+  },
+  sax: {      // alto sax in E♭: written G = concert B♭, the band's first key
+    ready: true, clef: "treble", toWritten: 9, key: "G", hz: [110, 900],
+    notes: [62, 64, 65, 66, 67, 69, 71, 72, 74, 76, 77, 78, 79], def: [67, 69, 71, 72, 74], open: [],   // F♮ too: written C is the band's 2nd key
+    samples: { F3: -11, G3: 0, A3: -2, Bb3: 1, C4: -3, D4: 0, Eb4: -9, F4: 14, G4: 19, A4: 10, Bb4: 15 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  },
+  flute: {
+    ready: true, clef: "treble", toWritten: 0, key: "Bb", hz: [200, 2400],
+    notes: [65, 67, 69, 70, 72, 74, 75, 77, 79], def: [70, 72, 74, 75, 77], open: [],
+    samples: { F4: 8, G4: 11, A4: 13, Bb4: 19, C5: 17, D5: 13, Eb5: 8, F5: 10, G5: 24, A5: 16, Bb5: 21 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  },
+  clarinet: { // B♭ clarinet: written C = concert B♭
+    ready: true, clef: "treble", toWritten: 2, key: "C", hz: [110, 1100],
+    notes: [57, 59, 60, 62, 64, 65, 67, 69, 70, 71, 72], def: [60, 62, 64, 65, 67], open: [],   // low A B, throat B♭; B and C5 over the break
+    samples: { Bb3: -5, C4: -3, D4: -10, Eb4: -4, F4: -2, G4: 0, A4: 1, Bb4: 1 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  },
+  recorder: { // soprano recorder: sounds an octave above the written note; B A G first
+    ready: true, clef: "treble", toWritten: -12, key: "G", hz: [400, 2400],
+    notes: [62, 64, 65, 66, 67, 69, 71, 72, 74, 76], def: [67, 69, 71], open: [],   // F♮ and F♯; after B A G come C' and D'
+    samples: { C5: 4, D5: 4, E5: 8, Gb5: -3, Ab5: 1, Bb5: 1, C6: 0, D6: 2, E6: 0 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  }
+};
+// Sharps (+) or flats (−) of each key.
+const KEY_SIG = { C: 0, G: 1, D: 2, A: 3, F: -1, Bb: -2, Eb: -3 };
+// Black keys this instrument reads as sharps (its key's own: F♯ in G); every other one is a flat.
+const sharpsOf = id => [6, 1, 8, 3, 10].slice(0, Math.max(0, KEY_SIG[INSTRUMENT_DATA[id].key]));
+// Do: the lowest note in `notes` with the key's name.
+const doOf = id => { const I = INSTRUMENT_DATA[id], pc = ({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[I.key[0]] + (I.key[1] === "b" ? 11 : 0)) % 12; return I.notes.find(n => n % 12 === pc); };
+// Every game's file and its id (the home tiles; the ids in `games`).
+const GAME_OF = { "ramzor.html": "ramzor", "balloon-breath.html": "breath", "buzz-along.html": "buzz", "sound-game.html": "long",
+  "right-note.html": "right", "horn-ladder.html": "ladder", "ninja.html": "ninja", "songs.html": "songs", "note-names.html": "names", "clap-along.html": "clap" };
+const playsGame = (id, game) => !!INSTRUMENT_DATA[id] && INSTRUMENT_DATA[id].games.split(" ").includes(game);
+// A link to a game this device's instrument doesn't play (from another class) goes home.
+(function () {
+  try {
+    var game = GAME_OF[location.pathname.split("/").pop()], id = localStorage.getItem("brass-inst");
+    if (game && INSTRUMENT_DATA[id] && !playsGame(id, game) && !/[?&]test=/.test(location.search)) location.replace("index.html");
+  } catch (_) {}
+})();
+</script>
+<!-- /instruments -->
 <style>
   :root {
     --ink: #15181d;
@@ -472,24 +556,12 @@ const SOLFEGE = T("noteNames");      // English: letters; Hebrew: do re mi
 const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
 const PC_NAME = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 
-// Same instruments and note lists as right-note.html, so the shared note choice means the same notes.
+// This page's view of the shared instrument list (INSTRUMENT_DATA, in <head>), the same notes as Right Note's picker.
 // written = concert + toWritten.
-const INSTRUMENTS = {
-  trumpet:  { clef: "treble", toWritten: 2, lo: 180, hi: 1000,
-              notes: [60, 62, 64, 65, 67, 69, 71, 72], open: [60, 67, 72], def: [60, 62, 64, 65, 67] },
-  trombone: { clef: "bass",  toWritten: 0, lo: 80, hi: 500,
-              notes: [46, 48, 50, 51, 53, 55, 57, 58], open: [46, 53, 58], def: [46, 48, 50, 51, 53] },
-  horn:     { clef: "treble", toWritten: 7, lo: 130, hi: 800,
-              notes: [60, 62, 64, 65, 67, 69, 71, 72, 76], open: [60, 67, 72, 76], def: [60, 62, 64, 65, 67] }
-};
-
-// Real recordings (University of Iowa MIS, ff), named by CONCERT pitch, with how many cents each
-// measured off equal temperament; playback corrects it.
-const SAMPLES = {
-  trumpet:  { Bb3: -10, C4: 16, D4: 13, Eb4: 3, F4: -3, G4: 11, A4: 7, Bb4: 8 },
-  trombone: { Bb2: -5, C3: -7, D3: -16, Eb3: -24, F3: 2, G3: 1, A3: 1, Bb3: 10 },
-  horn:     { F2: -34, C3: 5, F3: 13, G3: 4, A3: -14, Bb3: 10, C4: -7, D4: 9, E4: 8, Eb4: 11, F4: 14, G4: 18, A4: 7, C5: 2 }
-};
+const INSTRUMENTS = Object.fromEntries(Object.entries(INSTRUMENT_DATA).map(([id, d]) =>
+  [id, { clef: d.clef, toWritten: d.toWritten, lo: d.hz[0], hi: d.hz[1], notes: d.notes, open: d.open, def: d.def }]));
+// Real recordings, named by CONCERT pitch, with how many cents each measured off equal temperament; playback corrects it.
+const SAMPLES = Object.fromEntries(Object.entries(INSTRUMENT_DATA).map(([id, d]) => [id, d.samples]));
 
 const TOL_CENTS = 50;           // same as right-note "normal"
 const HIT_HOLD_MS = 500;        // hold this long and the ninja slices
@@ -514,8 +586,8 @@ function spell(midi) {
   let octave = Math.floor(Math.round(midi) / 12) - 1;
   let step = 0, alter = 0;
   for (let i = 6; i >= 0; i--) if (SEMITONE[i] <= pc) { step = i; alter = pc - SEMITONE[i]; break; }
-  // Brass reads flats: B♭ and E♭, never A♯ or D♯.
-  if (alter > 0) { step = (step + 1) % 7; alter = -1; if (step === 0) octave += 1; }
+  // Flats (B♭, E♭, never A♯ or D♯), except the key's own sharps (F♯ for a sax or recorder in G).
+  if (alter > 0 && !sharpsOf(state.inst).includes(pc)) { step = (step + 1) % 7; alter = -1; if (step === 0) octave += 1; }
   return { step, alter, octave: step === 0 && alter === -1 ? octave + 1 : octave };
 }
 const diatonicOf = sp => sp.octave * 7 + sp.step;
@@ -541,7 +613,6 @@ function load() {
 
 function save() {
   try {
-    localStorage.setItem("brass-inst", state.inst);
     localStorage.setItem("ninja-" + state.inst, JSON.stringify({ count: state.count, time: state.time, show: state.show, ref: state.ref }));
     let shared = null;
     try { shared = JSON.parse(localStorage.getItem("right-note-" + state.inst) || "null"); } catch (_) {}
@@ -868,11 +939,19 @@ function detect(buf, sampleRate, fMin, fMax) {
   }
   if (peak < 0.4) return null;
   const threshold = peak * 0.9;
+  const isPeak = l => nsdf[l] >= nsdf[l - 1] && nsdf[l] >= nsdf[l + 1];
+  // A peak's interpolated height: at high pitch the coarse lag grid samples it low.
+  const top = l => { const y1 = nsdf[l - 1], y2 = nsdf[l], y3 = nsdf[l + 1], d = 2 * y2 - y1 - y3; return d > 1e-9 ? y2 + (y3 - y1) * (y3 - y1) / (8 * d) : y2; };
   for (let lag = minLag + 1; lag < maxLag; lag++) {
-    if (nsdf[lag] > threshold && nsdf[lag] >= nsdf[lag - 1] && nsdf[lag] >= nsdf[lag + 1]) {
-      const y1 = nsdf[lag - 1], y2 = nsdf[lag], y3 = nsdf[lag + 1];
+    if (nsdf[lag] > threshold && isPeak(lag)) {
+      // A weak fundamental (flute E♭5/E5: the 2nd harmonic 17–21 dB louder): when the peak at twice this lag is
+      // clearly higher, that is the real period, an octave lower.
+      let best = lag;
+      for (let l2 = 2 * lag - 2; l2 <= 2 * lag + 2 && l2 < maxLag; l2++)
+        if (isPeak(l2) && top(l2) > top(lag) + 0.03 && (best === lag || top(l2) > top(best))) best = l2;
+      const y1 = nsdf[best - 1], y2 = nsdf[best], y3 = nsdf[best + 1];
       const denom = 2 * (2 * y2 - y1 - y3);
-      return { freq: sampleRate / (lag + (Math.abs(denom) > 1e-9 ? (y3 - y1) / denom : 0)), clarity: y2 };
+      return { freq: sampleRate / (best + (Math.abs(denom) > 1e-9 ? (y3 - y1) / denom : 0)), clarity: y2 };
     }
   }
   return null;

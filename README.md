@@ -1,13 +1,13 @@
 # Tonebee (טונבי)
 
-Playful practice tools for beginner brass and rhythm: trumpet, trombone and horn in F, ages 9–12. Projected in class, or on a phone or iPad at home. Hebrew and English. Plain HTML — no build step, no server, works offline.
+Playful practice tools for beginner wind players and rhythm: trumpet, trombone, horn in F, alto sax, clarinet, flute and soprano recorder, ages 9–12. Projected in class, or on a phone or iPad at home. Hebrew and English. Plain HTML — no build step, no server, works offline.
 
 **Open:** https://tonebee.app · **Contact:** hello@tonebee.app
 
 ## Tools
 - **רמזור / Traffic Light** (`ramzor.html`) — teacher-controlled red/yellow/green for starting, stopping and breathing together. No microphone.
 - **נשימה / Breathing** (`balloon-breath.html`) — breathe in, blow out slowly: a soap bubble grows or the wind takes the dandelion seeds.
-- **זמזום / Buzzing** (`buzz-along.html`) — mouthpiece buzzing with a bee: any buzz, match a flower's note, hold it, then sirens.
+- **זמזום / Buzzing** (`buzz-along.html`) — mouthpiece buzzing with a bee: any buzz, match a flower's note, hold it, then sirens (brass only).
 - **צליל ארוך / Long Note** (`sound-game.html`) — one steady note flies a rocket into space.
 - **צליל נכון / Right Note** (`right-note.html`) — the note you want and the note you play, on one staff.
 - **סולם / Ladder** (`horn-ladder.html`) — a monkey climbs to the note you play; catch the banana.
@@ -29,7 +29,12 @@ Open the link on the classroom laptop, allow the microphone, and play a note fro
 2. Add a tile for it in `index.html`, with its words in both `he` and `en`.
 3. Add the file to `FILES` in `sw.js` and bump `CACHE`, otherwise installed devices keep the old offline copy.
 
+## Add an instrument
+1. Add its entry to `INSTRUMENT_DATA` in `index.html` (the comment above it explains every field), its name to `TEXT` in `index.html` and its Note Names line to `TEXT.info` in `note-names.html`, and its picture as `icons/inst/<id>.png`.
+2. Recordings (optional): `sounds/<id>/<concert note>.m4a`, about 2 s, listed in `samples` with their cents and in `FILES` in `sw.js`.
+3. `node tests/sync-instruments.mjs`, then `node tests/consistency.mjs` says what is still missing.
+
 ## Deploy
 Cloudflare Workers static assets: `npx wrangler deploy` from this folder (`wrangler.jsonc`).
 
-Fonts: Lexend, Atkinson Hyperlegible, Rubik (Hebrew) and Bravura (music symbols), all SIL Open Font License (`fonts/OFL-*.txt`). Horn, trumpet and trombone recordings: University of Iowa Musical Instrument Samples.
+Fonts: Lexend, Atkinson Hyperlegible, Rubik (Hebrew) and Bravura (music symbols), all SIL Open Font License (`fonts/OFL-*.txt`). Horn, trumpet, trombone, alto sax, clarinet and flute recordings: University of Iowa Musical Instrument Samples. Soprano recorder: Versilian Community Sample Library (VCSL, CC0).

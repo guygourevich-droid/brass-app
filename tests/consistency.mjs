@@ -51,6 +51,12 @@ const GAMES = PAGES.filter(p => p !== "index.html");
 const src = {};
 for (const p of PAGES) src[p] = readFileSync(join(ROOT, p), "utf8");
 const lineOf = (text, idx) => text.slice(0, idx).split("\n").length;
+// The instrument list (INSTRUMENT_DATA in index.html), for the runtime checks: every instrument, its games.
+const INSTR = (() => { try {
+  const js = src["index.html"].slice(src["index.html"].indexOf("<!-- instruments:")).match(/<script>([\s\S]*?)<\/script>/)[1];
+  return vm.runInNewContext(js + "\n;({ D: INSTRUMENT_DATA, GAME_OF, playsGame })", {});
+} catch (_) { return { D: {}, GAME_OF: {}, playsGame: () => true }; } })();
+const INST_IDS = Object.keys(INSTR.D), READY = INST_IDS.filter(k => INSTR.D[k].ready);
 
 // A small JS scanner: skips strings, templates, comments and regex literals so brackets can be matched.
 function skipJs(s, i, prev) {
@@ -517,6 +523,68 @@ function staticChecks() {
     report("mic block: shared code identical on the 7 mic pages (comments/whitespace ignored)", fails, warns);
   }
 
+  // --- Instruments: one list (INSTRUMENT_DATA), edited in index.html and copied to every page ---
+  const INST_START = "<!-- instruments:", INST_END = "<!-- /instruments -->";
+  const instBlock = p => { const a = src[p].indexOf(INST_START), b = src[p].indexOf(INST_END); return a < 0 || b < a ? null : { text: src[p].slice(a, b), where: `${p}:${lineOf(src[p], a)}` }; };
+  sameEverywhere("instruments: the INSTRUMENT_DATA block is identical on every page (edit index.html, then `node tests/sync-instruments.mjs`)", instBlock);
+  report("instruments: the block sits in <head>, before the page's own scripts", PAGES.filter(p => { const b = instBlock(p); return !b || src[p].indexOf(INST_START) > src[p].indexOf("</head>"); }).map(p => `${p}: not in <head>`));
+  let INST = null;
+  {
+    const fails = [], warns = [], b = instBlock("index.html");
+    try {
+      const js = b.text.match(/<script>([\s\S]*)<\/script>/)[1];
+      INST = vm.runInNewContext(js + "\n;({ INSTRUMENT_DATA, KEY_SIG, GAME_OF, doOf, sharpsOf, playsGame })", {});
+    } catch (e) { fails.push("index.html: the instruments block does not evaluate: " + e.message); }
+    if (INST) {
+      const { INSTRUMENT_DATA: D, KEY_SIG, GAME_OF } = INST, games = new Set(Object.values(GAME_OF)), hz = m => 440 * Math.pow(2, (m - 69) / 12);
+      const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }, sampleMidi = n => { const m = n.match(/^([A-G])(b?)(\d)$/); return m && 12 * (+m[3] + 1) + SEMI[m[1]] - (m[2] ? 1 : 0); };
+      const buzzKeys = (src["buzz-along.html"].match(/const INSTRUMENTS = \{([\s\S]*?)\n\};/) || ["", ""])[1].match(/^\s*(\w+):/gm)?.map(k => k.trim().slice(0, -1)) || [];
+      const ladderKeys = (src["horn-ladder.html"].match(/const INSTRUMENTS = \{([\s\S]*?)\n\};/) || ["", ""])[1].match(/^  (\w+): \{/gm)?.map(k => k.trim().split(":")[0]) || [];
+      for (const [id, I] of Object.entries(D)) {
+        const f = msg => fails.push(`INSTRUMENT_DATA.${id}: ${msg}`);
+        if (!["treble", "bass"].includes(I.clef)) f(`clef ${I.clef}`);
+        if (!Number.isInteger(I.toWritten)) f(`toWritten ${I.toWritten}`);
+        if (!(I.key in KEY_SIG)) f(`key ${I.key} not in KEY_SIG`);
+        const N = I.notes || [];
+        if (!N.length || N.some((n, i) => !Number.isInteger(n) || (i && n <= N[i - 1]))) f("notes must be whole numbers, low to high, no repeats");
+        if (!I.def?.length || I.def.some(n => !N.includes(n))) f("def must be some of `notes`");
+        if ((I.open || []).some(n => !N.includes(n))) f("open must be some of `notes`");
+        const dn = INST.doOf(id);
+        if (dn === undefined) f(`no ${I.key} in notes: songs have no do`);
+        else if (!I.def.includes(dn)) f(`def leaves out do (${dn}): no song is playable on a new device`);
+        const [lo, hi] = I.hz || [];
+        if (!(lo > 0 && hi > lo)) f(`hz ${JSON.stringify(I.hz)}`);
+        else {
+          const low = hz(N[0] - I.toWritten), top = hz(N.at(-1) - I.toWritten);
+          if (lo > 0.85 * low) f(`hz low ${lo} is too close to the lowest note (${low.toFixed(0)} Hz): keep it ≤ 0.85 ×`);
+          if (hi < 1.15 * top) f(`hz high ${hi} is too close to the highest note (${top.toFixed(0)} Hz): keep it ≥ 1.15 ×`);
+        }
+        const [minN, maxN] = I.clef === "treble" ? [57, 79] : [40, 59];     // treble A3–G5: checked on every game screen
+        N.filter(n => n < minN || n > maxN).forEach(n => f(`note ${n} is off the staff's safe range (${minN}–${maxN}) for ${I.clef} clef`));
+        const names = Object.keys(I.samples || {});
+        for (const n of names) {
+          if (sampleMidi(n) === null) f(`sample ${n}: name it by concert pitch with a flat (Bb4, Eb5), not a sharp`);
+          else if (!existsSync(join(ROOT, `sounds/${id}/${n}.m4a`))) f(`sounds/${id}/${n}.m4a missing`);
+          else if (!filesSet.has(`sounds/${id}/${n}.m4a`)) f(`sounds/${id}/${n}.m4a not in sw.js FILES (offline)`);
+        }
+        if (names.length) N.forEach(n => { const c = n - I.toWritten; if (!names.some(x => Math.abs(sampleMidi(x) - c) <= 3)) f(`note ${n} has no recording within 3 semitones (a plain tone plays)`); });
+        else if (I.ready) warns.push(`INSTRUMENT_DATA.${id}: no recordings, every reference is a plain tone`);
+        const g = (I.games || "").split(" ");
+        g.filter(x => !games.has(x)).forEach(x => f(`games: unknown game "${x}" (one of ${[...games].join(" ")})`));
+        if (g.includes("buzz") && !buzzKeys.includes(id)) f("plays buzz but buzz-along.html INSTRUMENTS has no entry for it");
+        for (const l of ["he", "en"]) {
+          if (!LANGS["index.html"].TEXT?.[l]?.[id] && !LANGS["index.html"].COMMON?.[l]?.[id]) f(`no name in index.html TEXT.${l}`);
+          if (g.includes("names") && !LANGS["note-names.html"].TEXT?.[l]?.info?.[id]) f(`no Note Names info line in TEXT.${l}.info`);
+        }
+        if (!existsSync(join(ROOT, `icons/inst/${id}.png`))) f(`icons/inst/${id}.png missing`);
+      }
+      for (const k of buzzKeys) if (!D[k]) fails.push(`buzz-along.html INSTRUMENTS.${k} is not in INSTRUMENT_DATA`);
+      for (const k of ladderKeys) if (!D[k]) fails.push(`horn-ladder.html open notes for ${k}, which is not in INSTRUMENT_DATA`);
+      report(`instruments: every entry is complete and fits the games (${Object.keys(D).join(", ")})`, fails, warns);
+    }
+  }
+  report("instruments: only the home screen writes the instrument (brass-inst)", GAMES.filter(p => /setItem\("brass-inst"/.test(src[p])).map(p => `${p}:${lineOf(src[p], src[p].search(/setItem\("brass-inst"/))} writes brass-inst: a settings tap would change the device's instrument`));
+
   // --- Home tiles ---
   {
     const fails = [], html = src["index.html"];
@@ -526,9 +594,7 @@ function staticChecks() {
       if (!existsSync(join(ROOT, t.img))) fails.push(`index.html:${t.line} tile picture ${t.img} does not exist`);
     }
     for (const g of GAMES) if (!tiles.some(t => t.href === g)) fails.push(`${g} has no tile on index.html`);
-    const d = constDecl(MAIN["index.html"].code, "TILES");
-    let TILES = {};
-    try { TILES = evalExpr(d.text); } catch (e) { fails.push("index.html TILES does not evaluate: " + e.message); }
+    const TILES = INST ? INST.GAME_OF : {};
     for (const t of tiles) {
       if (!TILES[t.href]) { fails.push(`index.html:${t.line} ${t.href} not in TILES → its name is T("t_undefined")`); continue; }
       for (const l of ["he", "en"]) if (!LANGS["index.html"].TEXT?.[l]?.["t_" + TILES[t.href]]) fails.push(`index.html: TEXT.${l}.t_${TILES[t.href]} missing (tile ${t.href})`);
@@ -564,7 +630,7 @@ function staticChecks() {
     const OK = {
       "▶": "start/resume/play (\"▶ ממשיכים\", \"Songs' ▶\")", "◀": "the same arrow pointing forward in Hebrew (\"הבא ◀\")", "⏸": "top-bar icon (⚙ ? ⏸ ⛶)", "⚙": "top-bar icon; Songs \"⚙ לבחור צלילים\"",
       "⭐": "Ninja's perfect round \"מושלם! ⭐\" (agreed exception)", "🔒": "Songs' locked list (\"faded and 🔒\")",
-      "🥁": "Songs' band toggle", "🎧": "Songs' Listen", "🎺": "Songs' \"עם המנגינה\" toggle", "🔥": "Ninja's streak"
+      "🥁": "Songs' band toggle", "🎧": "Songs' Listen", "🎶": "Songs' \"עם המנגינה\" toggle", "🔥": "Ninja's streak"
     };
     const rx = /(?:\p{Extended_Pictographic}|[#*0-9]️?⃣)️?/gu;
     const fails = [], warns = [];
@@ -759,20 +825,24 @@ async function runtimeChecks(FILES) {
     // 1. Every page × language × viewport × first visit / returning.
     const matrix = [];
     for (const page of pages) for (const lang of ["he", "en"]) for (const vp of Object.keys(VIEWPORTS)) for (const state of ["first", "returning"]) matrix.push({ page, lang, vp, state });
+    // The note games again for every other instrument (another clef, key, sharps, notes higher or lower on the staff).
+    const NOTE_PAGES = ["right-note.html", "ninja.html", "songs.html", "note-names.html", "horn-ladder.html"];
+    for (const inst of READY.filter(i => i !== "trumpet")) for (const page of pages.filter(p => NOTE_PAGES.includes(p) && INSTR.playsGame(inst, INSTR.GAME_OF[p])))
+      for (const vp of ["phone", "phoneSide", "projector"]) matrix.push({ page, lang: vp === "phoneSide" ? "en" : "he", vp, state: "returning", inst });
     let optionalSeen = 0;
     await pool(matrix, async (w, job) => {
       const P = w.page;
       P.current = job.page;
-      await open(w, job.page, { query: qs(job.page, job.lang), storage: storageFor(job.state, job.lang), vp: VIEWPORTS[job.vp] });
+      await open(w, job.page, { query: qs(job.page, job.lang), storage: storageFor(job.state, job.lang, job.inst), vp: VIEWPORTS[job.vp] });
       const shown = await P.eval("location.pathname.split('/').pop() + location.search");
       if (!shown.startsWith(job.page)) job.redirect = shown;
       const at = shown.split("?")[0];
       job.info = await P.eval(`(${inspectPage})(${JSON.stringify({ main: MAIN_CONTROL[at] || MAIN_CONTROL[job.page], area: AREA.has(at) })})`);
       if (P.net.failed.some(f => OPTIONAL.test(f.split(" ").pop()))) optionalSeen++;
       job.errors = problems(P);
-      if (SHOTS) await P.screenshot(join(OUT, `${job.page.replace(".html", "")}-${job.lang}-${job.vp}-${job.state}.png`));
+      if (SHOTS) await P.screenshot(join(OUT, `${job.page.replace(".html", "")}-${job.lang}-${job.vp}-${job.state}${job.inst ? "-" + job.inst : ""}.png`));
     });
-    const tag = j => `${j.page} ${j.lang} ${j.vp} ${j.state}`;
+    const tag = j => `${j.page} ${j.lang} ${j.vp} ${j.state}${j.inst ? " " + j.inst : ""}`;
     // A game opened on a new device (no brass-inst, no ?test) goes home for setup first: index.html?next=<game>.
     {
       const redirects = matrix.filter(j => j.redirect), fails = [], warns = [];
@@ -863,7 +933,8 @@ async function runtimeChecks(FILES) {
     // 2. Home, first run: language → instrument → tiles.
     {
       const fails = [];
-      const runs = [{ lang: "he", vp: "phone", inst: 0 }, { lang: "en", vp: "phone", inst: 1 }, { lang: "he", vp: "laptop", inst: 2 }, { lang: "en", vp: "projector", inst: 0 }];
+      const runs = [{ lang: "he", vp: "phone", inst: 0 }, { lang: "en", vp: "phone", inst: 1 }, { lang: "he", vp: "laptop", inst: 2 }, { lang: "en", vp: "projector", inst: 0 },
+        ...[3, 4, 5, 6].filter(i => i < INST_IDS.length).map((inst, k) => ({ lang: k % 2 ? "en" : "he", vp: ["phone", "laptop", "projector", "phoneSide"][k], inst }))];
       await pool(runs, async (w, run) => {
         const P = w.page, where = `${run.lang} ${run.vp}`;
         P.current = "index.html";
@@ -879,22 +950,24 @@ async function runtimeChecks(FILES) {
         else { await P.click("#langHe"); await sleep(200); }
         s = await st();
         if (!s.setup || !s.inst) { fails.push(`${where}: after the language, the instrument step did not show (${JSON.stringify(s)})`); return; }
-        if (s.insts !== 7 || s.ready !== 3) fails.push(`${where}: ${s.insts} instruments, ${s.ready} ready (want 7, 3)`);
+        if (s.insts !== INST_IDS.length || s.ready !== READY.length) fails.push(`${where}: ${s.insts} instruments, ${s.ready} ready (want ${INST_IDS.length}, ${READY.length})`);
         const wantTitle = run.lang === "en" ? /^What do you play\?$/ : /[֐-׿]/;
         if (!wantTitle.test(s.title)) fails.push(`${where}: instrument title ${JSON.stringify(s.title)}`);
         // A "coming soon" instrument only shows the note; the setup stays.
-        await P.eval(`document.querySelector(".inst.later").scrollIntoView({ block: "center" })`);
-        await P.click(".inst.later");
-        await sleep(150);
-        const soon = await P.eval(`({ note: !document.getElementById("soonNote").hidden, setup: !document.getElementById("setup").hidden, text: document.getElementById("soonText").textContent })`);
-        if (!soon.note || !soon.setup || !soon.text) fails.push(`${where}: tapping a coming-soon instrument → ${JSON.stringify(soon)}`);
-        const id = ["trumpet", "trombone", "horn"][run.inst];
+        if (READY.length < INST_IDS.length) {
+          await P.eval(`document.querySelector(".inst.later").scrollIntoView({ block: "center" })`);
+          await P.click(".inst.later");
+          await sleep(150);
+          const soon = await P.eval(`({ note: !document.getElementById("soonNote").hidden, setup: !document.getElementById("setup").hidden, text: document.getElementById("soonText").textContent })`);
+          if (!soon.note || !soon.setup || !soon.text) fails.push(`${where}: tapping a coming-soon instrument → ${JSON.stringify(soon)}`);
+        }
+        const id = INST_IDS[run.inst], wantTiles = INSTR.D[id].games.split(" ").length;
         await P.eval(`document.querySelector(".inst:nth-child(${run.inst + 1})").scrollIntoView({ block: "center" })`);
         await P.click(`.inst:nth-child(${run.inst + 1})`);
         await sleep(300);
         s = await st();
         if (s.setup) fails.push(`${where}: setup still open after choosing ${id}`);
-        if (s.tiles !== 10) fails.push(`${where}: ${s.tiles} tiles visible (want 10)`);
+        if (s.tiles !== wantTiles) fails.push(`${where}: ${s.tiles} tiles visible for ${id} (want ${wantTiles})`);
         if (s.ls.lang !== run.lang || s.ls.inst !== id) fails.push(`${where}: saved ${JSON.stringify(s.ls)} (want ${run.lang}/${id})`);
         if (s.html !== (run.lang === "en" ? "en/ltr" : "he/rtl")) fails.push(`${where}: <html> ${s.html}`);
         const script = run.lang === "en" ? /^[A-Za-z' -]+$/ : /[֐-׿]/;
@@ -927,7 +1000,7 @@ async function runtimeChecks(FILES) {
         if (!at.startsWith("index.html?next=")) { run.skip = `${where} opened ${at} directly (no first-run redirect)`; return; }
         if (run.pick === "en") { const loaded = P.once("Page.loadEventFired", 15000); await P.click("#langEn"); await loaded; await sleep(300); }
         else { await P.click("#langHe"); await sleep(200); }
-        const id = ["trumpet", "trombone", "horn"][run.inst];
+        const id = INST_IDS[run.inst];
         await P.eval(`document.querySelector(".inst:nth-child(${run.inst + 1})").scrollIntoView({ block: "center" })`);
         const back = P.once("Page.loadEventFired", 15000);
         await P.click(`.inst:nth-child(${run.inst + 1})`);
@@ -951,7 +1024,7 @@ async function runtimeChecks(FILES) {
     // 3. Every instrument × every game × both languages: load, press the main control, play a moment.
     {
       const sweep = [];
-      for (const inst of ["trumpet", "trombone", "horn"]) for (const page of pages.filter(p => p !== "index.html")) for (const lang of ["he", "en"]) sweep.push({ inst, page, lang });
+      for (const inst of READY) for (const page of pages.filter(p => p !== "index.html" && INSTR.playsGame(inst, INSTR.GAME_OF[p]))) for (const lang of ["he", "en"]) sweep.push({ inst, page, lang });
       await pool(sweep, async (w, job) => {
         const P = w.page;
         P.current = job.page;
@@ -973,10 +1046,28 @@ async function runtimeChecks(FILES) {
         if (j.crash) { fails.push(`${t}: ${j.crash}`); continue; }
         j.errors.forEach(e => fails.push(`${t}: ${e.slice(0, 200)}`));
         if (MIC_PAGES.includes(j.page) && j.page !== "balloon-breath.html" && j.after.overlay) fails.push(`${t}: start overlay still showing after ▶ with ?test=1 (mic text ${JSON.stringify(j.after.mic)})`);
-        const wrong = (j.inst_shown || []).filter(x => x !== j.inst && ["trumpet", "trombone", "horn"].includes(x));
+        const wrong = (j.inst_shown || []).filter(x => x !== j.inst && INST_IDS.includes(x));
         if (wrong.length) warns.push(`${t}: shows the ${[...new Set(wrong)].join("/")} picture`);
       }
-      report(`instruments: trumpet/trombone/horn × ${pages.length - (pages.includes("index.html") ? 1 : 0)} games × he/en load and start (?test=1) without errors`, [...new Set(fails)], [...new Set(warns)]);
+      report(`instruments: ${READY.length} instruments × the games each plays × he/en load and start (?test=1) without errors (${sweep.length} runs)`, [...new Set(fails)], [...new Set(warns)]);
+    }
+
+    // 3b. A link to a game the device's instrument doesn't play (Buzzing on a recorder) goes home; the choice stays.
+    {
+      const fails = [], hidden = [];
+      for (const inst of READY) for (const page of pages.filter(p => p !== "index.html" && !INSTR.playsGame(inst, INSTR.GAME_OF[p]))) hidden.push({ inst, page });
+      await pool(hidden.slice(0, 8), async (w, job) => {
+        const P = w.page;
+        P.current = job.page;
+        await open(w, job.page, { query: "", storage: storageFor("returning", "he", job.inst), vp: VIEWPORTS.phone });
+        await sleep(400);
+        const at = await P.eval(`({ page: location.pathname.split("/").pop(), inst: localStorage.getItem("brass-inst"), tile: !!document.querySelector('.tool[href="${job.page}"]:not([hidden])') })`);
+        if (at.page !== "index.html") fails.push(`${job.inst} → ${job.page}: stayed on ${at.page}`);
+        if (at.inst !== job.inst) fails.push(`${job.inst} → ${job.page}: the device's instrument became ${at.inst}`);
+        if (at.tile) fails.push(`${job.inst}: the ${job.page} tile shows on the home screen`);
+      });
+      hidden.filter(r => r.crash).forEach(r => fails.push(`${r.inst} ${r.page}: ${r.crash}`));
+      if (hidden.length) report(`instruments: a game the instrument doesn't play sends a link home, its tile hidden (${hidden.slice(0, 8).map(h => h.inst + "/" + h.page.replace(".html", "")).join(", ")})`, fails);
     }
 
     dbg("offline");

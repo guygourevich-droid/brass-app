@@ -41,6 +41,90 @@
   // English pages lay out left to right from the first paint (the language block fills in the words).
   try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=he/.test(location.search) && localStorage.getItem("brass-lang") === "en")) { document.documentElement.lang = "en"; document.documentElement.dir = "ltr"; } } catch (_) {}
 </script>
+<!-- instruments: edit in index.html only, then `node tests/sync-instruments.mjs` copies it to every page -->
+<script>
+/* ---------- Instruments: the one list every page reads ----------
+   One entry per instrument, in the order of the setup screen. Notes are WRITTEN midi, what the child reads
+   (60 = C4, 62 = D4, 64 = E4, 65 = F4, 67 = G4, 69 = A4, 71 = B4, 72 = C5); sounds play at CONCERT pitch
+   (written = concert + toWritten).
+   ready    false = on the setup screen as "coming soon"
+   clef     "treble" | "bass"
+   key      the written key of the songs ("C", "G", "Bb"…, see KEY_SIG): its key signature, and do (step 1 of every
+            song) = the lowest note in `notes` with the key's name. Black keys are flats, except the key's own sharps.
+   hz       [low, high] concert Hz the note games listen between: about 0.8 × the lowest note and 2 × the highest,
+            so an overblown octave shows as a wrong note, not as the right one.
+   notes    the notes the teacher can tick (Right Note's picker, shared with Note Ninja, Songs and the Ladder);
+            keep them on or near the staff (treble: A3 to G5), where every game screen has room
+   def      ticked on a new device
+   open     notes with no valves (brass), marked "no fingers" in the picker
+   samples  recordings in sounds/<id>/, named by CONCERT pitch with flats: cents off equal temperament (playback
+            corrects it). A note more than 3 semitones from every recording plays a plain tone.
+   games    the home tiles it shows; a link to any other game goes home
+   Names are in index.html TEXT, pictures in icons/inst/<id>.png. Buzzing and the Ladder's open notes keep their
+   brass-only numbers in their own pages. */
+const INSTRUMENT_DATA = {
+  trumpet: {
+    ready: true, clef: "treble", toWritten: 2, key: "C", hz: [180, 1000],
+    notes: [60, 62, 64, 65, 67, 69, 71, 72], def: [60, 62, 64, 65, 67], open: [60, 67, 72],
+    samples: { Bb3: -10, C4: 16, D4: 13, Eb4: 3, F4: -3, G4: 11, A4: 7, Bb4: 8 },
+    games: "ramzor breath buzz long right ladder ninja songs names clap"
+  },
+  trombone: {
+    ready: true, clef: "bass", toWritten: 0, key: "Bb", hz: [80, 500],
+    notes: [46, 48, 50, 51, 53, 55, 57, 58], def: [46, 48, 50, 51, 53], open: [46, 53, 58],
+    samples: { Bb2: -5, C3: -7, D3: -16, Eb3: -24, F3: 2, G3: 1, A3: 1, Bb3: 10 },
+    games: "ramzor breath buzz long right ladder ninja songs names clap"
+  },
+  horn: {
+    ready: true, clef: "treble", toWritten: 7, key: "C", hz: [130, 800],
+    notes: [60, 62, 64, 65, 67, 69, 71, 72, 76], def: [60, 62, 64, 65, 67], open: [60, 67, 72, 76],
+    samples: { F2: -34, C3: 5, F3: 13, G3: 4, A3: -14, Bb3: 10, C4: -7, D4: 9, E4: 8, Eb4: 11, F4: 14, G4: 18, A4: 7, C5: 2 },
+    games: "ramzor breath buzz long right ladder ninja songs names clap"
+  },
+  sax: {      // alto sax in E♭: written G = concert B♭, the band's first key
+    ready: true, clef: "treble", toWritten: 9, key: "G", hz: [110, 900],
+    notes: [62, 64, 65, 66, 67, 69, 71, 72, 74, 76, 77, 78, 79], def: [67, 69, 71, 72, 74], open: [],   // F♮ too: written C is the band's 2nd key
+    samples: { F3: -11, G3: 0, A3: -2, Bb3: 1, C4: -3, D4: 0, Eb4: -9, F4: 14, G4: 19, A4: 10, Bb4: 15 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  },
+  flute: {
+    ready: true, clef: "treble", toWritten: 0, key: "Bb", hz: [200, 2400],
+    notes: [65, 67, 69, 70, 72, 74, 75, 77, 79], def: [70, 72, 74, 75, 77], open: [],
+    samples: { F4: 8, G4: 11, A4: 13, Bb4: 19, C5: 17, D5: 13, Eb5: 8, F5: 10, G5: 24, A5: 16, Bb5: 21 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  },
+  clarinet: { // B♭ clarinet: written C = concert B♭
+    ready: true, clef: "treble", toWritten: 2, key: "C", hz: [110, 1100],
+    notes: [57, 59, 60, 62, 64, 65, 67, 69, 70, 71, 72], def: [60, 62, 64, 65, 67], open: [],   // low A B, throat B♭; B and C5 over the break
+    samples: { Bb3: -5, C4: -3, D4: -10, Eb4: -4, F4: -2, G4: 0, A4: 1, Bb4: 1 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  },
+  recorder: { // soprano recorder: sounds an octave above the written note; B A G first
+    ready: true, clef: "treble", toWritten: -12, key: "G", hz: [400, 2400],
+    notes: [62, 64, 65, 66, 67, 69, 71, 72, 74, 76], def: [67, 69, 71], open: [],   // F♮ and F♯; after B A G come C' and D'
+    samples: { C5: 4, D5: 4, E5: 8, Gb5: -3, Ab5: 1, Bb5: 1, C6: 0, D6: 2, E6: 0 },
+    games: "ramzor breath long right ladder ninja songs names clap"
+  }
+};
+// Sharps (+) or flats (−) of each key.
+const KEY_SIG = { C: 0, G: 1, D: 2, A: 3, F: -1, Bb: -2, Eb: -3 };
+// Black keys this instrument reads as sharps (its key's own: F♯ in G); every other one is a flat.
+const sharpsOf = id => [6, 1, 8, 3, 10].slice(0, Math.max(0, KEY_SIG[INSTRUMENT_DATA[id].key]));
+// Do: the lowest note in `notes` with the key's name.
+const doOf = id => { const I = INSTRUMENT_DATA[id], pc = ({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[I.key[0]] + (I.key[1] === "b" ? 11 : 0)) % 12; return I.notes.find(n => n % 12 === pc); };
+// Every game's file and its id (the home tiles; the ids in `games`).
+const GAME_OF = { "ramzor.html": "ramzor", "balloon-breath.html": "breath", "buzz-along.html": "buzz", "sound-game.html": "long",
+  "right-note.html": "right", "horn-ladder.html": "ladder", "ninja.html": "ninja", "songs.html": "songs", "note-names.html": "names", "clap-along.html": "clap" };
+const playsGame = (id, game) => !!INSTRUMENT_DATA[id] && INSTRUMENT_DATA[id].games.split(" ").includes(game);
+// A link to a game this device's instrument doesn't play (from another class) goes home.
+(function () {
+  try {
+    var game = GAME_OF[location.pathname.split("/").pop()], id = localStorage.getItem("brass-inst");
+    if (game && INSTRUMENT_DATA[id] && !playsGame(id, game) && !/[?&]test=/.test(location.search)) location.replace("index.html");
+  } catch (_) {}
+})();
+</script>
+<!-- /instruments -->
 <style>
   :root {
     --ink: #15181d;
@@ -403,10 +487,12 @@ const TEXT = {
     learn: "מכירים את התווים", quiz: "איך קוראים לו?", level: "שלב", noteNames: "שמות התווים", sound: "צליל", fullscreenBtn: "⛶ מסך מלא",
     answers: "תשובות", levelN: n => `שלב ${n}`, levelTip: n => `שלב ${n}: ${n + 1} תווים`, levelNotes: list => `התווים בשלב הזה: ${list}`,
     playIt: name => `${name}: להשמיע`, isNew: "חדש", whichNote: "איזה תו זה?",
-    tipFirstTrombone: f => `<b>${f}</b> יושב על הקו השני מלמטה.`, tipFirst: f => `<b>${f}</b> יושב על קו קטן משלו מתחת לחמשה.`,
+    tipLine2: f => `<b>${f}</b> יושב על הקו השני מלמטה.`, tipLine3: f => `<b>${f}</b> יושב על הקו האמצעי.`, tipFirst: f => `<b>${f}</b> יושב על קו קטן משלו מתחת לחמשה.`,
     tips: ["<b>קו או רווח?</b> מסתכלים טוב לפני שעונים.", "<b>מוצאים תו שמכירים,</b> ואז עולים או יורדים.", "<b>אומרים ביחד,</b> ואז בודקים את התשובה."],
     score: (s, b) => `ברצף: <b>${s}</b> · שיא: ${b}`, playThem: "▶ להשמיע", next: "הבא ◀", nameIt: "איך קוראים לו? ◀", hearIt: "🔊 לשמוע",
-    info: { trumpet: "חצוצרה בסי במול · מפתח סול · נשמעת טון שלם נמוך מהכתוב", trombone: "טרומבון · מפתח פָה · נשמע בדיוק כמו שכתוב", horn: "קרן בפָה · מפתח סול · נשמעת קווינטה נמוך מהכתוב" },
+    info: { trumpet: "חצוצרה בסי במול · מפתח סול · נשמעת טון שלם נמוך מהכתוב", trombone: "טרומבון · מפתח פָה · נשמע בדיוק כמו שכתוב", horn: "קרן בפָה · מפתח סול · נשמעת קווינטה נמוך מהכתוב",
+      sax: "סקסופון אלט במי במול · מפתח סול · נשמע סקסטה גדולה נמוך מהכתוב", flute: "חליל צד · מפתח סול · נשמע בדיוק כמו שכתוב",
+      clarinet: "קלרינט בסי במול · מפתח סול · נשמע טון שלם נמוך מהכתוב", recorder: "חלילית סופרן · מפתח סול · נשמעת אוקטבה גבוה מהכתוב" },
     names: ["דוֹ", "רֶה", "מִי", "פָה", "סוֹל", "לָה", "סִי"]
   },
   en: {
@@ -414,10 +500,12 @@ const TEXT = {
     learn: "Meet the notes", quiz: "Name it", level: "Level", noteNames: "Note names", sound: "Sound", fullscreenBtn: "⛶ Full screen",
     answers: "Answers", levelN: n => `Level ${n}`, levelTip: n => `Level ${n}: ${n + 1} notes`, levelNotes: list => `The notes for this level: ${list}`,
     playIt: name => `${name}: play`, isNew: "new", whichNote: "Which note is this?",
-    tipFirstTrombone: f => `<b>${f}</b> sits on the second line from the bottom.`, tipFirst: f => `<b>${f}</b> sits on its own little line below the staff.`,
+    tipLine2: f => `<b>${f}</b> sits on the second line from the bottom.`, tipLine3: f => `<b>${f}</b> sits on the middle line.`, tipFirst: f => `<b>${f}</b> sits on its own little line below the staff.`,
     tips: ["<b>Line or space?</b> Look carefully before you answer.", "<b>Find a note you know,</b> then step up or down.", "<b>Say it together</b>, then check the answer."],
     score: (s, b) => `In a row: <b>${s}</b> · Best: ${b}`, playThem: "▶ Play them", next: "Next ▶", nameIt: "Name it ▶", hearIt: "🔊 Hear it",
-    info: { trumpet: "Trumpet in B♭ · treble clef · sounds a whole step lower than written", trombone: "Trombone · bass clef · sounds as written", horn: "Horn in F · treble clef · sounds a fifth lower than written" },
+    info: { trumpet: "Trumpet in B♭ · treble clef · sounds a whole step lower than written", trombone: "Trombone · bass clef · sounds as written", horn: "Horn in F · treble clef · sounds a fifth lower than written",
+      sax: "Alto sax in E♭ · treble clef · sounds a major sixth lower than written", flute: "Flute · treble clef · sounds as written",
+      clarinet: "Clarinet in B♭ · treble clef · sounds a whole step lower than written", recorder: "Soprano recorder · treble clef · sounds an octave higher than written" },
     names: ["C", "D", "E", "F", "G", "A", "B"]
   }
 };
@@ -432,7 +520,7 @@ const SVGNS = "http://www.w3.org/2000/svg";
 const INK = "#15181d", GOOD = "#17905a", GOLD = "#b7800f", WASH = "#ddebfa", BLUE = "#1a7fe2";
 
 // Bravura music font (SMuFL, SIL OFL): font-size = 4 staff spaces, each symbol sits on its reference line.
-const GLYPH = { gClef: "", fClef: "", flat: "", whole: "" };
+const GLYPH = { gClef: "", fClef: "", flat: "", sharp: "", whole: "" };
 const MUSIC_FONT = "font-family: Bravura";
 const WHOLE_WIDTH = 1.688; // staff spaces
 
@@ -440,27 +528,24 @@ const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
 const SOLFEGE = TEXT.he.names;          // Hebrew do re mi; English always names notes by letter
 const SEMITONE = [0, 2, 4, 5, 7, 9, 11];
 
-// A written note: letter index (C = 0 … B = 6), octave (C4 = middle C), alteration (-1 = flat).
+// A written note: letter index (C = 0 … B = 6), octave (C4 = middle C), alteration (-1 = flat, 1 = sharp).
 const note = (l, o, a = 0) => ({ l, o, a });
-const TREBLE_FIRST_NOTES = [note(0, 4), note(1, 4), note(2, 4), note(3, 4), note(4, 4), note(5, 4), note(6, 4), note(0, 5)];
-
-// First notes in the order they are added. Level n uses the first n + 1 notes.
-const INSTRUMENTS = {
-  trumpet: {
-    label: "Trumpet", clef: "treble", transpose: -2, notes: TREBLE_FIRST_NOTES,
-    info: "Trumpet in B♭ · treble clef · sounds a whole step lower than written"
-  },
-  trombone: {
-    label: "Trombone", clef: "bass", transpose: 0,
-    notes: [note(6, 2, -1), note(0, 3), note(1, 3), note(2, 3, -1), note(3, 3), note(4, 3), note(5, 3), note(6, 3, -1)],
-    info: "Trombone · bass clef · sounds as written"
-  },
-  horn: {
-    label: "Horn", clef: "treble", transpose: -7, notes: TREBLE_FIRST_NOTES,
-    info: "Horn in F · treble clef · sounds a fifth lower than written"
-  }
+// Written midi → note: flats, except the instrument's own sharps (F♯ for a sax or recorder in G).
+const noteOf = (m, id) => {
+  const pc = m % 12, o = Math.floor(m / 12) - 1, white = SEMITONE.indexOf(pc);
+  if (white >= 0) return note(white, o);
+  return sharpsOf(id).includes(pc) ? note(SEMITONE.indexOf(pc - 1), o, 1) : note(SEMITONE.indexOf(pc + 1), o, -1);
 };
 const LEVEL_COUNT = 7;
+
+// This page's view of the shared instrument list (INSTRUMENT_DATA, in <head>): clef, transposition, and the first
+// notes in the order they are added (level n uses the first n + 1): the key's notes from do up, then the key's
+// notes below do, then the rest (trumpet/horn C4 → C5, trombone B♭2 → B♭3, sax G4 → G5, recorder G4 → E5, F♯4, E4).
+const INSTRUMENTS = Object.fromEntries(Object.entries(INSTRUMENT_DATA).map(([id, d]) => {
+  const dn = doOf(id), inKey = n => SEMITONE.includes(((n - dn) % 12 + 12) % 12);
+  const up = d.notes.filter(n => n >= dn && inKey(n)), down = d.notes.filter(n => n < dn && inKey(n)).reverse(), rest = d.notes.filter(n => !inKey(n));
+  return [id, { clef: d.clef, transpose: -d.toWritten, notes: [...up, ...down, ...rest].slice(0, LEVEL_COUNT + 1).map(m => noteOf(m, id)) }];
+}));
 
 const state = {
   inst: "trumpet", level: 1, mode: "learn", names: "solfege", sound: true,
@@ -468,7 +553,7 @@ const state = {
   learn: [], timers: []
 };
 
-const nameOf = n => (state.names === "solfege" && LANG === "he" ? SOLFEGE : LETTERS)[n.l] + (n.a === -1 ? "♭" : "");
+const nameOf = n => (state.names === "solfege" && LANG === "he" ? SOLFEGE : LETTERS)[n.l] + (n.a === -1 ? "♭" : n.a === 1 ? "♯" : "");
 const concertMidi = n => 12 * (n.o + 1) + SEMITONE[n.l] + n.a + INSTRUMENTS[state.inst].transpose;
 const levelNotes = () => INSTRUMENTS[state.inst].notes.slice(0, state.level + 1);
 
@@ -554,7 +639,7 @@ function drawNote(parent, n, x, yOf, S) {
   const ledger = q => el("line", { x1: x - 0.45 * S, x2: x + w + 0.45 * S, y1: yOf(q), y2: yOf(q), stroke: INK, "stroke-width": S * 0.13 }, parent);
   for (let q = -2; q >= p; q -= 2) ledger(q);
   for (let q = 10; q <= p; q += 2) ledger(q);
-  if (n.a === -1) el("text", { x: x - 1.3 * S, y, "font-size": 4 * S, style: MUSIC_FONT }, g).textContent = GLYPH.flat;
+  if (n.a) el("text", { x: x - 1.3 * S, y, "font-size": 4 * S, style: MUSIC_FONT }, g).textContent = n.a === -1 ? GLYPH.flat : GLYPH.sharp;
   el("text", { x, y, "font-size": 4 * S, style: MUSIC_FONT }, g).textContent = GLYPH.whole;
   return { g, y, cx: x + w / 2 };
 }
@@ -681,11 +766,10 @@ function hear() {
 /* ---------- Screen ---------- */
 
 function tips() {
-  const first = nameOf(INSTRUMENTS[state.inst].notes[0]);
-  return [
-    state.inst === "trombone" ? T("tipFirstTrombone", first) : T("tipFirst", first),
-    ...T("tips")
-  ];
+  // Where the first note sits: its own little line below the staff (C4), the second line (G4, trombone B♭2), the middle line (B♭4).
+  const n = INSTRUMENTS[state.inst].notes[0], first = nameOf(n), p = staffPos(n);
+  const where = { [-2]: "tipFirst", 2: "tipLine2", 4: "tipLine3" }[p];
+  return where ? [T(where, first), ...T("tips")] : T("tips");
 }
 
 function rotateTip() {
@@ -821,7 +905,7 @@ if (document.fonts && document.fonts.load) document.fonts.load("120px Bravura").
   try { inst = localStorage.getItem("brass-inst") || inst; } catch (_) {}
   demo.querySelectorAll(".d-inst").forEach(i => i.setAttribute("href", `icons/inst/${inst}.png`));
   // the clef and the three answers follow the instrument: trombone reads bass clef
-  const bass = inst === "trombone", nm = T("names"), first = bass ? 2 : 0;
+  const bass = !!INSTRUMENT_DATA[inst] && INSTRUMENT_DATA[inst].clef === "bass", nm = T("names"), first = bass ? 2 : 0;
   demo.querySelector(".d-clef").textContent = bass ? "\uE062" : "\uE050";
   demo.querySelector(".d-clef").setAttribute("y", bass ? 80 : 120);
   // the answer buttons run in reading order: in Hebrew the first name is on the right, and so the right answer (the third name) is on the left

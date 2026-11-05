@@ -5,18 +5,37 @@
 // Whole run ≈ 16 min (6 tabs at once). Guard: `(node tests/play.mjs & P=$!; sleep 1500; kill $P; pkill -f tonebee-play)`;
 // set CHROME_TAG=<unique> when another run may `pkill -f tonebee-play`. Exit 1 on any FAIL; INFO lines are measurements.
 // PLAY_JOBS=n tabs at once (default 6), PLAY_INST=horn (or a comma list) narrows the instruments.
-import { serve, launch, sleep } from "./lib.mjs";
+import { serve, launch, sleep, ROOT } from "./lib.mjs";
 import { pathToFileURL } from "node:url";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import vm from "node:vm";
 
 const ALL = ["static", "long", "buzz", "ninja", "right", "ladder", "breath", "songs", "clap", "names", "pause", "real"];
 const want = process.argv.slice(2).filter(a => ALL.includes(a));
 const run = g => !want.length || want.includes(g);
 const JOBS = +process.env.PLAY_JOBS || 6;
-const INSTS = (process.env.PLAY_INST || "trumpet,trombone,horn").split(",");   // PLAY_INST=horn narrows a run
+// The instruments: the one list in index.html (INSTRUMENT_DATA), so a new instrument is tested with no change here.
+const INST = (() => {
+  const html = readFileSync(join(ROOT, "index.html"), "utf8"), js = html.slice(html.indexOf("<!-- instruments:")).match(/<script>([\s\S]*?)<\/script>/)[1];
+  return vm.runInNewContext(js + "\n;({ D: INSTRUMENT_DATA, doOf, playsGame })", {});
+})();
+const ids = Object.keys(INST.D).filter(k => INST.D[k].ready);
+const INSTS = (process.env.PLAY_INST || ids.join(",")).split(",");          // PLAY_INST=horn narrows a run
+const plays = (inst, game) => INST.playsGame(inst, game);
 const SEEN = ["breath", "buzz", "clap", "ladder", "long", "names", "ninja", "right", "songs"];
-const TO_WRITTEN = { trumpet: 2, trombone: 0, horn: 7 };
-const FIRST = { trumpet: 60, trombone: 46, horn: 60 };                      // written first note
+const TO_WRITTEN = Object.fromEntries(ids.map(k => [k, INST.D[k].toWritten]));
+const FIRST = Object.fromEntries(ids.map(k => [k, INST.doOf(k)]));         // written first note (do)
+const NOTES = Object.fromEntries(ids.map(k => [k, INST.D[k].notes]));
+const DEF = Object.fromEntries(ids.map(k => [k, INST.D[k].def]));
 const hzW = (w, inst) => 440 * Math.pow(2, (w - TO_WRITTEN[inst] - 69) / 12); // written midi → concert Hz
+// The synthetic player's tone colour (harmonic amplitudes, from the fundamental up): brass by default.
+const TIMBRE = {
+  sax: [1, .8, .7, .6, .5, .4, .3, .22, .16, .12, .08, .05, .03],
+  clarinet: [1, .04, .55, .03, .35, .02, .2, .02, .12, .01, .07],     // odd harmonics
+  flute: [1, .45, .15, .06, .03],
+  recorder: [1, .12, .06, .02]
+};
 
 /* ---------- Reporting ---------- */
 const results = [];
@@ -29,7 +48,7 @@ const info = (g, w, d) => say("INFO", g, w, d);
 const f1 = ms => ms < 0 ? "never" : (ms / 1000).toFixed(2) + "s";
 
 /* ---------- In-page sound source + bots (serialised into the page) ---------- */
-export function pageLib() {
+export function pageLib(timbre) {
   if (window.__inj) return;
   const rngOf = seed => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const c = ctx;
@@ -39,7 +58,7 @@ export function pageLib() {
   const pull = c.createGain(); pull.gain.value = 0; a.connect(pull); pull.connect(c.destination);
   const mix = c.createGain(); mix.connect(a);
   // Brass-like tone: strong low harmonics rolling off (Web Audio normalises the peak to 1).
-  const AMPS = [0, 1, .9, .75, .6, .45, .33, .24, .17, .12, .08, .055, .04, .028, .02, .014, .01];
+  const AMPS = timbre ? [0, ...timbre] : [0, 1, .9, .75, .6, .45, .33, .24, .17, .12, .08, .055, .04, .028, .02, .014, .01];
   const osc = c.createOscillator();
   osc.setPeriodicWave(c.createPeriodicWave(new Float32Array(AMPS.length), Float32Array.from(AMPS)));
   osc.frequency.value = 220;
@@ -174,7 +193,7 @@ export async function open(b, _srv, file, { inst = "trumpet", ls = {}, query = "
   if (start) {
     await page.eval(start);
     await sleep(250);
-    await page.eval(`(${pageLib})()`);
+    await page.eval(`(${pageLib})(${JSON.stringify(TIMBRE[inst] || null)})`);
     // A real start sets the floor to 0.002 and a real room is never silent.
     await page.eval(`__inj.room(0.005); if (typeof state === "object" && "noiseFloor" in state) state.noiseFloor = 0.002;`);
     await sleep(500);
@@ -239,23 +258,34 @@ async function staticChecks(b, srv) {
     // Every pickable written note, in concert Hz, inside each pitch game's detector band and the 80-1000 Hz band.
     const bad = [];
     for (const [name, I] of [["right", rn[inst]], ["ninja", nj.I[inst]], ["songs", sg.I[inst]]])
-      for (const w of I.notes) { const hz = hzW(w, inst); if (hz < I.lo || hz > I.hi || hz < 80 || hz > 1000) bad.push(`${name}:${w}=${hz.toFixed(0)}Hz`); }
-    for (const w of rn[inst].notes) { const hz = hzW(w, inst); if (hz < ln.F_LO || hz > ln.F_HI) bad.push(`long:${w}`); }
+      for (const w of I.notes) { const hz = hzW(w, inst); if (hz < I.lo || hz > I.hi) bad.push(`${name}:${w}=${hz.toFixed(0)}Hz`); }
+    for (const w of rn[inst].notes) { const hz = hzW(w, inst); if (hz < ln.F_LO) bad.push(`long:${w}`); }
+    // Long Note listens up to F_HI only: a higher note (recorder, flute's top) is heard an octave low, still one steady
+    // note, which is all the rocket needs (the "real" group flies it on the recordings).
+    const high = rn[inst].notes.filter(w => hzW(w, inst) > ln.F_HI);
+    if (high.length) info(G, `${inst} notes above Long Note's ${ln.F_HI} Hz (heard an octave low)`, high.join(" "));
     check(!bad.length, G, `${inst} every pickable note inside detector bands`, bad.length ? bad.join(" ") : `${hzW(rn[inst].notes[0], inst).toFixed(1)}–${hzW(rn[inst].notes.at(-1), inst).toFixed(1)} Hz vs [${rn[inst].lo}, ${rn[inst].hi}]`);
-    // Ladder: open partials (all lo/hi choices) and scale notes.
-    const L = hl.I[inst], f = L.fund, lo = Math.min(...L.lo), hi = Math.max(...L.hi);
-    const open = L.partials.filter(n => n >= lo && n <= hi).map(n => n * f);
-    const ladBad = open.filter(hz => hz < 80 || hz > 1000 || hz < open[0] * 0.75 || hz > Math.min(open.at(-1) * 1.3, 1000));
-    check(!ladBad.length, G, `${inst} ladder open partials ${lo}–${hi} inside 80–1000 Hz`, open.map(h => h.toFixed(0)).join(" "));
+    // Ladder: open partials (all lo/hi choices; brass only) and scale notes.
+    const L = hl.I[inst];
+    if (L) {
+      const f = L.fund, lo = Math.min(...L.lo), hi = Math.max(...L.hi);
+      const open = L.partials.filter(n => n >= lo && n <= hi).map(n => n * f);
+      const ladBad = open.filter(hz => hz < 80 || hz > 1000 || hz < open[0] * 0.75 || hz > Math.min(open.at(-1) * 1.3, 1000));
+      check(!ladBad.length, G, `${inst} ladder open partials ${lo}–${hi} inside 80–1000 Hz`, open.map(h => h.toFixed(0)).join(" "));
+    }
     // Buzz: every flower and siren peak inside the bee's sky and the buzz detector.
-    const B = bz.I[inst], dLo = B.base * Math.pow(2, (B.lo - 4) / 12), dHi = B.base * Math.pow(2, (B.hi + 4) / 12);
+    const B = plays(inst, "buzz") && bz.I[inst];
+    if (B) {
+    const dLo = B.base * Math.pow(2, (B.lo - 4) / 12), dHi = B.base * Math.pow(2, (B.hi + 4) / 12);
     const semis = [...bz.TARGETS, ...bz.sirens];
     const bb = semis.filter(s => s < B.lo || s > B.hi || B.base * Math.pow(2, s / 12) < Math.max(80, dLo) || B.base * Math.pow(2, s / 12) > Math.min(1000, dHi));
     check(!bb.length, G, `${inst} buzz flowers/sirens inside sky and detector`, `targets ${(B.base * Math.pow(2, Math.min(...semis) / 12)).toFixed(0)}–${(B.base * Math.pow(2, Math.max(...semis) / 12)).toFixed(0)} Hz, detector ${dLo.toFixed(0)}–${dHi.toFixed(0)} Hz`);
+    }
     // Songs: playable with the default notes (no dead end on day one).
-    const notes = rn[inst].notes, def = rn[inst].def;
-    const playable = sg.songs.filter(s => s.steps.every(st => notes[st - 1] !== undefined && def.includes(notes[st - 1])));
-    check(playable.length >= 1, G, `${inst} songs playable with default notes`, `${playable.length}/${sg.songs.length}`);
+    const def = rn[inst].def, MAJOR = [0, 2, 4, 5, 7, 9, 11], w = st => sg.I[inst].do + MAJOR[(st - 1) % 7] + 12 * Math.floor((st - 1) / 7);
+    const playable = sg.songs.filter(s => s.steps.every(st => def.includes(w(st))));
+    const fit = sg.songs.filter(s => s.steps.every(st => rn[inst].notes.includes(w(st))));
+    check(playable.length >= 1, G, `${inst} songs playable with default notes`, `${playable.length}/${sg.songs.length}; ${fit.length} with every note ticked${fit.length < sg.songs.length ? " (not on this instrument: " + sg.songs.filter(s => !fit.includes(s)).map(s => s.id).join(" ") + ")" : ""}`);
   }
   const badBars = sg.songs.filter(s => s.bars.some(x => Math.abs(x - 4) > 1e-9)).map(s => s.id);
   check(!badBars.length, G, "every song bar sums to 4 beats", badBars.join(" ") || `${sg.songs.length} songs`);
@@ -269,7 +299,7 @@ async function staticChecks(b, srv) {
   check(asc(nj.COUNTS) && asc(nj.TIMES), G, "Ninja round sizes and times ordered", `${nj.COUNTS} / ${nj.TIMES}s`);
   for (const inst of INSTS) {
     const L = hl.I[inst];
-    check(L.partials.includes(L.start.lo) && L.partials.includes(L.start.hi) && L.start.targets.every(n => n >= L.start.lo && n <= L.start.hi), G, `${inst} ladder first-visit ladder and bananas consistent`, `lo ${L.start.lo} hi ${L.start.hi} bananas ${L.start.targets}`);
+    if (L) check(L.partials.includes(L.start.lo) && L.partials.includes(L.start.hi) && L.start.targets.every(n => n >= L.start.lo && n <= L.start.hi), G, `${inst} ladder first-visit ladder and bananas consistent`, `lo ${L.start.lo} hi ${L.start.hi} bananas ${L.start.targets}`);
   }
   info(G, "detector thresholds", `long: onset ${ln.ONSET_MS}ms spread≤${ln.ONSET_SPREAD}c gap ${ln.GAP_MS}ms | buzz: onset ${bz.ONSET_MS}ms ±${bz.IN_CENTS}/${bz.OUT_CENTS}c | ninja: ±${nj.TOL_CENTS}c hold ${nj.HIT_HOLD_MS}ms grace ${nj.GRACE_MS}ms`);
 }
@@ -422,7 +452,7 @@ function longTasks(b, srv) {
 const BUZZ_TARGET = `() => state.phase === "play" ? INSTRUMENTS[state.inst].base * Math.pow(2, TARGETS[state.ti] / 12) : null`;
 function buzzTasks(b, srv) {
   const G = "buzz", tasks = [];
-  for (const inst of INSTS) {
+  for (const inst of INSTS.filter(i => plays(i, "buzz"))) {
     tasks.push({ game: G, name: `${inst} step1`, fn: async () => {
       const p = await open(b, srv, "buzz-along.html", { inst, ls: { buzz: { step: 1, hold: 4, siren: 2 } } });
       await p.eval("__inj.mon(() => ({ c: state.counter, on: state.soundOn, s: Math.round(scene.scroll) }), 50)");
@@ -548,7 +578,7 @@ function ninjaTasks(b, srv) {
   const G = "ninja", tasks = [];
   for (const inst of INSTS) {
     tasks.push({ game: G, name: `${inst} ideal`, fn: async () => {
-      const all = (await (async () => { const I = { trumpet: [60, 62, 64, 65, 67, 69, 71, 72], trombone: [46, 48, 50, 51, 53, 55, 57, 58], horn: [60, 62, 64, 65, 67, 69, 71, 72, 76] }; return I[inst]; })());
+      const all = NOTES[inst];
       const p = await open(b, srv, "ninja.html", { inst, ls: { ["right-note-" + inst]: { chosen: all }, ["ninja-" + inst]: { count: 10, time: 4, show: "both", ref: true } } });
       await p.eval(NINJA_BOT({ reaction: 250 }));
       const r = await ninjaRound(p, 120000);
@@ -607,8 +637,6 @@ function ninjaTasks(b, srv) {
 /*  Right Note (right-note.html)                                                             */
 /* ======================================================================================== */
 const RIGHT_BOT = cfg => `__inj.follow(Object.assign({ key: () => String(state.target), target: () => concertHz(state.target), ready: now => now > state.muteUntil, score: () => state.stars, cooldown: 1700 }, ${JSON.stringify(cfg)}))`;
-const NOTES = { trumpet: [60, 62, 64, 65, 67, 69, 71, 72], trombone: [46, 48, 50, 51, 53, 55, 57, 58], horn: [60, 62, 64, 65, 67, 69, 71, 72, 76] };
-const DEF = { trumpet: [60, 62, 64, 65, 67], trombone: [46, 48, 50, 51, 53], horn: [60, 62, 64, 65, 67] };
 function rightTasks(b, srv) {
   const G = "right", tasks = [];
   for (const inst of INSTS) {
@@ -672,8 +700,8 @@ function ladderTasks(b, srv) {
   const G = "ladder", tasks = [];
   const key = inst => inst === "horn" ? "horn-ladder" : "horn-ladder-" + inst;
   for (const inst of INSTS) {
-    for (const kind of ["open", "scale"]) tasks.push({ game: G, name: `${inst} ${kind} ideal`, fn: async () => {
-      const L = LADDER[inst], targets = kind === "open" ? L.open : NOTES[inst];
+    for (const kind of LADDER[inst] ? ["open", "scale"] : ["scale"]) tasks.push({ game: G, name: `${inst} ${kind} ideal`, fn: async () => {
+      const L = LADDER[inst] || { lo: 0, hi: 0 }, targets = kind === "open" ? L.open : NOTES[inst];
       const p = await open(b, srv, "horn-ladder.html", { inst, ls: { [key(inst)]: { mode: "aim", kind, lo: L.lo, hi: L.hi, order: "sequence", [kind === "open" ? "targets" : "scaleTargets"]: targets, hold: 1, tol: "normal", ref: true }, ["right-note-" + inst]: { chosen: NOTES[inst] } } });
       const shown = await p.eval("shown()");
       await p.eval("__inj.mon(() => ({ b: state.bananas, tg: state.target }), 100)");
@@ -800,6 +828,7 @@ function songsTasks(b, srv) {
       const p = await songsPage(b, srv, inst);
       await p.eval(FOLLOW_BOT({ reaction: 80 }));
       for (const id of part) {
+        if (!(await p.eval(`fits(SONGS.find(s => s.id === ${JSON.stringify(id)}))`))) { info(G, `${inst} "${id}" is not on this instrument (a note outside its list)`); continue; }
         const r = await playSong(p, id, "follow", 60000);
         check(r.t >= 0 && r.done === r.total && r.skipped === 0, G, `${inst} follow ideal "${id}"`, `${r.done}/${r.total} green, ${r.skipped} skipped, ${f1(r.t)}`);
         await waitFor(p, `state.phase === "ready"`, 5000);
@@ -811,6 +840,7 @@ function songsTasks(b, srv) {
       await p.eval("__inj.wobble({ drift: 35, flutter: 12 }); __inj.dropTrain({ every: [1200, 2200], len: [100, 220] })");
       await p.eval(FOLLOW_BOT({ reaction: 450, jitter: 500, biasSpread: 25, seed: 51, scoop: 80 }));
       for (const id of ["steps", "hotcross", "mary"]) {
+        if (!(await p.eval(`playable(SONGS.find(s => s.id === ${JSON.stringify(id)}))`))) continue;   // the recorder's first notes are B A G
         const r = await playSong(p, id, "follow", 90000);
         check(r.t >= 0, G, `${inst} follow beginner finishes "${id}"`, `${r.done}/${r.total} green, ${r.skipped} light-green skips, ${f1(r.t)}`);
         await waitFor(p, `state.phase === "ready"`, 5000);
@@ -1094,7 +1124,8 @@ function realTasks(b, srv) {
     // Long Note: the instrument's first note, real recording, flies the rocket to level 1's goal.
     const q = await open(b, srv, "sound-game.html", { inst });
     await q.eval("setLevel(1)");
-    const name = { trumpet: "Bb3", trombone: "Bb2", horn: "F3" }[inst];
+    const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }, midiOf = n => 12 * (+n.slice(-1) + 1) + SEMI[n[0]] - (n[1] === "b" ? 1 : 0);
+    const name = Object.keys(INST.D[inst].samples).reduce((a, n) => Math.abs(midiOf(n) - (FIRST[inst] - TO_WRITTEN[inst])) < Math.abs(midiOf(a) - (FIRST[inst] - TO_WRITTEN[inst])) ? n : a);
     await q.eval(`fetch("sounds/${inst}/${name}.m4a").then(r => r.arrayBuffer()).then(a => ctx.decodeAudioData(a)).then(buf => (${recLoop})(buf, 1, 0.6))`);
     const won = await waitFor(q, `state.phase === "won"`, 7000);
     await q.eval(`(${recLoop})(null)`);
@@ -1112,7 +1143,7 @@ const srv = await serve();
 const b = await launch();
 let closing = false;
 const quit = async (code, why) => { if (closing) return; closing = true; if (why) console.log(why); await Promise.race([b.close(), sleep(3000)]); process.exit(code); };
-const watchdog = setTimeout(() => quit(2, "FAIL watchdog: run took over 25 minutes"), 25 * 60 * 1000);
+const watchdog = setTimeout(() => quit(2, "FAIL watchdog: run took over 50 minutes"), 50 * 60 * 1000);
 process.on("SIGTERM", () => quit(2)); process.on("SIGINT", () => quit(2));
 // If Chrome is killed from outside, stop at once instead of waiting on a dead socket.
 const heart = setInterval(async () => {
