@@ -489,7 +489,11 @@ function staticChecks() {
       "needFresh": c => funcDecl(c, "needFresh"),
       "background → needFresh": c => stmtStarting(c, "document.addEventListener(\"visibilitychange\"", { not: /\bsend\(\)/ }),
       "interrupted 1.5 s → needFresh": c => stmtStarting(c, "document.addEventListener(\"pointerup\""),
-      "3 s of zeros": c => { const i = c.indexOf("if (state.rms === 0 && micStream) {"); if (i < 0) return null; const b = c.indexOf("{", i); let e = matchClose(c, b); const tail = c.slice(e + 1).match(/^\s*else[^{]*\{/); if (tail) e = matchClose(c, e + 1 + tail[0].length - 1); return { text: c.slice(i, e + 1), at: i }; },
+      "3 s of zeros": c => { const i = c.indexOf("if (state.rms === 0 && micStream && ctx.state === \"running\") {"); if (i < 0) return null; const b = c.indexOf("{", i); let e = matchClose(c, b); const tail = c.slice(e + 1).match(/^\s*else[^{]*\{/); if (tail) e = matchClose(c, e + 1 + tail[0].length - 1); return { text: c.slice(i, e + 1), at: i }; },
+      "engine stalled (clock stopped)": c => { const i = c.indexOf("if (ctx.currentTime !== state.ctxTime)"); if (i < 0) return null; const e = c.indexOf("\n  }", c.indexOf("else if", i)); return { text: c.slice(i, e + 4), at: i }; },
+      "reacquire in place": c => funcDecl(c, "reacquire"),
+      "watchTracks": c => funcDecl(c, "watchTracks"),
+      "audio session back to auto before getUserMedia": c => { const i = c.indexOf("if (navigator.audioSession) navigator.audioSession.type = \"auto\";\n    micStream = await navigator.mediaDevices.getUserMedia("); return i < 0 ? null : { text: "audioSession auto", at: i }; },
       "startMic reloads once fresh": c => { const i = c.indexOf("if (fresh) return location.reload();"); return i < 0 ? null : { text: "if (fresh) return location.reload();", at: i }; },
       "micError (mic_error + message)": c => funcDecl(c, "micError")
     };
@@ -498,11 +502,13 @@ function staticChecks() {
     // audioLine, the error path, the sample-rate check that also resets page state) touch page-specific things: WARN + diff.
     const STRICT = new Set(["getFloatTimeDomainData shim", "tap resumes the engine", "mic status opens the check panel", "IS_IOS", "VOICE_PARAM",
       "MIC_OPTIONS", "analyser pulled to destination", "keepAwake", "needFresh", "background → needFresh",
-      "interrupted 1.5 s → needFresh", "3 s of zeros", "startMic reloads once fresh"]);
+      "interrupted 1.5 s → needFresh", "3 s of zeros", "startMic reloads once fresh", "engine stalled (clock stopped)", "reacquire in place",
+      "watchTracks", "audio session back to auto before getUserMedia"]);
     // CLAUDE.md: "Recovery (six mic games, not Breathing whose mic is optional)": Breathing has no needFresh path and asks
     // for the mic quietly (refused is fine). Its copies of these pieces may differ or be absent; shown as WARN, never FAIL.
     const BREATH_EXEMPT = new Set(["needFresh", "background → needFresh", "interrupted 1.5 s → needFresh", "getUserMedia + error mapping",
-      "fail", "startMic reloads once fresh", "keepAwake", "3 s of zeros", "micError (mic_error + message)", "ensureCtx", "stopMic"]);
+      "fail", "startMic reloads once fresh", "keepAwake", "3 s of zeros", "micError (mic_error + message)", "ensureCtx", "stopMic",
+      "engine stalled (clock stopped)", "reacquire in place", "watchTracks"]);
     const exempt = (p, name) => p === "balloon-breath.html" && BREATH_EXEMPT.has(name);
     const fails = [], warns = [];
     for (const [name, get] of Object.entries(pieces)) {

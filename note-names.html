@@ -572,7 +572,7 @@ const Sound = (() => {
       else if (!c.tried) { c.tried = Date.now(); c.resume().then(() => { c.tried = 0; }, () => {}); }
     }
     if (!ctx) {
-      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      if (navigator.audioSession) navigator.audioSession.type = "playback";   // given back on pagehide (below)
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain();
       master.gain.value = 0.8;
@@ -892,6 +892,9 @@ document.addEventListener("keydown", e => {
 
 const rootEl = document.documentElement;
 if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia("(display-mode: standalone)").matches) $("fullscreen").hidden = true;
+// iPad/iPhone: "playback" (set for our sounds) would stay on for the whole app and lock the next game out of the microphone.
+addEventListener("pagehide", () => { if (navigator.audioSession) navigator.audioSession.type = "auto"; });
+addEventListener("pageshow", e => { if (e.persisted && navigator.audioSession) navigator.audioSession.type = "playback"; });
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 
 try { const s = localStorage.getItem("brass-inst"); if (INSTRUMENTS[s]) state.inst = s; } catch (_) {}

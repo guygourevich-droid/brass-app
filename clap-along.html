@@ -912,7 +912,7 @@ const Sound = (() => {
     }
     if (!ctx) {
       // iPad/iPhone: play even when the device is set to silent.
-      if (navigator.audioSession) navigator.audioSession.type = "playback";
+      if (navigator.audioSession) navigator.audioSession.type = "playback";   // given back on pagehide (below)
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
       const d = noise.getChannelData(0);
@@ -1298,6 +1298,9 @@ if (!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) || matchMedia(
   $("fullscreen").hidden = true;
 }
 
+// iPad/iPhone: "playback" (set for our sounds) would stay on for the whole app and lock the next game out of the microphone.
+addEventListener("pagehide", () => { if (navigator.audioSession) navigator.audioSession.type = "auto"; });
+addEventListener("pageshow", e => { if (e.persisted && navigator.audioSession) navigator.audioSession.type = "playback"; });
 if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 
 updateHeader();

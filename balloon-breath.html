@@ -541,6 +541,10 @@ async function startMic() {
   if (q.get("test")) return startTest();
   if (q.get("mic") === "0" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
   try {
+    // iPad/iPhone: a page that plays sound (traffic light, Note Names, Clap-Along) sets the audio session to "playback",
+    // and WebKit keeps that for the whole app: every microphone request then fails (InvalidStateError) until the app is
+    // closed. Back to "auto" first; reading the type is no use, a new page says "auto" while the app is still on playback.
+    if (navigator.audioSession) navigator.audioSession.type = "auto";
     micStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_OPTIONS });
   } catch (_) { return; }
   // iPad switches the hardware to the microphone's rate; an audio engine made before that can stay deaf.
@@ -562,7 +566,7 @@ async function startMic() {
   $("mic").hidden = false;
   $("micDot").classList.add("on");
   $("micText").textContent = T("listening");
-  micStream.getAudioTracks().forEach(t => t.addEventListener("ended", () => { state.listening = false; $("micDot").classList.remove("on"); }));
+  micStream.getAudioTracks().forEach(t => t.addEventListener("ended", stopMic));   // the next breath asks again
 }
 
 // ?test=1: hiss straight into the analyser. Console: testBlow(0.2) blows, testBlow(0) stops.

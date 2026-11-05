@@ -97,9 +97,12 @@ try {
     await p.goto(`${s.url}sound-game.html`);
     await p.eval(`navigator.mediaDevices.getUserMedia = async () => { const c = new AudioContext(); const d = c.createMediaStreamDestination(); return d.stream; }`);
     await p.eval("startMic()");
+    // 3 s of zeros → one quiet reconnect in the same page (a new stream); still zeros 3 s later → the steps.
     await sleep(3800);
+    const first = await read(p);
+    await sleep(3700);
     const r = await read(p);
-    check(r.help && /גישה למיקרופון/.test(r.steps.join(" ")), `silent mic on Android → quick-settings steps (${r.title})`);
+    check(!first.help && r.help && /גישה למיקרופון/.test(r.steps.join(" ")), `silent mic on Android → one reconnect in place, then quick-settings steps (${r.title})`);
     p.close();
   }
   // The store app (Capacitor): Tonebee's own settings page and a button to it, never "open in browser"; no ⛶, no install hint.

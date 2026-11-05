@@ -637,6 +637,10 @@ async function startMic() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fail(T("onlyOnline"));
   starting = true;
   try {
+    // iPad/iPhone: a page that plays sound (traffic light, Note Names, Clap-Along) sets the audio session to "playback",
+    // and WebKit keeps that for the whole app: every microphone request then fails (InvalidStateError) until the app is
+    // closed. Back to "auto" first; reading the type is no use, a new page says "auto" while the app is still on playback.
+    if (navigator.audioSession) navigator.audioSession.type = "auto";
     micStream = await navigator.mediaDevices.getUserMedia({ audio: MIC_OPTIONS });
   } catch (err) {
     return micError(err);
@@ -646,11 +650,11 @@ async function startMic() {
   const micRate = track && track.getSettings ? track.getSettings().sampleRate : 0;
   if (micRate && ctx.sampleRate !== micRate) { ctx.close(); ctx = null; ensureCtx(); }
   ctx.resume();
-  const src = ctx.createMediaStreamSource(micStream);
+  micSrc = ctx.createMediaStreamSource(micStream);
   analyser = ctx.createAnalyser();
   analyser.fftSize = 8192;
   analyser.smoothingTimeConstant = 0;
-  src.connect(analyser);
+  micSrc.connect(analyser);
   // iPad (WebKit) feeds an analyser only if it leads to the speakers: a silent gain does that, with no sound.
   const pull = ctx.createGain();
   pull.gain.value = 0;
@@ -662,11 +666,7 @@ async function startMic() {
   $("overlay").hidden = true;
   $("micDot").classList.add("on");
   $("micText").textContent = T("listening");
-  micStream.getAudioTracks().forEach(t => {
-    t.addEventListener("ended", () => needFresh(T("micGone"), "ended"));
-    t.addEventListener("mute", () => { $("micText").textContent = T("muted"); });
-    t.addEventListener("unmute", () => { $("micText").textContent = T("listening"); });
-  });
+  watchTracks();
   if (state.ref) setTimeout(playReference, 400);
 }
 
@@ -702,7 +702,8 @@ function fail(message) {
 
 // The microphone said no. Chrome and Safari never ask twice: once a child taps Block (or a parent's controls, or the phone's
 // own setting for the browser, refuse), every try fails at once with no question on screen. Say where to switch it on, for
-// this phone, and make "try again" a fresh page (iOS can also get stuck with InvalidStateError until the page is reopened).
+// this phone, and make "try again" a fresh page. iOS InvalidStateError: the audio session is stuck for the whole app (see
+// startMic), and only closing the app clears it: say so.
 async function micError(err) {
   const name = (err && err.name) || "unknown", text = String(err && err.message);
   let why = /system/i.test(text) ? "system" : /dismiss/i.test(text) ? "dismissed" : "", perm = "";
@@ -713,6 +714,7 @@ async function micError(err) {
   fail(name === "NotAllowedError" ? T("micBlocked") : name === "NotFoundError" ? T("micNotFound")
     : name === "NotReadableError" ? T("micBusy") : T("micFailed"));
   if (name === "NotAllowedError") showMicHelp(why);
+  else if (name === "InvalidStateError" && IS_IOS) showMicHelp("restart");
 }
 // The Tonebee app from the App Store / Google Play (Capacitor): the phone itself asks for the mic, and a refusal is undone in
 // the phone's settings for Tonebee, which the app can open (store/ in the project).
@@ -727,9 +729,10 @@ function showMicHelp(why) {
     : IN_APP ? "helpInApp" : IS_IOS ? (app ? "helpIosApp" : "helpIos") : why === "silent" ? "helpQuick"
     : /SamsungBrowser/.test(ua) ? "helpSamsung" : !/Android/.test(ua) ? "helpDesktop"
     : why === "system" ? "helpAndroidSystem" : app ? "helpAndroidApp" : "helpAndroid";
-  $("micSteps").replaceChildren(...T(steps).map(s => { const li = document.createElement("li"); li.textContent = s; return li; }));
+  const list = why === "restart" ? T(NATIVE || app ? "helpIosApp" : "helpIos").slice(-1) : T(steps);   // just "close it and reopen"
+  $("micSteps").replaceChildren(...list.map(s => { const li = document.createElement("li"); li.textContent = s; return li; }));
   $("micHelp").hidden = false;
-  $("micSettings").hidden = !NATIVE || why === "silent";
+  $("micSettings").hidden = !NATIVE || why === "silent" || why === "restart";
   $("micAsk").hidden = true;
   const demo = $("demo");
   if (demo) demo.toggleAttribute("hidden", true);
@@ -753,7 +756,7 @@ function keepAwake(on) {
 // iPhone/iPad: back from the background, or the mic cut off by iOS (a call, Siri, another app, the lock screen), WebKit can
 // keep the audio engine deaf until the page is opened again, which in the installed app meant closing it. So the way back
 // is a fresh page: one tap on the button, settings kept (they live in localStorage).
-let fresh = false;
+let fresh = false, micSrc = null;
 function needFresh(message, why) {
   tbTrack("audio_recover", { why });
   if (micStream) stopMic();
@@ -762,6 +765,39 @@ function needFresh(message, why) {
   fail(message);
   $("startBtn").textContent = T("resume");
   if (why === "silent" && /Android/.test(navigator.userAgent)) showMicHelp("silent");
+}
+// Elsewhere (Chrome on Windows after a sleep, another app or a headset taking the mic, Android) a new microphone stream in the
+// same page brings the sound back: no reload, no second ▶. At most once every 15 s; if it fails, the fresh page as before.
+let reacquiring = false, reacquiredAt = -1e9;
+async function reacquire(message, why) {
+  if (reacquiring) return;
+  if (IS_IOS || !micStream || !analyser || performance.now() - reacquiredAt < 15000) return needFresh(message, why);
+  reacquiring = true;
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: MIC_OPTIONS });
+    if (!micStream) { s.getTracks().forEach(t => t.stop()); return; }        // the page let go meanwhile
+    micStream.getTracks().forEach(t => t.stop());
+    if (micSrc) micSrc.disconnect();
+    micStream = s;
+    micSrc = ctx.createMediaStreamSource(s);
+    micSrc.connect(analyser);
+    watchTracks();
+    ctx.resume();
+    reacquiredAt = performance.now();
+    state.zeroSince = 0;
+    $("micText").textContent = T("listening");
+    tbTrack("audio_recover", { why, how: "inplace" });
+  } catch (_) { needFresh(message, why); }
+  finally { reacquiring = false; }
+}
+function watchTracks() {
+  micStream.getAudioTracks().forEach(t => {
+    const mine = () => micStream && micStream.getAudioTracks().includes(t);
+    t.addEventListener("ended", () => { if (mine()) reacquire(T("micGone"), "ended"); });
+    t.addEventListener("mute", () => { $("micText").textContent = T("muted"); });
+    t.addEventListener("unmute", () => { $("micText").textContent = T("listening"); });
+    if (t.readyState === "ended") reacquire(T("micGone"), "ended");      // ended before we listened (no event comes)
+  });
 }
 // Elsewhere (Android, a laptop switching to the slides) the mic survives being hidden: pause, and keep the screen awake again
 // on the way back. A mic that did die shows up anyway as an ended track or 3 s of exact silence.
@@ -816,9 +852,17 @@ function analyse() {
   for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
   state.rms = Math.sqrt(sum / raw.length);
   // A real microphone in a room is never exactly silent: say so instead of waiting forever.
-  if (state.rms === 0 && micStream) {
+  // An engine that stopped while saying "running" leaves the analyser repeating its last buffer: deaf (or one note heard
+  // forever) with "listening" on screen. Its clock tells; a new page is the way back.
+  if (ctx.currentTime !== state.ctxTime) { state.ctxTime = ctx.currentTime; state.ctxStill = 0; }
+  else if (ctx.state === "running" && micStream) {
+    if (!state.ctxStill) state.ctxStill = performance.now();
+    else if (performance.now() - state.ctxStill > 3000) return needFresh(T("noMicSound"), "stalled");
+  }
+  // Exact zeros only count while the engine runs (a suspended one gives zeros too, and a tap fixes that).
+  if (state.rms === 0 && micStream && ctx.state === "running") {
     if (!state.zeroSince) state.zeroSince = performance.now();
-    else if (performance.now() - state.zeroSince > 3000) needFresh(T("noMicSound"), "silent");
+    else if (performance.now() - state.zeroSince > 3000) reacquire(T("noMicSound"), "silent");
   } else if (state.zeroSince) { state.zeroSince = 0; $("micText").textContent = T("listening"); }
   // The floor never rises while a note sounds: a held note would otherwise fade below the gate within seconds.
   if (state.rms < state.noiseFloor) state.noiseFloor = state.rms * 0.2 + state.noiseFloor * 0.8;
