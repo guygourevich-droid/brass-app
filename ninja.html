@@ -168,6 +168,8 @@ const playsGame = (id, game) => !!INSTRUMENT_DATA[id] && INSTRUMENT_DATA[id].gam
   /* Between rounds: the next child steps up. */
   .card { position: absolute; inset-inline: 0; bottom: 6vh; display: grid; justify-items: center; gap: 1.5vh; pointer-events: none; }
   .card[hidden] { display: none; }
+  /* Upright screens anchor the picture to the bottom (fitScene): the card goes up into the empty sky, off the staff. */
+  @media (orientation: portrait) { .card { bottom: auto; top: 14vh; } }
   .card h2 { margin: 0; font-size: clamp(34px, 8vh, 96px); font-weight: 900; }
   .card .big-btn { pointer-events: auto; background: var(--belt); }
 
