@@ -508,7 +508,9 @@ const state = {
 
 /* ---------- Audio: gentle cues, and the optional microphone ---------- */
 
-let ctx = null, analyser = null, micStream = null, raw = null, micAsked = false;
+// micSrc lives here, not in startMic: a source node held by nothing but the graph is garbage-collected while the engine
+// is suspended, and the analyser then hears zeros forever (Chrome, measured 2026-11-05).
+let ctx = null, analyser = null, micStream = null, micSrc = null, raw = null, micAsked = false;
 
 function ensureCtx() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -552,10 +554,10 @@ async function startMic() {
   const micRate = track && track.getSettings ? track.getSettings().sampleRate : 0;
   if (micRate && ctx.sampleRate !== micRate) { ctx.close(); ctx = null; ensureCtx(); }
   ctx.resume();
-  const src = ctx.createMediaStreamSource(micStream);
+  micSrc = ctx.createMediaStreamSource(micStream);
   analyser = ctx.createAnalyser();
   analyser.fftSize = 2048;
-  src.connect(analyser);
+  micSrc.connect(analyser);
   // iPad (WebKit) feeds an analyser only if it leads to the speakers: a silent gain does that, with no sound.
   const pull = ctx.createGain();
   pull.gain.value = 0;

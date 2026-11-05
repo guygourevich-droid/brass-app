@@ -927,6 +927,8 @@ function keepAwake(on) {
 // iPhone/iPad: back from the background, or the mic cut off by iOS (a call, Siri, another app, the lock screen), WebKit can
 // keep the audio engine deaf until the page is opened again, which in the installed app meant closing it. So the way back
 // is a fresh page: one tap on the button, settings kept (they live in localStorage).
+// micSrc must live here, not in startMic: a source node held by nothing but the graph is garbage-collected while a pause has
+// the engine suspended, and the analyser then hears zeros forever (Chrome; the Windows "sound gone after a pause").
 let fresh = false, micSrc = null;
 function needFresh(message, why) {
   tbTrack("audio_recover", { why });
